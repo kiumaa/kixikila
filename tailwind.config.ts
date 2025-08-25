@@ -61,6 +61,44 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Kixikila specific colors
+				indigo: {
+					50: 'hsl(var(--indigo-50))',
+					100: 'hsl(var(--indigo-100))',
+					500: 'hsl(var(--indigo-500))',
+					600: 'hsl(var(--indigo-600))'
+				},
+				purple: {
+					50: 'hsl(var(--purple-50))',
+					100: 'hsl(var(--purple-100))',
+					500: 'hsl(var(--purple-500))',
+					600: 'hsl(var(--purple-600))'
+				},
+				emerald: {
+					100: 'hsl(var(--emerald-100))',
+					500: 'hsl(var(--emerald-500))',
+					600: 'hsl(var(--emerald-600))'
+				},
+				amber: {
+					100: 'hsl(var(--amber-100))',
+					600: 'hsl(var(--amber-600))'
+				},
+				red: {
+					100: 'hsl(var(--red-100))',
+					500: 'hsl(var(--red-500))'
+				},
+				gray: {
+					50: 'hsl(var(--gray-50))',
+					100: 'hsl(var(--gray-100))',
+					200: 'hsl(var(--gray-200))',
+					300: 'hsl(var(--gray-300))',
+					400: 'hsl(var(--gray-400))',
+					500: 'hsl(var(--gray-500))',
+					600: 'hsl(var(--gray-600))',
+					700: 'hsl(var(--gray-700))',
+					800: 'hsl(var(--gray-800))',
+					900: 'hsl(var(--gray-900))'
 				}
 			},
 			borderRadius: {
