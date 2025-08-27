@@ -280,15 +280,7 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
                   <Button 
                     variant="default" 
                     className="w-full ios-button text-lg font-semibold py-4"
-                    onClick={() => {
-                      // Simulação do redirecionamento para Stripe Checkout
-                      window.open('https://checkout.stripe.com/c/pay/cs_test_kixikila_vip#fidkdWxOYHwnPyd1blpxYHZxWjA0SjNMVTNfTFxTNGJfRXVMNn1Mcm10cUNAZUZmQDRgf1FycHdTPFpkTScpJ3VpbGtuQH11anZgYUxhJz8ncWB2cVo', '_blank');
-                      
-                      toast({
-                        title: "Redirecionamento para pagamento",
-                        description: "Será redirecionado para o Stripe para completar o pagamento VIP.",
-                      });
-                    }}
+                    onClick={handlePlanToggle}
                   >
                     <Crown className="w-5 h-5 mr-2" />
                     Assinar Plano VIP
