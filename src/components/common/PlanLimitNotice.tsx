@@ -59,7 +59,7 @@ export const PlanLimitNotice: React.FC<PlanLimitNoticeProps> = ({
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {isAtLimit 
-                  ? 'Atingiu o limite de 2 grupos. Liberta todo o potencial do KIXIKILA com o plano VIP!'
+                  ? 'Liberta todo o potencial do KIXIKILA com o plano VIP!'
                   : 'Desbloqueia grupos ilimitados, relatórios avançados e suporte prioritário.'
                 }
               </p>
