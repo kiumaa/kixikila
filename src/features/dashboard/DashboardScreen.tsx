@@ -12,6 +12,7 @@ import { mockUser, mockGroups, formatCurrency, formatDate, type Group } from '@/
 import { useMemoizedFilteredGroups, useMemoizedGroupProgress } from '@/lib/performance';
 import { useAppStore } from '@/store/useAppStore';
 import { PlanLimitNotice } from '@/components/common/PlanLimitNotice';
+import { PWADownloadPrompt } from '@/components/common/PWADownloadPrompt';
 import { toast } from '@/hooks/use-toast';
 
 interface DashboardScreenProps {
@@ -99,7 +100,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
   }
 
   return (
-    <div className="min-h-screen bg-surface pb-24 animate-fade-in">
+    <div className="min-h-screen bg-surface pb-24 animate-fade-in relative">
+      {/* PWA Download Prompt */}
+      <PWADownloadPrompt />
       {/* Header */}
       <div className="bg-gradient-to-br from-primary to-primary-hover px-6 pt-14 pb-32">
         <div className="flex justify-between items-start mb-8">
