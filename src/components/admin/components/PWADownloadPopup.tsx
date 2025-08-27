@@ -46,6 +46,11 @@ const PWADownloadPopup: React.FC<PWADownloadPopupProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [previewTheme, setPreviewTheme] = useState<'light' | 'dark'>('light');
 
+  // Add safety check for config
+  if (!config) {
+    return null;
+  }
+
   const handleConfigChange = (key: string, value: any) => {
     onChange({
       ...config,

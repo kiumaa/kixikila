@@ -37,7 +37,24 @@ const PWAManagement: React.FC = () => {
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const iconUploadRef = useRef<HTMLInputElement>(null);
 
-  const [downloadPopupConfig, setDownloadPopupConfig] = useState(pwaConfig.downloadPopup);
+  const [downloadPopupConfig, setDownloadPopupConfig] = useState(
+    pwaConfig.downloadPopup || {
+      enabled: true,
+      title: "KIXIKILA: Faça o download da app",
+      message: "Instale o app KIXIKILA para uma melhor experiência e acesso offline.",
+      buttonText: "Instalar App",
+      showAfterSeconds: 5,
+      dismissible: true,
+      showOnce: false,
+      theme: 'auto' as 'auto',
+      position: 'top' as 'top',
+      showOnPages: ['/dashboard', '/groups'],
+      icons: {
+        light: 'https://raw.githubusercontent.com/kiumaa/kixikila/main/Kixikila%20Brand/iso1.png',
+        dark: 'https://raw.githubusercontent.com/kiumaa/kixikila/main/Kixikila%20Brand/iso2.png'
+      }
+    }
+  );
 
   const handleSave = () => {
     updatePWAConfig({ ...editedConfig, downloadPopup: downloadPopupConfig });
