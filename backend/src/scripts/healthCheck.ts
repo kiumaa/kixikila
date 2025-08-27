@@ -38,8 +38,8 @@ async function healthCheck() {
   try {
     logger.info('🔍 Testing Supabase Admin connection...');
     const { data, error } = await supabaseAdmin
-      .from('system_config')
-      .select('key')
+      .from('users')
+      .select('id')
       .limit(1);
     
     if (!error) {
@@ -119,13 +119,15 @@ async function healthCheck() {
       const hasValidConfig = 
         config.email.host.length > 0 &&
         config.email.user.includes('@') &&
-        config.email.password.length > 0;
+        config.email.password.length > 0 &&
+        !config.email.user.includes('your-email') &&
+        !config.email.password.includes('your-app-password');
       
       if (hasValidConfig) {
         results.email = true;
         logger.info('✅ Email configuration valid');
       } else {
-        logger.error('❌ Invalid email configuration');
+        logger.warn('⚠️  Email configuration contains placeholder values');
         results.email = false;
       }
     }
@@ -168,19 +170,6 @@ async function testDatabaseOperations() {
   logger.info('🗄️  Testing database operations...');
   
   try {
-    // Test basic read operation
-    const { data: configData, error: configError } = await supabaseAdmin
-      .from('system_config')
-      .select('key, value')
-      .limit(5);
-    
-    if (configError) {
-      logger.error('❌ Failed to read from system_config:', configError);
-      return false;
-    }
-    
-    logger.info(`✅ Successfully read ${configData?.length || 0} config entries`);
-    
     // Test user table structure
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')

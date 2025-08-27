@@ -32,6 +32,15 @@ interface Config {
     from: string;
     baseUrl: string;
   };
+  email: {
+    host: string;
+    port: number;
+    secure: boolean;
+    user: string;
+    password: string;
+    fromName: string;
+    fromAddress: string;
+  };
   rateLimiting: {
     windowMs: number;
     maxRequests: number;
@@ -112,6 +121,16 @@ export const config: Config = {
     password: process.env.BULKSMS_PASSWORD || '',
     from: process.env.BULKSMS_FROM || 'KIXIKILA',
     baseUrl: process.env.BULKSMS_BASE_URL || 'https://api.bulksms.com/v1',
+  },
+  
+  email: {
+    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587', 10),
+    secure: process.env.EMAIL_SECURE === 'true' || process.env.SMTP_SECURE === 'true',
+    user: process.env.EMAIL_USER || process.env.SMTP_USER || '',
+    password: process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || '',
+    fromName: process.env.EMAIL_FROM_NAME || 'KIXIKILA',
+    fromAddress: process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || '',
   },
   
   rateLimiting: {

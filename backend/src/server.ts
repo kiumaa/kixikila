@@ -21,8 +21,9 @@ import groupRoutes from './routes/groups.ts';
 import transactionRoutes from './routes/transactions.ts';
 import notificationRoutes from './routes/notifications.ts';
 import adminRoutes from './routes/admin.ts';
-import webhookRoutes from './routes/webhooks.ts';
 import stripeRoutes from './routes/stripe.ts';
+import webhookRoutes from './routes/webhooks.ts';
+import healthRoutes from './routes/health.ts';
 
 // Load environment variables
 dotenv.config();
@@ -85,6 +86,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
+app.use(`/api/${config.apiVersion}/health`, healthRoutes);
 app.use(`/api/${config.apiVersion}/auth`, authRoutes);
 app.use(`/api/${config.apiVersion}/users`, authMiddleware, userRoutes);
 app.use(`/api/${config.apiVersion}/groups`, authMiddleware, groupRoutes);
