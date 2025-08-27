@@ -3,9 +3,9 @@ import { Check, Clock, AlertTriangle, Crown, Zap, Shield, Star } from 'lucide-re
 import { cn } from '@/lib/utils';
 
 interface StatusBadgeProps {
-  status: 'success' | 'pending' | 'warning' | 'error' | 'info' | 'vip' | 'verified' | 'premium';
+  status: 'success' | 'pending' | 'warning' | 'error' | 'info' | 'vip' | 'verified' | 'premium' | 'paid' | 'winner';
   children?: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   showIcon?: boolean;
   className?: string;
 }
@@ -18,6 +18,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   className = ''
 }) => {
   const sizeClasses = {
+    xs: 'px-1.5 py-0.5 text-[10px]',
     sm: 'px-2 py-1 text-xs',
     md: 'px-2.5 py-1.5 text-sm',
     lg: 'px-3 py-2 text-base'
@@ -55,6 +56,14 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     premium: {
       className: 'bg-gradient-to-r from-primary-subtle to-primary text-primary border border-primary/20',
       icon: Zap
+    },
+    paid: {
+      className: 'bg-success-subtle text-success border border-success/20',
+      icon: Check
+    },
+    winner: {
+      className: 'bg-gradient-to-r from-warning-subtle to-warning text-warning border border-warning/20',
+      icon: Crown
     }
   };
 

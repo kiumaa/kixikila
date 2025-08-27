@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 interface AvatarProps {
   name: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'xxl';
   image?: string;
   online?: boolean;
   verified?: boolean;
@@ -27,7 +27,8 @@ export const Avatar: React.FC<AvatarProps> = ({
     md: 'w-10 h-10 text-sm',
     lg: 'w-12 h-12 text-base',
     xl: 'w-16 h-16 text-lg',
-    '2xl': 'w-20 h-20 text-xl'
+    '2xl': 'w-20 h-20 text-xl',
+    'xxl': 'w-24 h-24 text-2xl'
   };
 
   const getGradient = (name: string) => {

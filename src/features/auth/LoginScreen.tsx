@@ -94,15 +94,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
           {step === 'phone' ? (
             <div className="space-y-6">
-              <Input
-                label="Número de Telemóvel"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="912 345 678"
-                icon={<Phone className="w-5 h-5" />}
-                helper="Vamos enviar um código SMS para este número"
-              />
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Número de Telemóvel
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="912 345 678"
+                    className="pl-10"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Vamos enviar um código SMS para este número
+                </p>
+              </div>
 
               <Button
                 variant="default"
@@ -142,7 +151,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     <input
                       key={i}
                       type="text"
-                      maxLength="1"
+                      maxLength={1}
                       value={otpCode[i] || ''}
                       onChange={(e) => {
                         const newOtp = otpCode.split('');
