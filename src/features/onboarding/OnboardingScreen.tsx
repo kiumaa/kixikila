@@ -60,9 +60,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             </CardContent>
           </Card> : <Card className="ios-card p-8 text-center animate-scale-in">
             <CardContent className="pt-6 space-y-6">
-              <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary to-primary-hover rounded-3xl flex items-center justify-center shadow-lg">
-                <img src={kixikilaLogo} alt="KIXIKILA" className="w-12 h-12" />
-              </div>
+              <img src={kixikilaLogo} alt="KIXIKILA" className="w-24 h-24 mx-auto" />
               
               <div className="space-y-3">
                 
