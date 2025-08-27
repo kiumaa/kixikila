@@ -1,103 +1,240 @@
-import React, { useState } from 'react';
-import { 
-  Users, Shield, Wallet, Sparkles, ArrowLeft, Lock, Plus, Home, User, PlusCircle, Bell, 
-  Eye, EyeOff, Upload, Download, History, Crown, Check, Calendar, Phone, Mail, 
-  Settings, LogOut, Search, ChevronRight, TrendingUp, Clock, AlertCircle
-} from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { useDarkMode } from '@/hooks/use-dark-mode';
-import { Avatar } from '@/components/design-system/Avatar';
-import { StatusBadge } from '@/components/design-system/StatusBadge';
-import { ThemeToggle } from '@/components/design-system/ThemeToggle';
-import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
-import { NotificationsScreen } from '@/components/screens/NotificationsScreen';
-import { GroupDetailsScreen } from '@/components/screens/GroupDetailsScreen';
-import { RegisterScreen } from '@/components/screens/RegisterScreen';
-import { CreateGroupModal } from '@/components/modals/CreateGroupModal';
-import { DepositModal } from '@/components/modals/DepositModal';
-import { WithdrawModal } from '@/components/modals/WithdrawModal';
-import { PaymentModal } from '@/components/modals/PaymentModal';
+import React, { useState, Suspense } from 'react';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { LoadingScreen } from '@/components/screens/LoadingScreen';
+import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { 
   mockUser, 
-  mockGroups, 
-  mockTransactions, 
   mockNotifications, 
-  formatCurrency, 
-  formatDate,
-  type Group,
-  type Transaction,
-  type Notification
+  type Group
 } from '@/data/mockData';
 
+// Lazy imports
+import {
+  DashboardScreen,
+  WalletScreen,
+  ProfileScreen,
+  GroupDetailsScreen,
+  NotificationsScreen,
+  OnboardingScreen,
+  LoginScreen,
+  RegisterScreen,
+  CreateGroupModal,
+  DepositModal,
+  WithdrawModal,
+  PaymentModal,
+  JoinGroupModal
+} from '@/routes/LazyRoutes';
+
 const Index = () => {
+  // App state
   const [currentScreen, setCurrentScreen] = useState('onboarding');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(0);
-  const [phone, setPhone] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [balanceVisible, setBalanceVisible] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [groupFilter, setGroupFilter] = useState('all');
-  const [transactionFilter, setTransactionFilter] = useState('all');
   
   // Modal states
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showJoinGroup, setShowJoinGroup] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  
-  const { toast } = useToast();
-  const { theme } = useDarkMode();
 
-  // Onboarding Features
-  const features = [
-    {
-      icon: <Users className="w-16 h-16 text-primary" />,
-      title: "Poupança Colaborativa",
-      description: "Junte-se a grupos de poupança e alcance os seus objetivos financeiros mais rapidamente com total transparência"
-    },
-    {
-      icon: <Shield className="w-16 h-16 text-success" />,
-      title: "100% Seguro",
-      description: "Transações protegidas com Stripe, verificação KYC e tecnologia bancária para máxima segurança dos seus fundos"
-    },
-    {
-      icon: <Wallet className="w-16 h-16 text-warning" />,
-      title: "Carteira Digital",
-      description: "Gerencie os seus fundos facilmente com depósitos instantâneos, levantamentos rápidos e histórico completo"
+  // Navigation handlers
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    setCurrentScreen('dashboard');
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentScreen('onboarding');
+  };
+
+  const handleNavigation = (screen: string) => {
+    if (!isLoggedIn && !['onboarding', 'login', 'register'].includes(screen)) {
+      setCurrentScreen('login');
+      return;
     }
-  ];
+    setCurrentScreen(screen);
+  };
 
-  // Onboarding Screen
-  const OnboardingScreen = () => (
-    <div className="min-h-screen bg-gradient-to-br from-primary-subtle via-background to-accent flex items-center justify-center p-6">
-      <div className="max-w-md w-full">
-        {/* Skip Button */}
-        <div className="flex justify-end mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setCurrentScreen('login')}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            Saltar
-          </Button>
-        </div>
+  const handleSelectGroup = (group: Group) => {
+    setSelectedGroup(group);
+    setCurrentScreen('groupDetails');
+  };
 
-        {step < 3 ? (
-          <Card className="ios-card p-8 text-center animate-fade-in">
-            <CardContent className="pt-6 space-y-6">
-              <div className="flex justify-center">
-                {features[step].icon}
-              </div>
-              <div className="space-y-3">
-                <h2 className="text-2xl font-bold font-system text-foreground">
-                  {features[step].title}
+  const renderCurrentScreen = () => {
+    switch (currentScreen) {
+      case 'onboarding':
+        return (
+          <OnboardingScreen
+            step={step}
+            onNext={() => {
+              if (step < 2) {
+                setStep(step + 1);
+              } else if (step === 2) {
+                setStep(3);
+              } else {
+                setCurrentScreen('register');
+              }
+            }}
+            onSkip={() => setCurrentScreen('login')}
+          />
+        );
+
+      case 'login':
+        return (
+          <LoginScreen
+            onBack={() => setCurrentScreen('onboarding')}
+            onSuccess={handleLogin}
+            onRegister={() => setCurrentScreen('register')}
+          />
+        );
+
+      case 'register':
+        return (
+          <RegisterScreen
+            onBack={() => setCurrentScreen('onboarding')}
+            onSuccess={handleLogin}
+          />
+        );
+
+      case 'dashboard':
+        return (
+          <DashboardScreen
+            onOpenNotifications={() => setCurrentScreen('notifications')}
+            onOpenWallet={() => setCurrentScreen('wallet')}
+            onOpenDeposit={() => setShowDeposit(true)}
+            onOpenWithdraw={() => setShowWithdraw(true)}
+            onOpenCreateGroup={() => setShowCreateGroup(true)}
+            onOpenJoinGroup={() => setShowJoinGroup(true)}
+            onSelectGroup={handleSelectGroup}
+            notifications={mockNotifications}
+            isLoading={isLoading}
+          />
+        );
+
+      case 'wallet':
+        return (
+          <WalletScreen
+            onBack={() => setCurrentScreen('dashboard')}
+            onOpenDeposit={() => setShowDeposit(true)}
+            onOpenWithdraw={() => setShowWithdraw(true)}
+          />
+        );
+
+      case 'profile':
+        return (
+          <ProfileScreen
+            onBack={() => setCurrentScreen('dashboard')}
+            onLogout={handleLogout}
+            onOpenPersonalData={() => {/* TODO */}}
+            onOpenKYC={() => {/* TODO */}}
+            onOpenPaymentMethods={() => {/* TODO */}}
+            onOpenNotificationSettings={() => {/* TODO */}}
+            onOpenSecurity={() => {/* TODO */}}
+            onOpenTerms={() => {/* TODO */}}
+            onOpenSupport={() => {/* TODO */}}
+          />
+        );
+
+      case 'notifications':
+        return (
+          <NotificationsScreen
+            onBack={() => setCurrentScreen('dashboard')}
+          />
+        );
+
+      case 'groupDetails':
+        return selectedGroup ? (
+          <GroupDetailsScreen
+            group={selectedGroup}
+            currentUserId={mockUser.id}
+            onBack={() => setCurrentScreen('dashboard')}
+            onPay={() => setShowPayment(true)}
+            onInvite={() => {/* TODO */}}
+          />
+        ) : null;
+
+      default:
+        return <LoadingScreen message="Carregando aplicação..." />;
+    }
+  };
+
+  const unreadNotifications = mockNotifications.filter(n => !n.read).length;
+
+  return (
+    <ErrorBoundary>
+      <div className="max-w-md mx-auto bg-background min-h-screen relative">
+        <Suspense fallback={<LoadingScreen />}>
+          {renderCurrentScreen()}
+        </Suspense>
+
+        {/* Modals */}
+        <Suspense fallback={null}>
+          {showCreateGroup && (
+            <CreateGroupModal
+              isOpen={showCreateGroup}
+              onClose={() => setShowCreateGroup(false)}
+            />
+          )}
+
+          {showJoinGroup && (
+            <JoinGroupModal
+              isOpen={showJoinGroup}
+              onClose={() => setShowJoinGroup(false)}
+            />
+          )}
+
+          {showDeposit && (
+            <DepositModal
+              isOpen={showDeposit}
+              onClose={() => setShowDeposit(false)}
+              currentBalance={mockUser.walletBalance}
+            />
+          )}
+
+          {showWithdraw && (
+            <WithdrawModal
+              isOpen={showWithdraw}
+              onClose={() => setShowWithdraw(false)}
+              currentBalance={mockUser.walletBalance}
+            />
+          )}
+
+          {showPayment && selectedGroup && (
+            <PaymentModal
+              isOpen={showPayment}
+              onClose={() => setShowPayment(false)}
+              group={selectedGroup}
+              currentBalance={mockUser.walletBalance}
+            />
+          )}
+        </Suspense>
+
+        {/* Bottom Navigation */}
+        {isLoggedIn && (
+          <BottomNavigation
+            currentScreen={currentScreen}
+            onNavigate={handleNavigation}
+            onCreateGroup={() => setShowCreateGroup(true)}
+            notificationCount={unreadNotifications}
+          />
+        )}
+
+        {/* Loading Overlay */}
+        {isLoading && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <LoadingScreen message="Processando..." />
+          </div>
+        )}
+      </div>
+    </ErrorBoundary>
+  );
+};
+
+export default Index;
                 </h2>
                 <p className="text-foreground/80 leading-relaxed text-base">
                   {features[step].description}
