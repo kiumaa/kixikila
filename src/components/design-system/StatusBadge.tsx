@@ -1,8 +1,9 @@
 import React from 'react';
-import { Check, Clock, AlertTriangle, Crown, Zap } from 'lucide-react';
+import { Check, Clock, AlertTriangle, Crown, Zap, Shield, Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StatusBadgeProps {
-  status: 'success' | 'pending' | 'warning' | 'error' | 'info' | 'vip' | 'premium';
+  status: 'success' | 'pending' | 'warning' | 'error' | 'info' | 'vip' | 'verified' | 'premium';
   children?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
   showIcon?: boolean;
@@ -41,14 +42,18 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     },
     info: {
       className: 'bg-primary-subtle text-primary border border-primary/20',
-      icon: Clock
+      icon: Star
+    },
+    verified: {
+      className: 'bg-primary-subtle text-primary border border-primary/20',
+      icon: Shield
     },
     vip: {
-      className: 'bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-800 border border-orange-200',
+      className: 'bg-gradient-to-r from-warning-subtle to-warning text-warning border border-warning/20',
       icon: Crown
     },
     premium: {
-      className: 'bg-gradient-to-r from-purple-100 to-indigo-100 text-indigo-800 border border-indigo-200',
+      className: 'bg-gradient-to-r from-primary-subtle to-primary text-primary border border-primary/20',
       icon: Zap
     }
   };
@@ -57,10 +62,12 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   const IconComponent = config.icon;
 
   return (
-    <span className={`
-      inline-flex items-center gap-1.5 rounded-full font-medium
-      ${sizeClasses[size]} ${config.className} ${className}
-    `}>
+    <span className={cn(
+      'inline-flex items-center gap-1.5 rounded-full font-medium smooth-transition',
+      sizeClasses[size],
+      config.className,
+      className
+    )}>
       {showIcon && <IconComponent className="w-3 h-3" />}
       {children}
     </span>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, Crown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface AvatarProps {
   name: string;
@@ -53,19 +54,18 @@ export const Avatar: React.FC<AvatarProps> = ({
     .toUpperCase();
 
   return (
-    <div className={`relative ${sizeClasses[size]} ${className}`}>
+    <div className={cn('relative ios-button', sizeClasses[size], className)}>
       {image ? (
         <img
           src={image}
           alt={name}
-          className="w-full h-full rounded-full object-cover ring-2 ring-background shadow-md"
+          className="w-full h-full rounded-full object-cover ring-2 ring-background shadow-md smooth-transition"
         />
       ) : (
-        <div className={`
-          w-full h-full rounded-full flex items-center justify-center 
-          text-white font-semibold shadow-md ring-2 ring-background
-          bg-gradient-to-br ${getGradient(name)}
-        `}>
+        <div className={cn(
+          'w-full h-full rounded-full flex items-center justify-center text-white font-semibold shadow-md ring-2 ring-background smooth-transition bg-gradient-to-br',
+          getGradient(name)
+        )}>
           {initials}
         </div>
       )}
@@ -75,17 +75,17 @@ export const Avatar: React.FC<AvatarProps> = ({
         <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full ring-2 ring-background animate-pulse" />
       )}
       
-      {/* Verification badge */}
-      {verified && (
-        <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full ring-2 ring-background flex items-center justify-center">
-          <Check className="w-3 h-3 text-primary-foreground" />
+      {/* VIP crown - priority over verified */}
+      {vip && (
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-warning rounded-full ring-2 ring-background flex items-center justify-center animate-bounce-in">
+          <Crown className="w-3 h-3 text-warning-foreground" />
         </div>
       )}
       
-      {/* VIP crown */}
-      {vip && (
-        <div className="absolute -top-1 -right-1 w-5 h-5 bg-warning rounded-full ring-2 ring-background flex items-center justify-center">
-          <Crown className="w-3 h-3 text-warning-foreground" />
+      {/* Verification badge */}
+      {verified && !vip && (
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full ring-2 ring-background flex items-center justify-center animate-scale-in">
+          <Check className="w-3 h-3 text-primary-foreground" />
         </div>
       )}
     </div>

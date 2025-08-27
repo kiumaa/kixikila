@@ -12,6 +12,8 @@ import { useDarkMode } from '@/hooks/use-dark-mode';
 import { Avatar } from '@/components/design-system/Avatar';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { ThemeToggle } from '@/components/design-system/ThemeToggle';
+import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
+import { NotificationsScreen } from '@/components/screens/NotificationsScreen';
 import { 
   mockUser, 
   mockGroups, 
@@ -27,6 +29,7 @@ import {
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState('onboarding');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
@@ -61,6 +64,18 @@ const Index = () => {
   const OnboardingScreen = () => (
     <div className="min-h-screen bg-gradient-to-br from-primary-subtle via-background to-accent flex items-center justify-center p-6">
       <div className="max-w-md w-full">
+        {/* Skip Button */}
+        <div className="flex justify-end mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setCurrentScreen('login')}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Saltar
+          </Button>
+        </div>
+
         {step < 3 ? (
           <Card className="ios-card p-8 text-center animate-fade-in">
             <CardContent className="pt-6 space-y-6">
@@ -71,29 +86,43 @@ const Index = () => {
                 <h2 className="text-2xl font-bold font-system text-foreground">
                   {features[step].title}
                 </h2>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-foreground/80 leading-relaxed text-base">
                   {features[step].description}
                 </p>
               </div>
               
+              {/* Progress indicators */}
               <div className="flex justify-center gap-2">
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
                     className={`h-2 rounded-full transition-all duration-300 ${
-                      i === step ? 'w-8 bg-primary' : 'w-2 bg-muted'
+                      i === step ? 'w-8 bg-primary' : i < step ? 'w-2 bg-primary/50' : 'w-2 bg-muted'
                     }`}
                   />
                 ))}
               </div>
               
-              <Button 
-                size="lg" 
-                className="w-full ios-button bg-primary hover:bg-primary-hover text-primary-foreground font-semibold"
-                onClick={() => setStep(step + 1)}
-              >
-                Continuar
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  size="lg" 
+                  className="w-full ios-button bg-primary hover:bg-primary-hover text-primary-foreground font-semibold"
+                  onClick={() => setStep(step + 1)}
+                >
+                  Continuar
+                </Button>
+                
+                {step > 0 && (
+                  <Button 
+                    variant="ghost"
+                    size="lg"
+                    className="w-full"
+                    onClick={() => setStep(step - 1)}
+                  >
+                    Voltar
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -185,15 +214,28 @@ const Index = () => {
               size="lg"
               className="w-full ios-button bg-primary hover:bg-primary-hover text-primary-foreground font-semibold"
               onClick={() => {
-                setIsLoggedIn(true);
-                setCurrentScreen('dashboard');
-                toast({
-                  title: "Login realizado!",
-                  description: "Bem-vindo de volta ao KIXIKILA"
-                });
+                setIsLoading(true);
+                // Simulate loading
+                setTimeout(() => {
+                  setIsLoggedIn(true);
+                  setCurrentScreen('dashboard');
+                  setIsLoading(false);
+                  toast({
+                    title: "Login realizado!",
+                    description: "Bem-vindo de volta ao KIXIKILA"
+                  });
+                }, 1500);
               }}
+              disabled={isLoading || !phone}
             >
-              Entrar
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  <span>Entrando...</span>
+                </div>
+              ) : (
+                'Entrar'
+              )}
             </Button>
           </div>
         </CardContent>
@@ -369,8 +411,13 @@ const Index = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="ios-button"
-                  onClick={() => setCurrentScreen('explore')}
+                  className="ios-button hover:bg-muted/50"
+                  onClick={() => {
+                    toast({
+                      title: "Procurar grupos",
+                      description: "Funcionalidade em desenvolvimento"
+                    });
+                  }}
                 >
                   <Search className="w-4 h-4 mr-2" />
                   Procurar
@@ -378,6 +425,12 @@ const Index = () => {
                 <Button
                   size="sm"
                   className="ios-button bg-primary hover:bg-primary-hover text-primary-foreground"
+                  onClick={() => {
+                    toast({
+                      title: "Criar grupo",
+                      description: "Funcionalidade em desenvolvimento"
+                    });
+                  }}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Criar
@@ -613,6 +666,12 @@ const Index = () => {
                 <Button
                   size="sm"
                   className="ios-button bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                  onClick={() => {
+                    toast({
+                      title: "Depositar",
+                      description: "Funcionalidade em desenvolvimento"
+                    });
+                  }}
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Depositar
@@ -620,6 +679,12 @@ const Index = () => {
                 <Button
                   size="sm"
                   className="ios-button bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
+                  onClick={() => {
+                    toast({
+                      title: "Levantar",
+                      description: "Funcionalidade em desenvolvimento"
+                    });
+                  }}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Levantar
@@ -921,7 +986,7 @@ const Index = () => {
     const navItems = [
       { key: 'dashboard', icon: Home, label: 'Início', screen: 'dashboard' },
       { key: 'wallet', icon: Wallet, label: 'Carteira', screen: 'wallet' },
-      { key: 'create', icon: PlusCircle, label: 'Criar' },
+      { key: 'create', icon: Plus, label: 'Criar', isFloating: true },
       { key: 'profile', icon: User, label: 'Perfil', screen: 'profile' }
     ];
 
@@ -930,25 +995,40 @@ const Index = () => {
     }
 
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border">
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border z-50">
         <div className="max-w-md mx-auto px-6 py-3">
-          <div className="flex justify-around items-center">
+          <div className="flex justify-around items-center relative">
             {navItems.map((item) => (
-              <Button
-                key={item.key}
-                onClick={() => item.screen && setCurrentScreen(item.screen)}
-                variant="ghost"
-                className={`flex flex-col items-center gap-1 py-2 px-3 h-auto ios-button ${
-                  currentScreen === item.screen 
-                    ? 'text-primary bg-primary/10' 
-                    : 'text-muted-foreground'
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="text-xs font-medium font-system">
-                  {item.label}
-                </span>
-              </Button>
+              item.isFloating ? (
+                <Button
+                  key={item.key}
+                  onClick={() => {
+                    toast({
+                      title: "Criar Grupo",
+                      description: "Funcionalidade em desenvolvimento",
+                    });
+                  }}
+                  className="w-12 h-12 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground shadow-lg ios-button transform hover:scale-105 transition-all duration-200"
+                >
+                  <item.icon className="w-6 h-6" />
+                </Button>
+              ) : (
+                <Button
+                  key={item.key}
+                  onClick={() => item.screen && setCurrentScreen(item.screen)}
+                  variant="ghost"
+                  className={`flex flex-col items-center gap-1 py-2 px-3 h-auto ios-button transition-all duration-200 ${
+                    currentScreen === item.screen 
+                      ? 'text-primary bg-primary/10 scale-105' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="text-xs font-medium font-system">
+                    {item.label}
+                  </span>
+                </Button>
+              )
             ))}
           </div>
         </div>
@@ -962,6 +1042,9 @@ const Index = () => {
       {/* Screens */}
       {currentScreen === 'onboarding' && <OnboardingScreen />}
       {currentScreen === 'login' && <LoginScreen />}
+      {currentScreen === 'notifications' && (
+        <NotificationsScreen onBack={() => setCurrentScreen('dashboard')} />
+      )}
       {isLoggedIn && currentScreen === 'dashboard' && <DashboardScreen />}
       {isLoggedIn && currentScreen === 'wallet' && <WalletScreen />}
       {isLoggedIn && currentScreen === 'profile' && <ProfileScreen />}
