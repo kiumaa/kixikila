@@ -14,7 +14,31 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentRoute
   const { isDark, theme } = useDarkMode();
   const { pwaConfig } = useAdminStore();
   
-  const config = pwaConfig.downloadPopup;
+  // Provide default config to prevent undefined errors
+  const defaultConfig = {
+    enabled: false,
+    title: 'Instalar KIXIKILA',
+    message: 'Adicione à tela inicial para acesso rápido',
+    buttonText: 'Instalar',
+    showAfterSeconds: 5,
+    position: 'bottom' as const,
+    dismissible: true,
+    showOnce: true,
+    showOnPages: ['/dashboard'],
+    theme: 'auto' as const,
+    icons: {
+      light: '/placeholder.svg',
+      dark: '/placeholder.svg'
+    }
+  };
+  
+  // Safely access config with fallback
+  const config = pwaConfig?.downloadPopup ?? defaultConfig;
+  
+  // Early return if configuration is not ready or disabled
+  if (!pwaConfig || !config.enabled) {
+    return null;
+  }
 
   useEffect(() => {
     // Check if banner should be shown based on configuration
