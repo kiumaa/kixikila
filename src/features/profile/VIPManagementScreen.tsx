@@ -113,12 +113,12 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
                   <h2 className="text-xl font-bold font-system text-foreground">
                     {isVIP ? 'Plano VIP Ativo' : 'Plano Gratuito'}
                   </h2>
-                  <p className="text-muted-foreground text-sm font-system">
-                    {isVIP 
-                      ? `Válido até ${formatDate(mockUser.vipExpiry!)}`
-                      : 'Estás no plano gratuito. Participa em até 2 grupos por convite.'
-                    }
-                  </p>
+                   <p className="text-muted-foreground text-sm font-system">
+                     {isVIP 
+                       ? `Válido até ${formatDate(mockUser.vipExpiry!)}`
+                       : 'Participa em até 2 grupos por convite.'
+                     }
+                   </p>
                 </div>
               </div>
               <Badge variant={isVIP ? 'default' : 'secondary'} className="font-semibold">
