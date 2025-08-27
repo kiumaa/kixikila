@@ -74,19 +74,19 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-bold font-system text-warning-foreground">
+          <h1 className="text-xl font-bold font-system text-foreground">
             Gestão VIP
           </h1>
         </div>
 
         {/* Current Status */}
-        <Card className="bg-warning-foreground/10 backdrop-blur-md border-0 text-warning-foreground ios-card">
+        <Card className="bg-warning/10 backdrop-blur-md border-0 ios-card">
           <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <Crown className="w-8 h-8 text-warning-foreground" />
+              <Crown className="w-8 h-8 text-warning" />
               <div>
-                <h2 className="text-xl font-bold font-system">Plano VIP Ativo</h2>
-                <p className="text-warning-foreground/80 text-sm font-system">
+                <h2 className="text-xl font-bold font-system text-foreground">Plano VIP Ativo</h2>
+                <p className="text-muted-foreground text-sm font-system">
                   Válido até {formatDate(mockUser.vipExpiry!)}
                 </p>
               </div>
@@ -94,23 +94,23 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
             
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="text-center">
-                <div className="text-2xl font-bold font-system">∞</div>
-                <div className="text-xs text-warning-foreground/70">Grupos</div>
+                <div className="text-2xl font-bold font-system text-foreground">∞</div>
+                <div className="text-xs text-muted-foreground">Grupos</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold font-system">24h</div>
-                <div className="text-xs text-warning-foreground/70">Suporte</div>
+                <div className="text-2xl font-bold font-system text-foreground">24h</div>
+                <div className="text-xs text-muted-foreground">Suporte</div>
               </div>
             </div>
 
-            <div className="bg-warning-foreground/20 rounded-xl p-4">
+            <div className="bg-warning/20 rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-system">Próxima renovação</span>
-                <span className="text-sm font-bold font-system">
+                <span className="text-sm font-system text-foreground">Próxima renovação</span>
+                <span className="text-sm font-bold font-system text-foreground">
                   {formatCurrency(89.99)}
                 </span>
               </div>
-              <div className="text-xs text-warning-foreground/70">
+              <div className="text-xs text-muted-foreground">
                 Renovação automática em {formatDate(mockUser.vipExpiry!)}
               </div>
             </div>
