@@ -162,10 +162,10 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
                   </p>
                 </div>
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <div>🔓 Grupos ilimitados</div>
-                  <div>⚡ Suporte prioritário</div>
-                  <div>📊 Relatórios avançados</div>
-                  <div>✨ Funcionalidades Premium</div>
+                  <div>Grupos ilimitados</div>
+                  <div>Suporte prioritário</div>
+                  <div>Relatórios avançados</div>
+                  <div>Funcionalidades Premium</div>
                 </div>
               </div>
             )}
