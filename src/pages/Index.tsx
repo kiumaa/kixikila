@@ -18,6 +18,8 @@ import {
   NotificationSettingsScreen,
   SecurityScreen,
   SupportScreen,
+  PaymentMethodsScreen,
+  TermsScreen,
   GroupDetailsScreen,
   NotificationsScreen,
   OnboardingScreen,
@@ -46,13 +48,6 @@ const Index = () => {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showInviteGroup, setShowInviteGroup] = useState(false);
-  
-  // Profile subscreen states  
-  const [showPersonalData, setShowPersonalData] = useState(false);
-  const [showKYC, setShowKYC] = useState(false);
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [showSecurity, setShowSecurity] = useState(false);
-  const [showSupport, setShowSupport] = useState(false);
 
   // Navigation handlers
   const handleLogin = () => {
@@ -143,65 +138,64 @@ const Index = () => {
           <ProfileScreen
             onBack={() => setCurrentScreen('dashboard')}
             onLogout={handleLogout}
-            onOpenPersonalData={() => setShowPersonalData(true)}
-            onOpenKYC={() => setShowKYC(true)}
-            onOpenPaymentMethods={() => {/* TODO: PaymentMethodsScreen */}}
-            onOpenNotificationSettings={() => setShowNotificationSettings(true)}
-            onOpenSecurity={() => setShowSecurity(true)}
-            onOpenTerms={() => {/* TODO: TermsScreen */}}
-            onOpenSupport={() => setShowSupport(true)}
+            onOpenPersonalData={() => setCurrentScreen('personalData')}
+            onOpenKYC={() => setCurrentScreen('kyc')}
+            onOpenPaymentMethods={() => setCurrentScreen('paymentMethods')}
+            onOpenNotificationSettings={() => setCurrentScreen('notificationSettings')}
+            onOpenSecurity={() => setCurrentScreen('security')}
+            onOpenTerms={() => setCurrentScreen('terms')}
+            onOpenSupport={() => setCurrentScreen('support')}
           />
         );
 
       case 'personalData':
-        return showPersonalData ? (
+        return (
           <PersonalDataScreen
-            onBack={() => {
-              setShowPersonalData(false);
-              setCurrentScreen('profile');
-            }}
+            onBack={() => setCurrentScreen('profile')}
           />
-        ) : null;
+        );
 
       case 'kyc':
-        return showKYC ? (
+        return (
           <KYCScreen
-            onBack={() => {
-              setShowKYC(false);
-              setCurrentScreen('profile');
-            }}
+            onBack={() => setCurrentScreen('profile')}
           />
-        ) : null;
+        );
 
       case 'notificationSettings':
-        return showNotificationSettings ? (
+        return (
           <NotificationSettingsScreen
-            onBack={() => {
-              setShowNotificationSettings(false);
-              setCurrentScreen('profile');
-            }}
+            onBack={() => setCurrentScreen('profile')}
           />
-        ) : null;
+        );
 
       case 'security':
-        return showSecurity ? (
+        return (
           <SecurityScreen
-            onBack={() => {
-              setShowSecurity(false);
-              setCurrentScreen('profile');
-            }}
+            onBack={() => setCurrentScreen('profile')}
           />
-        ) : null;
+        );
 
       case 'support':
-        return showSupport ? (
+        return (
           <SupportScreen
-            onBack={() => {
-              setShowSupport(false);
-              setCurrentScreen('profile');
-            }}
+            onBack={() => setCurrentScreen('profile')}
           />
-        ) : null;
+        );
+
+      case 'paymentMethods':
+        return (
+          <PaymentMethodsScreen
+            onBack={() => setCurrentScreen('profile')}
+          />
+        );
+
+      case 'terms':
+        return (
+          <TermsScreen
+            onBack={() => setCurrentScreen('profile')}
+          />
+        );
 
       case 'notifications':
         return (

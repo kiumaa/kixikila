@@ -19,6 +19,48 @@ export const ProfileScreen = lazy(() =>
   }))
 );
 
+export const PersonalDataScreen = lazy(() => 
+  import('@/features/profile/PersonalDataScreen').then(module => ({ 
+    default: module.PersonalDataScreen 
+  }))
+);
+
+export const KYCScreen = lazy(() => 
+  import('@/features/profile/KYCScreen').then(module => ({ 
+    default: module.KYCScreen 
+  }))
+);
+
+export const NotificationSettingsScreen = lazy(() => 
+  import('@/features/profile/NotificationSettingsScreen').then(module => ({ 
+    default: module.NotificationSettingsScreen 
+  }))
+);
+
+export const SecurityScreen = lazy(() => 
+  import('@/features/profile/SecurityScreen').then(module => ({ 
+    default: module.SecurityScreen 
+  }))
+);
+
+export const SupportScreen = lazy(() => 
+  import('@/features/profile/SupportScreen').then(module => ({ 
+    default: module.SupportScreen 
+  }))
+);
+
+export const PaymentMethodsScreen = lazy(() => 
+  import('@/features/profile/PaymentMethodsScreen').then(module => ({ 
+    default: module.PaymentMethodsScreen 
+  }))
+);
+
+export const TermsScreen = lazy(() => 
+  import('@/features/profile/TermsScreen').then(module => ({ 
+    default: module.TermsScreen 
+  }))
+);
+
 export const GroupDetailsScreen = lazy(() => 
   import('@/components/screens/GroupDetailsScreen').then(module => ({ 
     default: module.GroupDetailsScreen 
@@ -77,5 +119,11 @@ export const PaymentModal = lazy(() =>
 export const JoinGroupModal = lazy(() => 
   import('@/features/search/JoinGroupModal').then(module => ({ 
     default: module.JoinGroupModal 
+  }))
+);
+
+export const InviteGroupModal = lazy(() => 
+  import('@/components/modals/InviteGroupModal').then(module => ({ 
+    default: module.InviteGroupModal 
   }))
 );
