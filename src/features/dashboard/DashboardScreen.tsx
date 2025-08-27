@@ -97,7 +97,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-2xl font-bold font-system text-primary-foreground mb-1">
-              Olá, {mockUser.name.split(' ')[0]} 👋
+              Olá, {mockUser.name.split(' ')[0]}
             </h1>
             <p className="text-primary-foreground/80">
               {new Date().toLocaleDateString('pt-PT', { 
