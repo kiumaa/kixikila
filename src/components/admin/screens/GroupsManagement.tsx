@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/design-system/Avatar';
+import EditGroupModal from '@/components/admin/modals/EditGroupModal';
+import { useToast } from '@/hooks/use-toast';
+import { type Group } from '@/data/mockData';
 import { 
   FileText, 
   Search, 
@@ -39,9 +42,12 @@ import { formatCurrency, formatDate } from '@/data/mockData';
 
 const GroupsManagement: React.FC = () => {
   const { deleteGroup, freezeGroup } = useAdminStore();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const filteredGroups = mockGroups.filter(group => {
     const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -63,6 +69,11 @@ const GroupsManagement: React.FC = () => {
     if (confirm(`Tem certeza que deseja congelar o grupo "${groupName}"?`)) {
       freezeGroup(groupId);
     }
+  };
+
+  const handleEditGroup = (group: Group) => {
+    setSelectedGroup(group);
+    setIsEditModalOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -279,15 +290,15 @@ const GroupsManagement: React.FC = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="w-4 h-4 mr-2" />
-                        Ver Detalhes
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Editar Grupo
-                      </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditGroup(group)}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          Ver Detalhes
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem onClick={() => handleEditGroup(group)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar Grupo
+                        </DropdownMenuItem>
                       
                       <DropdownMenuItem 
                         onClick={() => handleFreezeGroup(group.id, group.name)}
@@ -327,6 +338,15 @@ const GroupsManagement: React.FC = () => {
           </Card>
         )}
       </div>
+
+      <EditGroupModal
+        group={selectedGroup}
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedGroup(null);
+        }}
+      />
     </div>
   );
 };
