@@ -137,7 +137,7 @@ const AdminLogin: React.FC = () => {
                     <span className="ml-2">Autenticando...</span>
                   </>
                 ) : (
-                  'Entrar no Painel'
+                  'Entrar'
                 )}
               </Button>
               </form>
