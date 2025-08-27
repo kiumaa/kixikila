@@ -14,7 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      users: {
+        Row: {
+          active_groups: number | null
+          address: string | null
+          avatar_url: string | null
+          city: string | null
+          completed_cycles: number | null
+          country: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          email: string
+          email_verified: boolean | null
+          full_name: string
+          id: string
+          is_active: boolean | null
+          is_vip: boolean | null
+          kyc_status: string | null
+          last_login: string | null
+          phone: string | null
+          phone_verified: boolean | null
+          role: string | null
+          total_earned: number | null
+          total_saved: number | null
+          total_withdrawn: number | null
+          trust_score: number | null
+          updated_at: string | null
+          vip_expiry_date: string | null
+          wallet_balance: number | null
+        }
+        Insert: {
+          active_groups?: number | null
+          address?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          completed_cycles?: number | null
+          country?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email: string
+          email_verified?: boolean | null
+          full_name: string
+          id: string
+          is_active?: boolean | null
+          is_vip?: boolean | null
+          kyc_status?: string | null
+          last_login?: string | null
+          phone?: string | null
+          phone_verified?: boolean | null
+          role?: string | null
+          total_earned?: number | null
+          total_saved?: number | null
+          total_withdrawn?: number | null
+          trust_score?: number | null
+          updated_at?: string | null
+          vip_expiry_date?: string | null
+          wallet_balance?: number | null
+        }
+        Update: {
+          active_groups?: number | null
+          address?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          completed_cycles?: number | null
+          country?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string
+          email_verified?: boolean | null
+          full_name?: string
+          id?: string
+          is_active?: boolean | null
+          is_vip?: boolean | null
+          kyc_status?: string | null
+          last_login?: string | null
+          phone?: string | null
+          phone_verified?: boolean | null
+          role?: string | null
+          total_earned?: number | null
+          total_saved?: number | null
+          total_withdrawn?: number | null
+          trust_score?: number | null
+          updated_at?: string | null
+          vip_expiry_date?: string | null
+          wallet_balance?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
