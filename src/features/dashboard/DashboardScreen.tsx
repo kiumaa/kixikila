@@ -189,42 +189,35 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
 
       {/* Content */}
       <div className="px-6 -mt-16 space-y-6">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
-            <CardContent className="p-0">
-              <div className="text-2xl font-bold font-system text-foreground">
-                {isVIP ? groupCount : `${groupCount}/2`}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Grupos {isVIP ? 'Ativos' : 'Ativo/Limite'}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
-            <CardContent className="p-0">
-              {isVIP ? (
-                <>
-                  <div className="text-2xl font-bold font-system text-success">+24%</div>
-                  <div className="text-xs text-muted-foreground mt-1">Rentabilidade</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold font-system text-muted-foreground">🔒</div>
-                  <div className="text-xs text-muted-foreground mt-1">Premium</div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-          <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
-            <CardContent className="p-0">
-              <div className="text-2xl font-bold font-system text-primary">
-                {mockUser.trustScore}%
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">Trust Score</div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Quick Stats - Only for VIP users */}
+        {isVIP && (
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
+              <CardContent className="p-0">
+                <div className="text-2xl font-bold font-system text-foreground">
+                  {groupCount}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Grupos Ativos
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
+              <CardContent className="p-0">
+                <div className="text-2xl font-bold font-system text-success">+24%</div>
+                <div className="text-xs text-muted-foreground mt-1">Rentabilidade</div>
+              </CardContent>
+            </Card>
+            <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
+              <CardContent className="p-0">
+                <div className="text-2xl font-bold font-system text-primary">
+                  {mockUser.trustScore}%
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Trust Score</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Plan Notice */}
         {!isVIP && <PlanLimitNotice className="mb-4" onNavigateToVIP={onNavigateToVIP} />}
