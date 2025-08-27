@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, AlertCircle, X } from 'lucide-react';
+import { Crown, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,9 +21,8 @@ export const PlanLimitNotice: React.FC<PlanLimitNoticeProps> = ({
   onClose,
   className = ""
 }) => {
-  const { userPlan, getGroupCount, canCreateGroup } = useAppStore();
+  const { userPlan, getGroupCount } = useAppStore();
   const groupCount = getGroupCount();
-  const isAtLimit = !canCreateGroup();
 
   if (userPlan === 'vip') return null;
 
@@ -46,26 +45,19 @@ export const PlanLimitNotice: React.FC<PlanLimitNoticeProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
             <div className="w-10 h-10 bg-warning/20 rounded-xl flex items-center justify-center flex-shrink-0">
-              {isAtLimit ? (
-                <AlertCircle className="w-5 h-5 text-warning" />
-              ) : (
-                <Crown className="w-5 h-5 text-warning" />
-              )}
+              <Crown className="w-5 h-5 text-warning" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold text-foreground text-sm">
-                  {isAtLimit ? 'Limite Atingido' : 'Plano Gratuito'}
+                  Plano Gratuito
                 </h3>
                 <Badge variant="secondary" className="text-xs">
-                  {groupCount}/2 grupos
+                  {groupCount} grupos (convite)
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {isAtLimit 
-                  ? 'Liberta todo o potencial do KIXIKILA com o plano VIP!'
-                  : 'Desbloqueia grupos ilimitados, relatórios avançados e suporte prioritário.'
-                }
+                Apenas por convite. Torna-te VIP para criar grupos ilimitados e mais benefícios!
               </p>
             </div>
           </div>
