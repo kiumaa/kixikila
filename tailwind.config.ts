@@ -96,6 +96,7 @@ export default {
 			},
 			fontFamily: {
 				system: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+				inter: ['Inter', 'system-ui', 'sans-serif'],
 			},
 			borderRadius: {
 				'sm': 'var(--radius-sm)',
