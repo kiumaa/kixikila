@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useForm } from 'react-hook-form';
+import kixikilaLogo from '@/assets/kixikila-logo.png';
 
 interface LoginForm {
   email: string;
@@ -52,9 +53,7 @@ const AdminLogin: React.FC = () => {
         <div className="w-full max-w-6xl mx-auto">{/* Constrain max width for better desktop layout */}
           <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="text-center pb-8 pt-12">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl">
-                <Shield className="w-10 h-10 text-white" />
-              </div>
+              <img src={kixikilaLogo} alt="KIXIKILA" className="w-20 h-20 mx-auto mb-6" />
               <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
                 Painel Administrativo
               </CardTitle>
