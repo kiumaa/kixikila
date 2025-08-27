@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: kixikila-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm ci --only=production
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: BULKSMS_USERNAME
+        sync: false
+      - key: BULKSMS_PASSWORD
+        sync: false
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        value: 587
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://kixikila.netlify.app
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      - key: LOG_LEVEL
+        value: info
+      - key: SECURITY_BCRYPT_ROUNDS
+        value: 12
+      - key: SECURITY_SESSION_TIMEOUT
+        value: 86400000
