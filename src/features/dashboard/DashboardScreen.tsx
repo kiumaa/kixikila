@@ -222,8 +222,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
         {/* Plan Notice */}
         {!isVIP && <PlanLimitNotice className="mb-4" onNavigateToVIP={onNavigateToVIP} />}
 
-        {/* VIP Banner - Only for non-VIP users */}
-        {!isVIP && (
+        {/* VIP Banner - Only for non-VIP users who haven't reached limit */}
+        {!isVIP && canCreateGroup() && (
           <Card className="ios-card bg-gradient-to-r from-warning-subtle to-warning-subtle/50 border-warning/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -240,12 +240,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
                     </p>
                   </div>
                 </div>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="ios-button"
-                  onClick={onNavigateToVIP}
-                >
+                <Button variant="default" size="sm" className="ios-button">
                   Ver mais
                 </Button>
               </div>
@@ -277,8 +272,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
                     onOpenCreateGroup();
                   } else {
                     toast({
-                      title: "Funcionalidade VIP",
-                      description: "Plano gratuito: apenas por convite. Torna-te VIP para criar grupos.",
+                      title: "Limite Atingido",
+                      description: "Plano gratuito permite até 2 grupos. Torna-te VIP para criar mais.",
                     });
                   }
                 }}

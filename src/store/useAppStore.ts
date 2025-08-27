@@ -36,10 +36,9 @@ export const useAppStore = create<AppState>()(
       },
 
       canCreateGroup: () => {
-        const { userPlan } = get();
-        // Plano gratuito: apenas por convite (não pode criar)
-        // Plano VIP: pode criar grupos ilimitados
-        return userPlan === 'vip';
+        const { userPlan, userGroups } = get();
+        if (userPlan === 'vip') return true;
+        return userGroups.length < 2;
       },
 
       addGroup: (group: Group) => {
