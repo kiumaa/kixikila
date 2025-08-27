@@ -1,5 +1,8 @@
 import { Router } from 'express';
+import { supabase } from '../services/supabase.ts';
 import { logger } from '../utils/logger.ts';
+import { authenticateToken, requireAdmin } from '../middleware/auth.ts';
+import { adminController } from '../controllers/adminController.ts';
 
 const router = Router();
 
@@ -180,5 +183,19 @@ router.put('/config', async (req, res) => {
     });
   }
 });
+
+// Email Configuration Routes
+router.get('/email-config', adminController.getEmailConfig);
+router.put('/email-config', adminController.updateEmailConfig);
+router.post('/email-config/test', adminController.testEmailConfig);
+
+// Stripe Configuration Routes
+router.get('/stripe-config', adminController.getStripeConfig);
+router.put('/stripe-config', adminController.updateStripeConfig);
+
+// BulkSMS Configuration Routes
+router.get('/bulksms-config', adminController.getBulkSMSConfig);
+router.put('/bulksms-config', adminController.updateBulkSMSConfig);
+router.post('/bulksms-config/test', adminController.testSMSConfig);
 
 export default router;
