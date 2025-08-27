@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Settings, Key, Database, Save, Mail, MessageSquare, CreditCard, TestTube, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { adminApi } from '@/services/api';
+import { adminApi, type ApiResponse } from '@/services/api';
 
 interface EmailConfig {
   host: string;
@@ -81,21 +81,21 @@ const SystemSettings: React.FC = () => {
       setLoading(true);
       
       // Load email config
-      const emailResponse = await adminApi.get('/email-config');
-      if (emailResponse.data.success) {
-        setEmailConfig(prev => ({ ...prev, ...emailResponse.data.data }));
+      const emailResponse = await adminApi.get<EmailConfig>('/email-config');
+      if (emailResponse.success) {
+        setEmailConfig(prev => ({ ...prev, ...emailResponse.data }));
       }
       
       // Load Stripe config
-      const stripeResponse = await adminApi.get('/stripe-config');
-      if (stripeResponse.data.success) {
-        setStripeConfig(prev => ({ ...prev, ...stripeResponse.data.data }));
+      const stripeResponse = await adminApi.get<StripeConfig>('/stripe-config');
+      if (stripeResponse.success) {
+        setStripeConfig(prev => ({ ...prev, ...stripeResponse.data }));
       }
       
       // Load BulkSMS config
-      const bulkSMSResponse = await adminApi.get('/bulksms-config');
-      if (bulkSMSResponse.data.success) {
-        setBulkSMSConfig(prev => ({ ...prev, ...bulkSMSResponse.data.data }));
+      const bulkSMSResponse = await adminApi.get<BulkSMSConfig>('/bulksms-config');
+      if (bulkSMSResponse.success) {
+        setBulkSMSConfig(prev => ({ ...prev, ...bulkSMSResponse.data }));
       }
     } catch (error) {
       console.error('Error loading configurations:', error);
@@ -112,9 +112,9 @@ const SystemSettings: React.FC = () => {
   const handleSaveEmailConfig = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.put('/email-config', emailConfig);
+      const response = await adminApi.put<any>('/email-config', emailConfig);
       
-      if (response.data.success) {
+      if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'Configuração de email salva com sucesso'
@@ -144,9 +144,9 @@ const SystemSettings: React.FC = () => {
 
     try {
       setTestingEmail(true);
-      const response = await adminApi.post('/email-config/test', { testEmail });
+      const response = await adminApi.post<any>('/email-config/test', { testEmail });
       
-      if (response.data.success) {
+      if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'Email de teste enviado com sucesso'
@@ -166,9 +166,9 @@ const SystemSettings: React.FC = () => {
   const handleSaveStripeConfig = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.put('/stripe-config', stripeConfig);
+      const response = await adminApi.put<any>('/stripe-config', stripeConfig);
       
-      if (response.data.success) {
+      if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'Configuração do Stripe salva com sucesso'
@@ -189,9 +189,9 @@ const SystemSettings: React.FC = () => {
   const handleSaveBulkSMSConfig = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.put('/bulksms-config', bulkSMSConfig);
+      const response = await adminApi.put<any>('/bulksms-config', bulkSMSConfig);
       
-      if (response.data.success) {
+      if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'Configuração do BulkSMS salva com sucesso'
@@ -221,9 +221,9 @@ const SystemSettings: React.FC = () => {
 
     try {
       setTestingSMS(true);
-      const response = await adminApi.post('/bulksms-config/test', { testPhone });
+      const response = await adminApi.post<any>('/bulksms-config/test', { testPhone });
       
-      if (response.data.success) {
+      if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'SMS de teste enviado com sucesso'
@@ -573,35 +573,6 @@ const SystemSettings: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              BulkSMS
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Username</label>
-              <Input placeholder="username" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
-              <Input placeholder="password" type="password" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex justify-end">
-        <Button>
-          <Save className="w-4 h-4 mr-2" />
-          Guardar Configurações
-        </Button>
-      </div>
     </div>
   );
 };
