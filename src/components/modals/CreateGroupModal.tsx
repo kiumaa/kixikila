@@ -14,11 +14,13 @@ import { formatCurrency } from '@/data/mockData';
 interface CreateGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onNavigateToVIP?: () => void;
 }
 
 export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   isOpen,
-  onClose
+  onClose,
+  onNavigateToVIP
 }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -140,7 +142,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       <div className="space-y-6">
         {/* Plan Limit Notice for Free Users */}
         {userPlan === 'free' && (
-          <PlanLimitNotice showCloseButton={false} />
+          <PlanLimitNotice showCloseButton={false} onNavigateToVIP={onNavigateToVIP} />
         )}
 
         {/* Progress Bar */}

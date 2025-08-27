@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface PlanLimitNoticeProps {
   onUpgrade?: () => void;
+  onNavigateToVIP?: () => void;
   showCloseButton?: boolean;
   onClose?: () => void;
   className?: string;
@@ -15,6 +16,7 @@ interface PlanLimitNoticeProps {
 
 export const PlanLimitNotice: React.FC<PlanLimitNoticeProps> = ({ 
   onUpgrade, 
+  onNavigateToVIP,
   showCloseButton = false,
   onClose,
   className = ""
@@ -26,7 +28,9 @@ export const PlanLimitNotice: React.FC<PlanLimitNoticeProps> = ({
   if (userPlan === 'vip') return null;
 
   const handleUpgradeClick = () => {
-    if (onUpgrade) {
+    if (onNavigateToVIP) {
+      onNavigateToVIP();
+    } else if (onUpgrade) {
       onUpgrade();
     } else {
       toast({

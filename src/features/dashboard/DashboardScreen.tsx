@@ -22,6 +22,7 @@ interface DashboardScreenProps {
   onOpenCreateGroup: () => void;
   onOpenJoinGroup: () => void;
   onSelectGroup: (group: Group) => void;
+  onNavigateToVIP: () => void;
   notifications: any[];
   isLoading?: boolean;
 }
@@ -34,6 +35,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
   onOpenCreateGroup,
   onOpenJoinGroup,
   onSelectGroup,
+  onNavigateToVIP,
   notifications,
   isLoading = false
 }) => {
@@ -225,7 +227,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
         </div>
 
         {/* Plan Notice */}
-        {!isVIP && <PlanLimitNotice className="mb-4" />}
+        {!isVIP && <PlanLimitNotice className="mb-4" onNavigateToVIP={onNavigateToVIP} />}
 
         {/* VIP Banner - Only for non-VIP users who haven't reached limit */}
         {!isVIP && canCreateGroup() && (

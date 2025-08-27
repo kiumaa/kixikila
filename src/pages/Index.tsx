@@ -132,6 +132,7 @@ const Index = () => {
             onOpenCreateGroup={handleCreateGroup}
             onOpenJoinGroup={() => setShowJoinGroup(true)}
             onSelectGroup={handleSelectGroup}
+            onNavigateToVIP={() => setCurrentScreen('vipManagement')}
             notifications={mockNotifications}
             isLoading={isLoading}
           />
@@ -256,6 +257,7 @@ const Index = () => {
             <CreateGroupModal
               isOpen={showCreateGroup}
               onClose={() => setShowCreateGroup(false)}
+              onNavigateToVIP={() => setCurrentScreen('vipManagement')}
             />
           )}
 
