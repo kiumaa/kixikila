@@ -12,7 +12,7 @@ const SystemSettings: React.FC = () => {
         <p className="text-gray-600">Configure integrações e chaves de API</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -47,6 +47,25 @@ const SystemSettings: React.FC = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Chave</label>
               <Input placeholder="eyJ..." type="password" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              BulkSMS
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Username</label>
+              <Input placeholder="username" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Password</label>
+              <Input placeholder="password" type="password" />
             </div>
           </CardContent>
         </Card>
