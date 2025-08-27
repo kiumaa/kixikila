@@ -110,32 +110,32 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = React.memo(
 
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3">
-          <Card className="glass text-primary-foreground border-primary-foreground/20 p-4 text-center">
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold font-system">
+          <Card className="bg-background/90 backdrop-blur-sm border-border text-center">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold font-system text-foreground">
                 {formatCurrency(group.totalPool)}
               </div>
-              <div className="text-xs text-primary-foreground/80 mt-1">
+              <div className="text-xs text-muted-foreground mt-1">
                 Valor Total
               </div>
             </CardContent>
           </Card>
-          <Card className="glass text-primary-foreground border-primary-foreground/20 p-4 text-center">
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold font-system">
+          <Card className="bg-background/90 backdrop-blur-sm border-border text-center">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold font-system text-foreground">
                 {group.cycle}º
               </div>
-              <div className="text-xs text-primary-foreground/80 mt-1">
+              <div className="text-xs text-muted-foreground mt-1">
                 Ciclo Atual
               </div>
             </CardContent>
           </Card>
-          <Card className="glass text-primary-foreground border-primary-foreground/20 p-4 text-center">
-            <CardContent className="pt-4">
-                <div className="text-2xl font-bold font-system">
-                  {paidMembers}/{group.members.length}
-                </div>
-              <div className="text-xs text-primary-foreground/80 mt-1">
+          <Card className="bg-background/90 backdrop-blur-sm border-border text-center">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold font-system text-foreground">
+                {paidMembers}/{group.members.length}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
                 Pagamentos
               </div>
             </CardContent>
