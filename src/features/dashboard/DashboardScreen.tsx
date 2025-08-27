@@ -146,7 +146,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
               {balanceVisible ? formatCurrency(mockUser.walletBalance) : '••••••'}
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex gap-3 justify-center">
               <Button 
                 variant="secondary" 
                 size="sm"
