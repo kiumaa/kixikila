@@ -65,7 +65,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
               <div className="space-y-3">
                 
                 <p className="text-lg text-muted-foreground">
-                  A forma mais inteligente de poupar em grupo
+                  Bem-vindo(a) ao KIXIKILA, uma forma inteligente de poupar
                 </p>
               </div>
 
