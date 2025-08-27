@@ -154,10 +154,10 @@ const AdminDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      {/* Charts Section - Improved desktop grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
         {/* Monthly Growth */}
-        <Card>
+        <Card className="2xl:col-span-2">{/* Take 2 columns on large screens */}
           <CardHeader>
             <CardTitle>Evolução Mensal</CardTitle>
           </CardHeader>
@@ -222,10 +222,10 @@ const AdminDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Activity and Recent Actions */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      {/* Activity and Recent Actions - Improved desktop layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
         {/* User Activity */}
-        <Card className="xl:col-span-2">
+        <Card className="xl:col-span-3">{/* Take 3 columns for charts */}
           <CardHeader>
             <CardTitle>Atividade de Utilizadores (24h)</CardTitle>
           </CardHeader>
@@ -245,7 +245,7 @@ const AdminDashboard: React.FC = () => {
         </Card>
 
         {/* Recent Activity Logs */}
-        <Card>
+        <Card className="xl:col-span-2">{/* Take 2 columns for logs */}
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="w-5 h-5" />

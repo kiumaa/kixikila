@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { mockGroups, mockTransactions, mockUser, type User, type Group, type Transaction } from '@/data/mockData';
 
-export type AdminRole = 'admin' | 'superadmin';
+export type AdminRole = 'admin';
 export type UserStatus = 'active' | 'banned' | 'inactive';
 
 export interface AdminUser extends User {
@@ -10,6 +10,8 @@ export interface AdminUser extends User {
   lastLogin?: string;
   status: UserStatus;
   banReason?: string;
+  email: string;
+  password: string;
 }
 
 export interface PlanConfig {
@@ -148,9 +150,11 @@ interface AdminState {
 // Mock admin data
 const mockAdminUser: AdminUser = {
   ...mockUser,
-  role: 'superadmin',
+  role: 'admin',
   lastLogin: new Date().toISOString(),
-  status: 'active'
+  status: 'active',
+  email: 'admin@kixikila.com',
+  password: 'admin123'
 };
 
 const mockUsers: AdminUser[] = [
@@ -158,7 +162,6 @@ const mockUsers: AdminUser[] = [
   {
     id: 2,
     name: "Pedro Silva",
-    email: "pedro.silva@email.pt",
     phone: "+351 913 456 789",
     avatar: "PS",
     isVIP: false,
@@ -173,12 +176,13 @@ const mockUsers: AdminUser[] = [
     trustScore: 85,
     role: 'admin',
     status: 'active',
-    lastLogin: "2025-01-20T10:30:00Z"
+    lastLogin: "2025-01-20T10:30:00Z",
+    email: 'pedro.silva@admin.com',
+    password: 'pedro123'
   },
   {
     id: 3,
     name: "Maria Costa",
-    email: "maria.costa@email.pt",
     phone: "+351 914 567 890",
     avatar: "MC",
     isVIP: true,
@@ -193,7 +197,9 @@ const mockUsers: AdminUser[] = [
     completedCycles: 1,
     trustScore: 92,
     role: 'admin',
-    status: 'active'
+    status: 'active',
+    email: 'maria.costa@admin.com',
+    password: 'maria123'
   }
 ];
 

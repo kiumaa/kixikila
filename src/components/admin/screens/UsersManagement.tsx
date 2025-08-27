@@ -169,7 +169,7 @@ const UsersManagement: React.FC = () => {
                       {user.isVIP && (
                         <Crown className="w-4 h-4 text-amber-500" />
                       )}
-                      {(user.role === 'admin' || user.role === 'superadmin') && (
+                      {user.role === 'admin' && (
                         <Shield className="w-4 h-4 text-blue-500" />
                       )}
                     </div>

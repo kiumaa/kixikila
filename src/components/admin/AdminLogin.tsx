@@ -1,59 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAdminStore } from '@/store/useAdminStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, Phone, KeyRound } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
+import { useForm } from 'react-hook-form';
+
+interface LoginForm {
+  email: string;
+  password: string;
+}
 
 const AdminLogin: React.FC = () => {
-  const [phone, setPhone] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [isLoading, setIsLoading] = useState(false);
-  const [resendTimer, setResendTimer] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   
   const { adminLogin, allUsers } = useAdminStore();
+  
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
 
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
-
-  const handleSendOTP = async () => {
-    if (phone.length < 9) return;
-    
-    // Mock validation - check if phone belongs to admin user
-    const adminUser = allUsers.find(user => 
-      user.phone.includes(phone) && (user.role === 'admin' || user.role === 'superadmin')
-    );
-    
-    if (!adminUser) {
-      alert('Número de telefone não autorizado para acesso administrativo.');
-      return;
-    }
-    
+  const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
+    setError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      setStep('otp');
-      setResendTimer(60);
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  const handleVerifyOTP = async () => {
-    if (otpCode.length !== 6) return;
-    
-    setIsLoading(true);
-    
-    // Mock OTP verification (accept any 6-digit code)
+    // Mock authentication with delay
     setTimeout(() => {
       const adminUser = allUsers.find(user => 
-        user.phone.includes(phone) && (user.role === 'admin' || user.role === 'superadmin')
+        user.role === 'admin' && 
+        user.email === data.email && 
+        user.password === data.password
       );
       
       if (adminUser) {
@@ -61,135 +38,134 @@ const AdminLogin: React.FC = () => {
           ...adminUser,
           lastLogin: new Date().toISOString()
         });
+      } else {
+        setError('Email ou senha incorretos');
       }
       
       setIsLoading(false);
-    }, 2000);
-  };
-
-  const handleResendOTP = () => {
-    setResendTimer(60);
-    // Mock resend logic
+    }, 1500);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
-            <Shield className="w-8 h-8 text-white" />
-          </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            Painel Administrativo
-          </CardTitle>
-          <p className="text-gray-600">
-            Acesso restrito a administradores
-          </p>
-        </CardHeader>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center p-8">
+      <div className="w-full max-w-lg">
+        <div className="w-full max-w-6xl mx-auto">{/* Constrain max width for better desktop layout */}
+          <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="text-center pb-8 pt-12">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl">
+                <Shield className="w-10 h-10 text-white" />
+              </div>
+              <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
+                Painel Administrativo
+              </CardTitle>
+              <p className="text-gray-600 text-lg">
+                Acesso restrito para administradores
+              </p>
+            </CardHeader>
 
-        <CardContent className="space-y-6">
-          {step === 'phone' ? (
-            <>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Telemóvel
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <Input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="912 345 678"
-                      className="pl-10"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Apenas números autorizados podem aceder
-                  </p>
+            <CardContent className="px-12 pb-12">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-md mx-auto">{/* Center form with max width */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Input
+                    type="email"
+                    {...register('email', { 
+                      required: 'Email é obrigatório',
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: 'Email inválido'
+                      }
+                    })}
+                    className="pl-12 py-3 text-base"
+                    placeholder="admin@kixikila.com"
+                  />
                 </div>
-
-                <Button
-                  onClick={handleSendOTP}
-                  disabled={phone.length < 9 || isLoading}
-                  className="w-full"
-                >
-                  {isLoading ? <LoadingSpinner /> : 'Enviar Código SMS'}
-                </Button>
+                {errors.email && (
+                  <p className="text-red-600 text-sm">{errors.email.message}</p>
+                )}
               </div>
 
-              {/* Mock admin numbers for testing */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs font-medium text-gray-700 mb-2">Para demonstração:</p>
-                <p className="text-xs text-gray-600">+351 912 345 678 (SuperAdmin)</p>
-                <p className="text-xs text-gray-600">+351 913 456 789 (Admin)</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="text-center mb-6">
-                <p className="text-gray-600 mb-2">Código enviado para</p>
-                <p className="font-semibold text-gray-900">+351 {phone}</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Código de Verificação
-                  </label>
-                  <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <Input
-                      type="text"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="000000"
-                      className="pl-10 text-center text-2xl tracking-widest"
-                      maxLength={6}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Para demonstração: qualquer código de 6 dígitos
-                  </p>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Senha
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    {...register('password', { 
+                      required: 'Senha é obrigatória',
+                      minLength: {
+                        value: 6,
+                        message: 'Senha deve ter pelo menos 6 caracteres'
+                      }
+                    })}
+                    className="pl-12 pr-12 py-3 text-base"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
-
-                <Button
-                  onClick={handleVerifyOTP}
-                  disabled={otpCode.length !== 6 || isLoading}
-                  className="w-full"
-                >
-                  {isLoading ? <LoadingSpinner /> : 'Verificar e Entrar'}
-                </Button>
-
-                <div className="text-center">
-                  {resendTimer > 0 ? (
-                    <p className="text-sm text-gray-500">
-                      Reenviar código em {resendTimer}s
-                    </p>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      onClick={handleResendOTP}
-                      className="text-sm"
-                    >
-                      Reenviar código
-                    </Button>
-                  )}
-                </div>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => setStep('phone')}
-                  className="w-full text-sm"
-                >
-                  Alterar número
-                </Button>
+                {errors.password && (
+                  <p className="text-red-600 text-sm">{errors.password.message}</p>
+                )}
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm font-medium">{error}</p>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 text-base font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              >
+                {isLoading ? (
+                  <>
+                    <LoadingSpinner />
+                    <span className="ml-2">Autenticando...</span>
+                  </>
+                ) : (
+                  'Entrar no Painel'
+                )}
+              </Button>
+              </form>
+
+              {/* Demo credentials */}
+              <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200 max-w-md mx-auto">{/* Center demo box */}
+              <p className="text-sm font-semibold text-gray-700 mb-3">
+                🔐 Credenciais para demonstração:
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-600">admin@kixikila.com</span>
+                  <span className="text-gray-500">admin123</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-600">pedro.silva@admin.com</span>
+                  <span className="text-gray-500">pedro123</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-600">maria.costa@admin.com</span>
+                  <span className="text-gray-500">maria123</span>
+                </div>
+              </div>
+            </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };

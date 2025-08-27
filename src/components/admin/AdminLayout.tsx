@@ -93,7 +93,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar - Desktop */}
-      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0">
+      <div className="hidden lg:flex lg:flex-col lg:w-80 lg:fixed lg:inset-y-0">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           {/* Logo */}
           <div className="flex items-center h-16 px-6 border-b border-gray-200">
@@ -133,7 +133,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <Avatar 
                 name={currentAdmin?.avatar || 'AD'} 
                 size="sm"
-                verified={currentAdmin?.role === 'superadmin'}
+                verified={true}
               />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">
@@ -204,7 +204,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       )}
 
       {/* Main content */}
-      <div className="flex-1 lg:pl-64">
+      <div className="flex-1 lg:pl-80">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
