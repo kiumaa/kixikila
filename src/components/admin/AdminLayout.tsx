@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdminStore } from '@/store/useAdminStore';
+import { useDarkMode } from '@/hooks/use-dark-mode';
 import {
   BarChart3,
   Users,
@@ -21,6 +22,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/design-system/Avatar';
 import { cn } from '@/lib/utils';
+import kixikilaLogoDark from '@/assets/kixikila-logo-dark.png';
+import kixikilaLogoLight from '@/assets/kixikila-logo-light.png';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -42,6 +45,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentAdmin, adminLogout, sessionTimeout, extendSession } = useAdminStore();
+  const { isDark } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
 
@@ -97,15 +101,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           {/* Logo */}
           <div className="flex items-center h-16 px-6 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Admin Panel</h1>
-                <p className="text-xs text-gray-500">KIXIKILA</p>
-              </div>
-            </div>
+            <img 
+              src={isDark ? kixikilaLogoDark : kixikilaLogoLight} 
+              alt="KIXIKILA" 
+              className="h-8 w-auto" 
+            />
           </div>
 
           {/* Navigation */}
