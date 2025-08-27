@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, Crown, Calendar, CreditCard, Star, Gift, 
-  TrendingUp, Zap, Award, Shield, CheckCircle, X
+  TrendingUp, Zap, Award, Shield, CheckCircle, X, Lock
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -116,13 +116,13 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
                   <p className="text-muted-foreground text-sm font-system">
                     {isVIP 
                       ? `Válido até ${formatDate(mockUser.vipExpiry!)}`
-                      : 'Acesso limitado a 2 grupos'
+                      : 'Estás no plano gratuito. Participa em até 2 grupos por convite.'
                     }
                   </p>
                 </div>
               </div>
               <Badge variant={isVIP ? 'default' : 'secondary'} className="font-semibold">
-                {isVIP ? 'VIP' : 'FREE'}
+                {isVIP ? 'VIP' : 'GRATUITO'}
               </Badge>
             </div>
             
@@ -155,13 +155,17 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
               </div>
             ) : (
               <div className="bg-primary/10 rounded-xl p-4 text-center">
-                <p className="text-sm font-system text-foreground mb-2">
-                  Upgrade para VIP e desbloqueia:
-                </p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-sm font-system text-foreground">
+                    Liberta todo o potencial do KIXIKILA
+                  </p>
+                </div>
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <div>• Grupos ilimitados</div>
-                  <div>• Suporte prioritário</div>
-                  <div>• Relatórios avançados</div>
+                  <div>🔓 Grupos ilimitados</div>
+                  <div>⚡ Suporte prioritário</div>
+                  <div>📊 Relatórios avançados</div>
+                  <div>✨ Funcionalidades Premium</div>
                 </div>
               </div>
             )}
@@ -275,16 +279,31 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
                 <>
                   <Button 
                     variant="default" 
-                    className="w-full ios-button"
-                    onClick={handlePlanToggle}
+                    className="w-full ios-button text-lg font-semibold py-4"
+                    onClick={() => {
+                      // Simulação do redirecionamento para Stripe Checkout
+                      window.open('https://checkout.stripe.com/c/pay/cs_test_kixikila_vip#fidkdWxOYHwnPyd1blpxYHZxWjA0SjNMVTNfTFxTNGJfRXVMNn1Mcm10cUNAZUZmQDRgf1FycHdTPFpkTScpJ3VpbGtuQH11anZgYUxhJz8ncWB2cVo', '_blank');
+                      
+                      toast({
+                        title: "Redirecionamento para pagamento",
+                        description: "Será redirecionado para o Stripe para completar o pagamento VIP.",
+                      });
+                    }}
                   >
-                    <Crown className="w-4 h-4 mr-2" />
-                    Ativar Plano VIP
+                    <Crown className="w-5 h-5 mr-2" />
+                    Assinar Plano VIP
                   </Button>
-                  <Button variant="outline" className="w-full ios-button" disabled>
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Funcionalidade VIP
-                  </Button>
+                  <div className="bg-muted/50 rounded-xl p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">
+                        Funcionalidades Premium Bloqueadas
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Desbloqueia com o plano VIP
+                    </p>
+                  </div>
                 </>
               )}
             </div>

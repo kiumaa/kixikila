@@ -10,6 +10,9 @@ import { Avatar } from '@/components/design-system/Avatar';
 import { SkeletonCard } from '@/components/design-system/SkeletonCard';
 import { mockUser, mockGroups, formatCurrency, formatDate, type Group } from '@/data/mockData';
 import { useMemoizedFilteredGroups, useMemoizedGroupProgress } from '@/lib/performance';
+import { useAppStore } from '@/store/useAppStore';
+import { PlanLimitNotice } from '@/components/common/PlanLimitNotice';
+import { toast } from '@/hooks/use-toast';
 
 interface DashboardScreenProps {
   onOpenNotifications: () => void;
@@ -36,6 +39,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
 }) => {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const { userPlan, canCreateGroup, getGroupCount } = useAppStore();
+  const isVIP = userPlan === 'vip';
+  const groupCount = getGroupCount();
 
   // Memoized calculations
   const unreadNotifications = useMemo(() => 
@@ -186,15 +192,26 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
           <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
             <CardContent className="p-0">
               <div className="text-2xl font-bold font-system text-foreground">
-                {mockUser.activeGroups}
+                {isVIP ? groupCount : `${groupCount}/2`}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Grupos Ativos</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Grupos {isVIP ? 'Ativos' : 'Ativo/Limite'}
+              </div>
             </CardContent>
           </Card>
           <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
             <CardContent className="p-0">
-              <div className="text-2xl font-bold font-system text-success">+24%</div>
-              <div className="text-xs text-muted-foreground mt-1">Rentabilidade</div>
+              {isVIP ? (
+                <>
+                  <div className="text-2xl font-bold font-system text-success">+24%</div>
+                  <div className="text-xs text-muted-foreground mt-1">Rentabilidade</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold font-system text-muted-foreground">🔒</div>
+                  <div className="text-xs text-muted-foreground mt-1">Premium</div>
+                </>
+              )}
             </CardContent>
           </Card>
           <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
@@ -207,8 +224,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
           </Card>
         </div>
 
-        {/* VIP Banner */}
-        {!mockUser.isVIP && (
+        {/* Plan Notice */}
+        {!isVIP && <PlanLimitNotice className="mb-4" />}
+
+        {/* VIP Banner - Only for non-VIP users who haven't reached limit */}
+        {!isVIP && canCreateGroup() && (
           <Card className="ios-card bg-gradient-to-r from-warning-subtle to-warning-subtle/50 border-warning/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -252,8 +272,18 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
               <Button 
                 variant="default" 
                 size="sm"
-                onClick={onOpenCreateGroup}
-                className="ios-button"
+                onClick={() => {
+                  if (canCreateGroup()) {
+                    onOpenCreateGroup();
+                  } else {
+                    toast({
+                      title: "Limite Atingido",
+                      description: "Plano gratuito permite até 2 grupos. Torna-te VIP para criar mais.",
+                    });
+                  }
+                }}
+                disabled={!canCreateGroup()}
+                className={`ios-button ${!canCreateGroup() ? 'opacity-50' : ''}`}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Criar

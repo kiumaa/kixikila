@@ -9,6 +9,7 @@ import { Avatar } from '@/components/design-system/Avatar';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { ThemeToggle } from '@/components/design-system/ThemeToggle';
 import { mockUser, formatCurrency, formatDate } from '@/data/mockData';
+import { useAppStore } from '@/store/useAppStore';
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -35,6 +36,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onOpenSupport,
   onOpenVIPManagement
 }) => {
+  const { userPlan } = useAppStore();
+  const isVIP = userPlan === 'vip';
   const menuItems = [
     { 
       icon: User, 
@@ -121,12 +124,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </p>
           
           <div className="flex justify-center gap-2">
-            {mockUser.isVIP && (
-              <StatusBadge status="winner">
-                <Crown className="w-3 h-3 mr-1" />
-                VIP
-              </StatusBadge>
-            )}
+            <StatusBadge status={isVIP ? "winner" : "info"}>
+              {isVIP ? (
+                <>
+                  <Crown className="w-3 h-3 mr-1" />
+                  Plano VIP
+                </>
+              ) : (
+                <>
+                  <Shield className="w-3 h-3 mr-1" />
+                  Plano Gratuito
+                </>
+              )}
+            </StatusBadge>
             {mockUser.kycStatus === 'verified' && (
               <StatusBadge status="paid">
                 <Shield className="w-3 h-3 mr-1" />
@@ -183,7 +193,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </Card>
 
         {/* VIP Status */}
-        {mockUser.isVIP ? (
+        {isVIP ? (
           <Card className="ios-card bg-gradient-to-r from-warning-subtle to-warning-subtle/50 border-warning/20">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-4">
@@ -230,11 +240,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     Plano Gratuito
                   </h3>
                   <p className="text-xs text-muted-foreground font-system">
-                    Limitado a 2 grupos
+                    Estás no plano gratuito. Participa em até 2 grupos por convite.
                   </p>
                 </div>
-                <Button variant="default" size="sm" className="ios-button">
-                  Upgrade VIP
+                <Button variant="default" size="sm" className="ios-button" onClick={onOpenVIPManagement}>
+                  Assinar VIP
                 </Button>
               </div>
             </CardContent>

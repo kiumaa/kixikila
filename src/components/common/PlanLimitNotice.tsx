@@ -10,12 +10,14 @@ interface PlanLimitNoticeProps {
   onUpgrade?: () => void;
   showCloseButton?: boolean;
   onClose?: () => void;
+  className?: string;
 }
 
 export const PlanLimitNotice: React.FC<PlanLimitNoticeProps> = ({ 
   onUpgrade, 
   showCloseButton = false,
-  onClose 
+  onClose,
+  className = ""
 }) => {
   const { userPlan, getGroupCount, canCreateGroup } = useAppStore();
   const groupCount = getGroupCount();
@@ -35,7 +37,7 @@ export const PlanLimitNotice: React.FC<PlanLimitNoticeProps> = ({
   };
 
   return (
-    <Card className="bg-gradient-to-r from-warning/10 to-primary/10 border-warning/20">
+    <Card className={`bg-gradient-to-r from-warning/10 to-primary/10 border-warning/20 ${className}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
@@ -57,8 +59,8 @@ export const PlanLimitNotice: React.FC<PlanLimitNoticeProps> = ({
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {isAtLimit 
-                  ? 'Atingiu o limite de 2 grupos. Torna-te VIP para criar grupos ilimitados.'
-                  : 'Upgrade para VIP e cria grupos ilimitados com benefícios exclusivos.'
+                  ? 'Atingiu o limite de 2 grupos. Liberta todo o potencial do KIXIKILA com o plano VIP!'
+                  : 'Desbloqueia grupos ilimitados, relatórios avançados e suporte prioritário.'
                 }
               </p>
             </div>
@@ -71,7 +73,7 @@ export const PlanLimitNotice: React.FC<PlanLimitNoticeProps> = ({
               className="text-xs px-3 py-1.5 h-auto"
               onClick={handleUpgradeClick}
             >
-              Upgrade VIP
+              Assinar VIP
             </Button>
             {showCloseButton && onClose && (
               <Button
