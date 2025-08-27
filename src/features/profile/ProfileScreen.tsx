@@ -190,10 +190,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     <Crown className="w-5 h-5 text-warning" />
                   </div>
                   <div>
-                    <h3 className="font-semibold font-system text-warning-foreground">
+                    <h3 className="font-semibold font-system text-warning">
                       Plano VIP
                     </h3>
-                    <p className="text-xs text-warning-foreground/70 font-system">
+                    <p className="text-xs text-warning/70 font-system">
                       Válido até {formatDate(mockUser.vipExpiry!)}
                     </p>
                   </div>
@@ -204,15 +204,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </div>
               
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-warning-foreground/80">
+                <div className="flex items-center gap-2 text-warning/80">
                   <div className="w-1.5 h-1.5 bg-warning rounded-full" />
                   <span className="font-system">Grupos ilimitados</span>
                 </div>
-                <div className="flex items-center gap-2 text-warning-foreground/80">
+                <div className="flex items-center gap-2 text-warning/80">
                   <div className="w-1.5 h-1.5 bg-warning rounded-full" />
                   <span className="font-system">Relatórios avançados</span>
                 </div>
-                <div className="flex items-center gap-2 text-warning-foreground/80">
+                <div className="flex items-center gap-2 text-warning/80">
                   <div className="w-1.5 h-1.5 bg-warning rounded-full" />
                   <span className="font-system">Suporte prioritário</span>
                 </div>
