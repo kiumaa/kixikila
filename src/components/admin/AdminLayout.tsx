@@ -104,7 +104,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <img 
               src={isDark ? kixikilaLogoDark : kixikilaLogoLight} 
               alt="KIXIKILA" 
-              className="h-8 w-auto" 
+              className="h-10 w-auto" 
             />
           </div>
 
