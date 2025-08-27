@@ -261,7 +261,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
           {/* Groups List */}
           <div className="space-y-4">
-            {mockGroups.map((group) => {
+            {mockGroups.filter((group) => {
+              if (activeTab === 'all') return true;
+              if (activeTab === 'active') return group.status === 'active' || group.status === 'ready_for_draw';
+              if (activeTab === 'pending') return group.status === 'pending';
+              if (activeTab === 'completed') return group.status === 'completed';
+              return true;
+            }).map((group) => {
               const paidMembers = group.members.filter(m => m.paid).length;
               const totalMembers = group.members.length;
               const progress = (paidMembers / totalMembers) * 100;

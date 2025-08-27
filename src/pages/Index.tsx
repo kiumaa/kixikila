@@ -13,12 +13,18 @@ import {
   DashboardScreen,
   WalletScreen,
   ProfileScreen,
+  PersonalDataScreen,
+  KYCScreen,
+  NotificationSettingsScreen,
+  SecurityScreen,
+  SupportScreen,
   GroupDetailsScreen,
   NotificationsScreen,
   OnboardingScreen,
   LoginScreen,
   RegisterScreen,
   CreateGroupModal,
+  InviteGroupModal,
   DepositModal,
   WithdrawModal,
   PaymentModal,
@@ -39,6 +45,14 @@ const Index = () => {
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [showInviteGroup, setShowInviteGroup] = useState(false);
+  
+  // Profile subscreen states  
+  const [showPersonalData, setShowPersonalData] = useState(false);
+  const [showKYC, setShowKYC] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showSecurity, setShowSecurity] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
 
   // Navigation handlers
   const handleLogin = () => {
@@ -129,15 +143,65 @@ const Index = () => {
           <ProfileScreen
             onBack={() => setCurrentScreen('dashboard')}
             onLogout={handleLogout}
-            onOpenPersonalData={() => {/* TODO */}}
-            onOpenKYC={() => {/* TODO */}}
-            onOpenPaymentMethods={() => {/* TODO */}}
-            onOpenNotificationSettings={() => {/* TODO */}}
-            onOpenSecurity={() => {/* TODO */}}
-            onOpenTerms={() => {/* TODO */}}
-            onOpenSupport={() => {/* TODO */}}
+            onOpenPersonalData={() => setShowPersonalData(true)}
+            onOpenKYC={() => setShowKYC(true)}
+            onOpenPaymentMethods={() => {/* TODO: PaymentMethodsScreen */}}
+            onOpenNotificationSettings={() => setShowNotificationSettings(true)}
+            onOpenSecurity={() => setShowSecurity(true)}
+            onOpenTerms={() => {/* TODO: TermsScreen */}}
+            onOpenSupport={() => setShowSupport(true)}
           />
         );
+
+      case 'personalData':
+        return showPersonalData ? (
+          <PersonalDataScreen
+            onBack={() => {
+              setShowPersonalData(false);
+              setCurrentScreen('profile');
+            }}
+          />
+        ) : null;
+
+      case 'kyc':
+        return showKYC ? (
+          <KYCScreen
+            onBack={() => {
+              setShowKYC(false);
+              setCurrentScreen('profile');
+            }}
+          />
+        ) : null;
+
+      case 'notificationSettings':
+        return showNotificationSettings ? (
+          <NotificationSettingsScreen
+            onBack={() => {
+              setShowNotificationSettings(false);
+              setCurrentScreen('profile');
+            }}
+          />
+        ) : null;
+
+      case 'security':
+        return showSecurity ? (
+          <SecurityScreen
+            onBack={() => {
+              setShowSecurity(false);
+              setCurrentScreen('profile');
+            }}
+          />
+        ) : null;
+
+      case 'support':
+        return showSupport ? (
+          <SupportScreen
+            onBack={() => {
+              setShowSupport(false);
+              setCurrentScreen('profile');
+            }}
+          />
+        ) : null;
 
       case 'notifications':
         return (
@@ -153,7 +217,7 @@ const Index = () => {
             currentUserId={mockUser.id}
             onBack={() => setCurrentScreen('dashboard')}
             onPay={() => setShowPayment(true)}
-            onInvite={() => {/* TODO */}}
+            onInvite={() => setShowInviteGroup(true)}
           />
         ) : null;
 
@@ -200,6 +264,14 @@ const Index = () => {
               isOpen={showWithdraw}
               onClose={() => setShowWithdraw(false)}
               currentBalance={mockUser.walletBalance}
+            />
+          )}
+
+          {showInviteGroup && selectedGroup && (
+            <InviteGroupModal
+              isOpen={showInviteGroup}
+              onClose={() => setShowInviteGroup(false)}
+              group={selectedGroup}
             />
           )}
 
