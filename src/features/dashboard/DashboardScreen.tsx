@@ -101,8 +101,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
 
   return (
     <div className="min-h-screen bg-surface pb-24 animate-fade-in relative">
-      {/* PWA Download Prompt */}
-      <PWAInstallBanner />
+      {/* PWA Install Banner */}
+      <PWAInstallBanner currentRoute="/dashboard" />
       {/* Header */}
       <div className="bg-gradient-to-br from-primary to-primary-hover px-6 pt-14 pb-32">
         <div className="flex justify-between items-start mb-8">

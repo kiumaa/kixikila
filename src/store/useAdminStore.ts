@@ -46,6 +46,23 @@ export interface BrandingConfig {
   isDarkMode: boolean;
 }
 
+export interface PWAPopupConfig {
+  enabled: boolean;
+  title: string;
+  message: string;
+  buttonText: string;
+  showAfterSeconds: number;
+  dismissible: boolean;
+  showOnce: boolean;
+  theme: 'auto' | 'light' | 'dark';
+  position: 'top' | 'bottom';
+  showOnPages: string[];
+  icons: {
+    light: string;
+    dark: string;
+  };
+}
+
 export interface PWAConfig {
   shortName: string;
   splashScreenImage: string | null;
@@ -53,6 +70,7 @@ export interface PWAConfig {
   icon512: string | null;
   backgroundColor: string;
   themeColor: string;
+  downloadPopup: PWAPopupConfig;
 }
 
 export interface SystemConfig {
@@ -241,7 +259,23 @@ const initialPWAConfig: PWAConfig = {
   icon192: null,
   icon512: null,
   backgroundColor: '#ffffff',
-  themeColor: '#6366f1'
+  themeColor: '#6366f1',
+  downloadPopup: {
+    enabled: true,
+    title: "KIXIKILA: Faça o download da app",
+    message: "Instale o app KIXIKILA para uma melhor experiência e acesso offline.",
+    buttonText: "Instalar App",
+    showAfterSeconds: 5,
+    dismissible: true,
+    showOnce: false,
+    theme: 'auto',
+    position: 'top',
+    showOnPages: ['/dashboard', '/groups'],
+    icons: {
+      light: 'https://raw.githubusercontent.com/kiumaa/kixikila/main/Kixikila%20Brand/iso1.png',
+      dark: 'https://raw.githubusercontent.com/kiumaa/kixikila/main/Kixikila%20Brand/iso2.png'
+    }
+  }
 };
 
 const mockActivityLogs: ActivityLog[] = [
