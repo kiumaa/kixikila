@@ -198,21 +198,20 @@ export const mockTransactions: Transaction[] = [
   { id: 7, type: 'reward', amount: 450.00, date: '2025-07-25', status: 'completed', description: 'Prémio recebido - Surf Crew', groupId: 3, reference: 'RWD-2025-007' }
 ];
 
-export const mockNotifications: Notification[] = [
-  { id: 1, text: "Próximo pagamento em 2 dias - Família Santos", time: "há 1 hora", read: false, type: "payment" },
-  { id: 2, text: "Sorteio realizado! Maria João foi contemplada", time: "há 3 horas", read: false, type: "winner" },
-  { id: 3, text: "Depósito de €500 processado com sucesso", time: "há 1 dia", read: true, type: "deposit" },
-  { id: 4, text: "Novo membro entrou no grupo Tech Founders", time: "há 2 dias", read: true, type: "member" }
-];
-
 // Utility functions
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('pt-PT', {
     style: 'currency',
     currency: 'EUR',
-    minimumFractionDigits: 2
   }).format(amount);
 };
+
+export const mockNotifications: Notification[] = [
+  { id: 1, text: "Próximo pagamento em 2 dias - Família Santos", time: "há 1 hora", read: false, type: "payment" },
+  { id: 2, text: "Sorteio realizado! Maria João foi contemplada", time: "há 3 horas", read: false, type: "winner" },
+  { id: 3, text: `Depósito de ${formatCurrency(500)} processado com sucesso`, time: "há 1 dia", read: true, type: "deposit" },
+  { id: 4, text: "Novo membro entrou no grupo Tech Founders", time: "há 2 dias", read: true, type: "member" }
+];
 
 export const formatDate = (date: string): string => {
   return new Date(date).toLocaleDateString('pt-PT', {

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { useToast } from '@/hooks/use-toast';
-import { mockUser } from '@/data/mockData';
+import { mockUser, formatCurrency } from '@/data/mockData';
 
 interface KYCScreenProps {
   onBack: () => void;
@@ -133,7 +133,7 @@ export const KYCScreen: React.FC<KYCScreenProps> = ({
                   <li>• Proteger a sua conta e transações</li>
                   <li>• Cumprir regulamentações financeiras</li>
                   <li>• Prevenir fraudes e atividades suspeitas</li>
-                  <li>• Permitir levantamentos superiores a €500</li>
+                  <li>• Permitir levantamentos superiores a {formatCurrency(500)}</li>
                 </ul>
               </div>
             </div>

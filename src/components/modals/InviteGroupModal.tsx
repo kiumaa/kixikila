@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { type Group } from '@/data/mockData';
+import { type Group, formatCurrency } from '@/data/mockData';
 
 interface InviteGroupModalProps {
   isOpen: boolean;
@@ -61,7 +61,7 @@ export const InviteGroupModal: React.FC<InviteGroupModalProps> = ({
     const body = encodeURIComponent(
       `Olá!\n\nConvido-te a juntar-te ao meu grupo de poupança "${group.name}" na KIXIKILA.\n\n` +
       `${group.description}\n\n` +
-      `Contribuição mensal: €${group.contributionAmount}\n` +
+      `Contribuição mensal: ${formatCurrency(group.contributionAmount)}\n` +
       `Membros: ${group.currentMembers}/${group.maxMembers}\n\n` +
       `Clica no link para entrares:\n${inviteLink}\n\n` +
       `Ou usa o código: ${inviteCode}\n\n` +
@@ -74,7 +74,7 @@ export const InviteGroupModal: React.FC<InviteGroupModalProps> = ({
     const text = encodeURIComponent(
       `🔗 *Convite KIXIKILA*\n\n` +
       `Junta-te ao meu grupo "${group.name}"!\n\n` +
-      `💰 Contribuição: €${group.contributionAmount}/mês\n` +
+      `💰 Contribuição: ${formatCurrency(group.contributionAmount)}/mês\n` +
       `👥 Vagas: ${group.maxMembers - group.currentMembers} disponíveis\n\n` +
       `${inviteLink}\n\n` +
       `Código: *${inviteCode}*`
@@ -101,7 +101,7 @@ export const InviteGroupModal: React.FC<InviteGroupModalProps> = ({
             </p>
             <div className="flex items-center gap-4 text-sm">
               <span className="font-semibold font-system text-primary">
-                €{group.contributionAmount}/mês
+                {formatCurrency(group.contributionAmount)}/mês
               </span>
               <span className="text-primary/70">
                 {group.maxMembers - group.currentMembers} vagas disponíveis

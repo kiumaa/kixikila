@@ -94,7 +94,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
               />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Mínimo: €10 • Máximo: €5.000
+              Mínimo: {formatCurrency(10)} • Máximo: {formatCurrency(5000)}
             </p>
           </div>
 
@@ -106,12 +106,13 @@ export const DepositModal: React.FC<DepositModalProps> = ({
               {quickAmounts.map(value => (
                 <Button
                   key={value}
+                  type="button"
                   onClick={() => setAmount(value.toString())}
                   variant={amount === value.toString() ? 'default' : 'outline'}
                   className="ios-button font-semibold"
                   size="sm"
                 >
-                  €{value}
+                  {formatCurrency(value)}
                 </Button>
               ))}
             </div>
@@ -154,7 +155,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
             size="lg"
           >
             <CreditCard className="w-5 h-5 mr-2" />
-            Depositar {amount ? formatCurrency(parseFloat(amount)) : '€0.00'}
+            Depositar {amount ? formatCurrency(parseFloat(amount)) : formatCurrency(0)}
           </Button>
         </div>
       )}

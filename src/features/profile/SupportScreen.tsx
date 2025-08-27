@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrency } from '@/data/mockData';
 
 interface SupportScreenProps {
   onBack: () => void;
@@ -46,7 +47,7 @@ export const SupportScreen: React.FC<SupportScreenProps> = ({
     },
     {
       question: "Como funciona a verificação KYC?",
-      answer: "Carregue documento de identidade e comprovativo de morada. A verificação demora 1-3 dias úteis e é obrigatória para levantamentos superiores a €500."
+      answer: `Carregue documento de identidade e comprovativo de morada. A verificação demora 1-3 dias úteis e é obrigatória para levantamentos superiores a ${formatCurrency(500)}.`
     }
   ];
 
