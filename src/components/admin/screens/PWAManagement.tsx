@@ -80,7 +80,7 @@ const PWAManagement: React.FC = () => {
 
       setEditedConfig({
         ...editedConfig,
-        iconUrl: mockUrl
+        icon512: mockUrl
       });
 
       toast({
@@ -186,7 +186,7 @@ const PWAManagement: React.FC = () => {
               <Label htmlFor="app-name">Nome Completo da App</Label>
               <Input
                 id="app-name"
-                value={editedConfig.name}
+                value={editedConfig.name || ''}
                 onChange={(e) => setEditedConfig({ ...editedConfig, name: e.target.value })}
                 placeholder="KIXIKILA - Poupança Colaborativa"
                 className="mt-1"
@@ -334,9 +334,9 @@ const PWAManagement: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-              {editedConfig.iconUrl ? (
+              {(editedConfig as any).iconUrl || editedConfig.icon512 ? (
                 <img 
-                  src={editedConfig.iconUrl} 
+                  src={(editedConfig as any).iconUrl || editedConfig.icon512 || ''} 
                   alt="App Icon"
                   className="w-16 h-16 object-contain"
                 />
