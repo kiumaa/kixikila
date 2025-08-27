@@ -6,7 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/design-system/Modal';
 import { Card, CardContent } from '@/components/ui/card';
+import { PlanLimitNotice } from '@/components/common/PlanLimitNotice';
 import { useToast } from '@/hooks/use-toast';
+import { useAppStore } from '@/store/useAppStore';
 import { formatCurrency } from '@/data/mockData';
 
 interface CreateGroupModalProps {
@@ -30,6 +32,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { canCreateGroup, userPlan, addGroup } = useAppStore();
 
   const handleNext = () => {
     if (step < 4) {
@@ -44,10 +47,50 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   };
 
   const handleSubmit = () => {
+    // Check group limit before proceeding
+    if (!canCreateGroup()) {
+      toast({
+        title: "Limite Atingido",
+        description: "Plano gratuito permite até 2 grupos. Torna-te VIP para criar mais.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     // Simulate API call
     setTimeout(() => {
+      // Add mock group to store
+      const newGroup = {
+        id: Date.now(),
+        name: formData.name,
+        description: formData.description,
+        contributionAmount: parseFloat(formData.contributionAmount),
+        frequency: 'mensal' as const,
+        maxMembers: parseInt(formData.maxMembers),
+        currentMembers: 1,
+        nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: 'active' as const,
+        adminId: 1,
+        cycle: 1,
+        groupType: formData.groupType as 'lottery' | 'order',
+        totalPool: parseFloat(formData.contributionAmount),
+        startDate: new Date().toISOString().split('T')[0],
+        privacy: formData.privacy as 'public' | 'private',
+        category: 'family' as const,
+        members: [{
+          id: 1,
+          name: "Ana Santos",
+          avatar: "AS",
+          paid: false,
+          isWinner: false,
+          isAdmin: true
+        }],
+        history: []
+      };
+
+      addGroup(newGroup);
+      
       setIsLoading(false);
       onClose();
       setStep(1);
@@ -95,6 +138,11 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       size="lg"
     >
       <div className="space-y-6">
+        {/* Plan Limit Notice for Free Users */}
+        {userPlan === 'free' && (
+          <PlanLimitNotice showCloseButton={false} />
+        )}
+
         {/* Progress Bar */}
         <div className="flex gap-2">
           {[1, 2, 3, 4].map((num) => (
@@ -114,7 +162,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               <h3 className="text-xl font-bold font-system text-foreground mb-2">
                 Escolha o tipo de grupo
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Selecione como será definido o próximo contemplado
               </p>
             </div>
@@ -123,7 +171,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               <Card
                 className={`cursor-pointer ios-card transition-all ${
                   formData.groupType === 'lottery'
-                    ? 'ring-2 ring-primary bg-primary-subtle/20'
+                    ? 'ring-2 ring-primary bg-primary/5'
                     : 'hover:bg-muted/50'
                 }`}
                 onClick={() => setFormData({ ...formData, groupType: 'lottery' })}
@@ -134,7 +182,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     <h4 className="font-semibold font-system text-foreground">
                       Grupo por Sorteio
                     </h4>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       O próximo contemplado é escolhido por sorteio aleatório
                     </p>
                   </div>
@@ -150,7 +198,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               <Card
                 className={`cursor-pointer ios-card transition-all ${
                   formData.groupType === 'order'
-                    ? 'ring-2 ring-primary bg-primary-subtle/20'
+                    ? 'ring-2 ring-primary bg-primary/5'
                     : 'hover:bg-muted/50'
                 }`}
                 onClick={() => setFormData({ ...formData, groupType: 'order' })}
@@ -161,7 +209,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     <h4 className="font-semibold font-system text-foreground">
                       Grupo por Ordem
                     </h4>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Os membros definem a ordem de quem recebe primeiro
                     </p>
                   </div>
@@ -184,7 +232,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               <h3 className="text-xl font-bold font-system text-foreground mb-2">
                 Informações básicas
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Defina o nome e descrição do seu grupo
               </p>
             </div>
@@ -225,7 +273,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     type="button"
                     variant={formData.privacy === 'public' ? 'default' : 'outline'}
                     onClick={() => setFormData({ ...formData, privacy: 'public' })}
-                    className="ios-button"
+                    className="ios-button text-xs py-2"
                   >
                     <Users className="w-4 h-4 mr-2" />
                     Público
@@ -234,7 +282,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     type="button"
                     variant={formData.privacy === 'private' ? 'default' : 'outline'}
                     onClick={() => setFormData({ ...formData, privacy: 'private' })}
-                    className="ios-button"
+                    className="ios-button text-xs py-2"
                   >
                     <Shield className="w-4 h-4 mr-2" />
                     Privado
@@ -252,7 +300,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               <h3 className="text-xl font-bold font-system text-foreground mb-2">
                 Configurações financeiras
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Defina o valor e número de participantes
               </p>
             </div>
@@ -301,7 +349,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                   <Button
                     type="button"
                     variant="default"
-                    className="ios-button justify-start"
+                    className="ios-button justify-start text-xs py-2"
                     disabled
                   >
                     <Calendar className="w-4 h-4 mr-2" />
@@ -311,12 +359,12 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               </div>
 
               {totalAmount > 0 && (
-                <Card className="ios-card bg-primary-subtle/20 border-primary/20">
+                <Card className="ios-card bg-primary/5 border-primary/20">
                   <CardContent className="p-4 text-center">
-                    <div className="text-sm text-muted-foreground mb-1">
+                    <div className="text-xs text-muted-foreground mb-1">
                       Valor total do grupo por ciclo
                     </div>
-                    <div className="text-2xl font-bold font-system text-primary">
+                    <div className="text-xl font-bold font-system text-primary">
                       {formatCurrency(totalAmount)}
                     </div>
                   </CardContent>
@@ -333,7 +381,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               <h3 className="text-xl font-bold font-system text-foreground mb-2">
                 Confirmar criação
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Revise as informações do seu grupo
               </p>
             </div>
@@ -350,17 +398,17 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     <h4 className="font-semibold font-system text-foreground">
                       {formData.name}
                     </h4>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {formData.groupType === 'lottery' ? 'Grupo por Sorteio' : 'Grupo por Ordem'}
                     </p>
                   </div>
                 </div>
 
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
                   {formData.description}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
                     <span className="text-muted-foreground">Contribuição:</span>
                     <div className="font-semibold text-foreground">
@@ -397,7 +445,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <Button
               onClick={handleBack}
               variant="outline"
-              className="flex-1 ios-button"
+              className="flex-1 ios-button text-xs py-2"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar
@@ -408,7 +456,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <Button
               onClick={handleNext}
               disabled={!isStepValid()}
-              className="flex-1 ios-button bg-primary hover:bg-primary-hover text-primary-foreground"
+              className="flex-1 ios-button text-xs py-2"
             >
               Continuar
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -416,11 +464,11 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={isLoading}
-              className="flex-1 ios-button bg-primary hover:bg-primary-hover text-primary-foreground"
+              disabled={isLoading || !canCreateGroup()}
+              className="flex-1 ios-button text-xs py-2"
             >
-              {isLoading ? 'Criando...' : 'Criar Grupo'}
-              {!isLoading && <Check className="w-4 h-4 ml-2" />}
+              {isLoading ? 'Criando...' : !canCreateGroup() ? 'Limite Atingido' : 'Criar Grupo'}
+              {!isLoading && canCreateGroup() && <Check className="w-4 h-4 ml-2" />}
             </Button>
           )}
         </div>

@@ -2,6 +2,7 @@ import React, { useState, Suspense } from 'react';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { LoadingScreen } from '@/components/screens/LoadingScreen';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
+import { useAppStore } from '@/store/useAppStore';
 import { 
   mockUser, 
   mockNotifications, 
@@ -50,6 +51,9 @@ const Index = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [showInviteGroup, setShowInviteGroup] = useState(false);
 
+  // Global store
+  const { canCreateGroup, userGroups } = useAppStore();
+
   // Navigation handlers
   const handleLogin = () => {
     setIsLoggedIn(true);
@@ -72,6 +76,14 @@ const Index = () => {
   const handleSelectGroup = (group: Group) => {
     setSelectedGroup(group);
     setCurrentScreen('groupDetails');
+  };
+
+  const handleCreateGroup = () => {
+    if (!canCreateGroup()) {
+      // toast will be handled by the modal
+      return;
+    }
+    setShowCreateGroup(true);
   };
 
   const renderCurrentScreen = () => {
@@ -117,7 +129,7 @@ const Index = () => {
             onOpenWallet={() => setCurrentScreen('wallet')}
             onOpenDeposit={() => setShowDeposit(true)}
             onOpenWithdraw={() => setShowWithdraw(true)}
-            onOpenCreateGroup={() => setShowCreateGroup(true)}
+            onOpenCreateGroup={handleCreateGroup}
             onOpenJoinGroup={() => setShowJoinGroup(true)}
             onSelectGroup={handleSelectGroup}
             notifications={mockNotifications}
@@ -293,7 +305,7 @@ const Index = () => {
           <BottomNavigation
             currentScreen={currentScreen}
             onNavigate={handleNavigation}
-            onCreateGroup={() => setShowCreateGroup(true)}
+            onCreateGroup={handleCreateGroup}
             notificationCount={unreadNotifications}
           />
         )}

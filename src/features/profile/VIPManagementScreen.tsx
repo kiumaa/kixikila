@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, Crown, Calendar, CreditCard, Star, Gift, 
-  TrendingUp, Zap, Award, Shield, CheckCircle
+  TrendingUp, Zap, Award, Shield, CheckCircle, X
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
+import { Badge } from '@/components/ui/badge';
 import { mockUser, formatCurrency, formatDate } from '@/data/mockData';
+import { useAppStore } from '@/store/useAppStore';
+import { toast } from '@/hooks/use-toast';
 
 interface VIPManagementScreenProps {
   onBack: () => void;
@@ -14,6 +17,21 @@ interface VIPManagementScreenProps {
 
 export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack }) => {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const { userPlan, togglePlan, getGroupCount } = useAppStore();
+  const isVIP = userPlan === 'vip';
+  const groupCount = getGroupCount();
+
+  const handlePlanToggle = () => {
+    togglePlan();
+    const newPlan = userPlan === 'free' ? 'vip' : 'free';
+    
+    toast({
+      title: "Plano alterado com sucesso!",
+      description: newPlan === 'vip' 
+        ? "Bem-vindo ao Plano VIP! Agora pode criar grupos ilimitados."
+        : "Plano alterado para Gratuito. Máximo de 2 grupos ativos.",
+    });
+  };
 
   const vipFeatures = [
     {
@@ -80,40 +98,73 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
         </div>
 
         {/* Current Status */}
-        <Card className="bg-warning/10 backdrop-blur-md border-0 ios-card">
+        <Card className={`backdrop-blur-md border-0 ios-card ${
+          isVIP ? 'bg-warning/10' : 'bg-muted/10'
+        }`}>
           <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Crown className="w-8 h-8 text-warning" />
-              <div>
-                <h2 className="text-xl font-bold font-system text-foreground">Plano VIP Ativo</h2>
-                <p className="text-muted-foreground text-sm font-system">
-                  Válido até {formatDate(mockUser.vipExpiry!)}
-                </p>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                {isVIP ? (
+                  <Crown className="w-8 h-8 text-warning" />
+                ) : (
+                  <Shield className="w-8 h-8 text-muted-foreground" />
+                )}
+                <div>
+                  <h2 className="text-xl font-bold font-system text-foreground">
+                    {isVIP ? 'Plano VIP Ativo' : 'Plano Gratuito'}
+                  </h2>
+                  <p className="text-muted-foreground text-sm font-system">
+                    {isVIP 
+                      ? `Válido até ${formatDate(mockUser.vipExpiry!)}`
+                      : 'Acesso limitado a 2 grupos'
+                    }
+                  </p>
+                </div>
               </div>
+              <Badge variant={isVIP ? 'default' : 'secondary'} className="font-semibold">
+                {isVIP ? 'VIP' : 'FREE'}
+              </Badge>
             </div>
             
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="text-center">
-                <div className="text-2xl font-bold font-system text-foreground">∞</div>
+                <div className="text-2xl font-bold font-system text-foreground">
+                  {isVIP ? '∞' : `${groupCount}/2`}
+                </div>
                 <div className="text-xs text-muted-foreground">Grupos</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold font-system text-foreground">24h</div>
+                <div className="text-2xl font-bold font-system text-foreground">
+                  {isVIP ? '24h' : '48h'}
+                </div>
                 <div className="text-xs text-muted-foreground">Suporte</div>
               </div>
             </div>
 
-            <div className="bg-warning/20 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-system text-foreground">Próxima renovação</span>
-                <span className="text-sm font-bold font-system text-foreground">
-                  {formatCurrency(89.99)}
-                </span>
+            {isVIP ? (
+              <div className="bg-warning/20 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-system text-foreground">Próxima renovação</span>
+                  <span className="text-sm font-bold font-system text-foreground">
+                    {formatCurrency(89.99)}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Renovação automática em {formatDate(mockUser.vipExpiry!)}
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                Renovação automática em {formatDate(mockUser.vipExpiry!)}
+            ) : (
+              <div className="bg-primary/10 rounded-xl p-4 text-center">
+                <p className="text-sm font-system text-foreground mb-2">
+                  Upgrade para VIP e desbloqueia:
+                </p>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>• Grupos ilimitados</div>
+                  <div>• Suporte prioritário</div>
+                  <div>• Relatórios avançados</div>
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -205,14 +256,37 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
             </div>
 
             <div className="space-y-3">
-              <Button variant="default" className="w-full ios-button">
-                <CreditCard className="w-4 h-4 mr-2" />
-                Alterar Plano
-              </Button>
-              <Button variant="outline" className="w-full ios-button">
-                <Calendar className="w-4 h-4 mr-2" />
-                Pausar Renovação
-              </Button>
+              {isVIP ? (
+                <>
+                  <Button variant="outline" className="w-full ios-button">
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Alterar Plano
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full ios-button"
+                    onClick={handlePlanToggle}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancelar Subscrição VIP
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="default" 
+                    className="w-full ios-button"
+                    onClick={handlePlanToggle}
+                  >
+                    <Crown className="w-4 h-4 mr-2" />
+                    Ativar Plano VIP
+                  </Button>
+                  <Button variant="outline" className="w-full ios-button" disabled>
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Funcionalidade VIP
+                  </Button>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
