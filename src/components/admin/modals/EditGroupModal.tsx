@@ -31,7 +31,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ group, isOpen, onClose 
     contributionAmount: group?.contributionAmount || 0,
     maxMembers: group?.maxMembers || 0,
     frequency: group?.frequency || 'mensal',
-    category: group?.category || 'general',
+    category: group?.category || 'family',
     privacy: group?.privacy || 'public',
     status: group?.status || 'active'
   });
@@ -57,7 +57,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ group, isOpen, onClose 
     setIsSubmitting(true);
     
     try {
-      updateGroup(group.id, formData);
+      updateGroup(group.id, formData as Partial<Group>);
       
       toast({
         title: "Grupo atualizado",
@@ -106,7 +106,7 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ group, isOpen, onClose 
   const handleFreezeGroup = () => {
     if (!group) return;
     
-    const action = group.status === 'frozen' ? 'reativar' : 'congelar';
+    const action = group.status === 'active' ? 'congelar' : 'reativar';
     const confirmed = window.confirm(
       `Tem a certeza que deseja ${action} o grupo "${group.name}"?`
     );
@@ -115,8 +115,8 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ group, isOpen, onClose 
       try {
         freezeGroup(group.id);
         toast({
-          title: `Grupo ${group.status === 'frozen' ? 'reativado' : 'congelado'}`,
-          description: `O grupo "${group.name}" foi ${group.status === 'frozen' ? 'reativado' : 'congelado'}.`,
+          title: `Grupo ${group.status === 'active' ? 'congelado' : 'reativado'}`,
+          description: `O grupo "${group.name}" foi ${group.status === 'active' ? 'congelado' : 'reativado'}.`,
           variant: "default"
         });
         onClose();
@@ -170,17 +170,16 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ group, isOpen, onClose 
 
               <div>
                 <Label htmlFor="category">Categoria</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value as any })}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="family">Família</SelectItem>
-                    <SelectItem value="friends">Amigos</SelectItem>
-                    <SelectItem value="work">Trabalho</SelectItem>
+                    <SelectItem value="travel">Viagens</SelectItem>
                     <SelectItem value="investment">Investimento</SelectItem>
                     <SelectItem value="hobby">Hobby</SelectItem>
-                    <SelectItem value="general">Geral</SelectItem>
+                    <SelectItem value="emergency">Emergência</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -225,9 +224,9 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ group, isOpen, onClose 
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="monthly">Mensal</SelectItem>
-                    <SelectItem value="quarterly">Trimestral</SelectItem>
+                    <SelectItem value="semanal">Semanal</SelectItem>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                    <SelectItem value="quinzenal">Quinzenal</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -360,9 +359,9 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({ group, isOpen, onClose 
           <Button
             onClick={handleFreezeGroup}
             variant="outline"
-            className={group.status === 'frozen' ? 'text-green-600' : 'text-yellow-600'}
+            className={group.status === 'pending' ? 'text-green-600' : 'text-yellow-600'}
           >
-            {group.status === 'frozen' ? (
+            {group.status === 'pending' ? (
               <>
                 <Play className="w-4 h-4 mr-2" />
                 Reativar

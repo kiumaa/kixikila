@@ -225,7 +225,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, isOpen, onClose }) 
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold">{user.groups?.length || 0}</div>
+                  <div className="text-2xl font-bold">{user.activeGroups || 0}</div>
                   <div className="text-xs text-gray-500">Grupos</div>
                 </CardContent>
               </Card>

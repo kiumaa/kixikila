@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useAdminStore } from '@/store/useAdminStore';
+import { useAdminStore, type AdminUser } from '@/store/useAdminStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/design-system/Avatar';
+import EditUserModal from '@/components/admin/modals/EditUserModal';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Users, 
   Search, 
@@ -37,9 +39,12 @@ import { formatCurrency, formatDate } from '@/data/mockData';
 
 const UsersManagement: React.FC = () => {
   const { allUsers, banUser, unbanUser, updateUserPlan } = useAdminStore();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [planFilter, setPlanFilter] = useState<string>('all');
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const filteredUsers = allUsers.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -223,15 +228,15 @@ const UsersManagement: React.FC = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="w-4 h-4 mr-2" />
-                        Ver Perfil
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Editar Dados
-                      </DropdownMenuItem>
+                       <DropdownMenuItem onClick={() => {setSelectedUser(user); setIsEditModalOpen(true);}}>
+                         <Eye className="w-4 h-4 mr-2" />
+                         Ver Perfil
+                       </DropdownMenuItem>
+                       
+                       <DropdownMenuItem onClick={() => {setSelectedUser(user); setIsEditModalOpen(true);}}>
+                         <Edit className="w-4 h-4 mr-2" />
+                         Editar Dados
+                       </DropdownMenuItem>
                       
                       <DropdownMenuItem 
                         onClick={() => handleTogglePlan(user.id, user.isVIP)}
@@ -279,6 +284,12 @@ const UsersManagement: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      <EditUserModal
+        user={selectedUser}
+        isOpen={isEditModalOpen}
+        onClose={() => {setIsEditModalOpen(false); setSelectedUser(null);}}
+      />
     </div>
   );
 };
