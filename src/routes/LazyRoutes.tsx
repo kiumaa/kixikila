@@ -61,6 +61,12 @@ export const TermsScreen = lazy(() =>
   }))
 );
 
+export const VIPManagementScreen = lazy(() => 
+  import('@/features/profile/VIPManagementScreen').then(module => ({ 
+    default: module.VIPManagementScreen 
+  }))
+);
+
 export const GroupDetailsScreen = lazy(() => 
   import('@/components/screens/GroupDetailsScreen').then(module => ({ 
     default: module.GroupDetailsScreen 

@@ -20,6 +20,7 @@ import {
   SupportScreen,
   PaymentMethodsScreen,
   TermsScreen,
+  VIPManagementScreen,
   GroupDetailsScreen,
   NotificationsScreen,
   OnboardingScreen,
@@ -145,6 +146,7 @@ const Index = () => {
             onOpenSecurity={() => setCurrentScreen('security')}
             onOpenTerms={() => setCurrentScreen('terms')}
             onOpenSupport={() => setCurrentScreen('support')}
+            onOpenVIPManagement={() => setCurrentScreen('vipManagement')}
           />
         );
 
@@ -201,6 +203,13 @@ const Index = () => {
         return (
           <NotificationsScreen
             onBack={() => setCurrentScreen('dashboard')}
+          />
+        );
+
+      case 'vipManagement':
+        return (
+          <VIPManagementScreen
+            onBack={() => setCurrentScreen('profile')}
           />
         );
 

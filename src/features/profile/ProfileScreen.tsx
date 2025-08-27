@@ -20,6 +20,7 @@ interface ProfileScreenProps {
   onOpenSecurity: () => void;
   onOpenTerms: () => void;
   onOpenSupport: () => void;
+  onOpenVIPManagement: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -31,7 +32,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onOpenNotificationSettings,
   onOpenSecurity,
   onOpenTerms,
-  onOpenSupport
+  onOpenSupport,
+  onOpenVIPManagement
 }) => {
   const menuItems = [
     { 
@@ -198,7 +200,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="ios-button">
+                <Button variant="outline" size="sm" className="ios-button" onClick={onOpenVIPManagement}>
                   Gerir
                 </Button>
               </div>
