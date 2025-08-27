@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Home, Wallet, User, Plus, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -9,20 +9,27 @@ interface BottomNavigationProps {
   notificationCount?: number;
 }
 
-const navItems = [
-  { key: 'dashboard', icon: Home, label: 'Início' },
-  { key: 'wallet', icon: Wallet, label: 'Carteira' },
-  { key: 'create', icon: Plus, label: 'Criar', isAction: true },
-  { key: 'notifications', icon: Bell, label: 'Notificações' },
-  { key: 'profile', icon: User, label: 'Perfil' }
-];
+// Moved inside component for memoization
 
-export const BottomNavigation: React.FC<BottomNavigationProps> = ({
+export const BottomNavigation: React.FC<BottomNavigationProps> = React.memo(({
   currentScreen,
   onNavigate,
   onCreateGroup,
   notificationCount = 0
 }) => {
+  // Memoized navigation items
+  const navItems = useMemo(() => [
+    { key: 'dashboard', icon: Home, label: 'Início' },
+    { key: 'wallet', icon: Wallet, label: 'Carteira' },
+    { key: 'create', icon: Plus, label: 'Criar', isAction: true },
+    { key: 'notifications', icon: Bell, label: 'Notificações' },
+    { key: 'profile', icon: User, label: 'Perfil' }
+  ], []);
+
+  // Memoized handlers
+  const handleNavigation = useCallback((screen: string) => {
+    onNavigate(screen);
+  }, [onNavigate]);
   if (!['dashboard', 'wallet', 'profile', 'notifications'].includes(currentScreen)) {
     return null;
   }
@@ -52,7 +59,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             return (
               <button
                 key={item.key}
-                onClick={() => onNavigate(item.key)}
+                onClick={() => handleNavigation(item.key)}
                 className={`relative flex flex-col items-center gap-1 py-3 px-4 rounded-xl transition-all duration-200 ios-button ${
                   isActive 
                     ? 'text-primary bg-primary/10 scale-105' 
@@ -83,4 +90,4 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       </div>
     </div>
   );
-};
+});

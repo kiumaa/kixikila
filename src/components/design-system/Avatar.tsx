@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Check, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -12,7 +12,7 @@ interface AvatarProps {
   className?: string;
 }
 
-export const Avatar: React.FC<AvatarProps> = ({
+export const Avatar: React.FC<AvatarProps> = React.memo(({
   name,
   size = 'md',
   image,
@@ -21,6 +21,16 @@ export const Avatar: React.FC<AvatarProps> = ({
   vip = false,
   className = ''
 }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const handleImageLoad = useCallback(() => {
+    setImageLoaded(true);
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+  }, []);
   const sizeClasses = {
     xs: 'w-6 h-6 text-[10px]',
     sm: 'w-8 h-8 text-xs',
@@ -56,12 +66,28 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   return (
     <div className={cn('relative ios-button', sizeClasses[size], className)}>
-      {image ? (
-        <img
-          src={image}
-          alt={name}
-          className="w-full h-full rounded-full object-cover ring-2 ring-background shadow-md smooth-transition"
-        />
+      {image && !imageError ? (
+        <div className="relative w-full h-full">
+          {!imageLoaded && (
+            <div className={cn(
+              'absolute inset-0 rounded-full flex items-center justify-center text-white font-semibold shadow-md ring-2 ring-background bg-gradient-to-br animate-pulse',
+              getGradient(name)
+            )}>
+              {initials}
+            </div>
+          )}
+          <img
+            src={image}
+            alt={name}
+            loading="lazy"
+            className={cn(
+              "w-full h-full rounded-full object-cover ring-2 ring-background shadow-md transition-opacity duration-300",
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            )}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        </div>
       ) : (
         <div className={cn(
           'w-full h-full rounded-full flex items-center justify-center text-white font-semibold shadow-md ring-2 ring-background smooth-transition bg-gradient-to-br',
@@ -91,4 +117,4 @@ export const Avatar: React.FC<AvatarProps> = ({
       )}
     </div>
   );
-};
+});

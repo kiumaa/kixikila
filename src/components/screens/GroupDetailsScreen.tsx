@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ArrowLeft, Calendar, Crown, Users, Settings, CreditCard, Share2, Trophy, Clock, Check, AlertCircle, Sparkles, Euro, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,6 +6,7 @@ import { Avatar } from '@/components/design-system/Avatar';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { useToast } from '@/hooks/use-toast';
 import { type Group, formatCurrency, formatDate } from '@/data/mockData';
+import { useMemoizedGroupProgress } from '@/lib/performance';
 
 interface GroupDetailsScreenProps {
   group: Group;
@@ -15,7 +16,7 @@ interface GroupDetailsScreenProps {
   currentUserId: number;
 }
 
-export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
+export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = React.memo(({
   group,
   onBack,
   onPay,
@@ -26,12 +27,12 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
   const [showConfetti, setShowConfetti] = useState(false);
   const { toast } = useToast();
 
-  const paidMembers = group.members.filter(m => m.paid).length;
-  const progress = (paidMembers / group.members.length) * 100;
-  const isAdmin = group.adminId === currentUserId;
-  const canDraw = progress === 100 && group.groupType === 'lottery';
+  // Memoized calculations
+  const { paidMembers, progress } = useMemoizedGroupProgress(group.members);
+  const isAdmin = useMemo(() => group.adminId === currentUserId, [group.adminId, currentUserId]);
+  const canDraw = useMemo(() => progress === 100 && group.groupType === 'lottery', [progress, group.groupType]);
 
-  const handleDraw = () => {
+  const handleDraw = useCallback(() => {
     const unpaidMembers = group.members.filter(m => !m.paid && !m.isWinner);
     if (unpaidMembers.length === 0) return;
     
@@ -44,14 +45,18 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
     });
 
     setTimeout(() => setShowConfetti(false), 3000);
-  };
+  }, [group.members, group.totalPool, toast]);
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { key: 'overview', label: 'Visão Geral' },
     { key: 'members', label: 'Membros' },
     { key: 'history', label: 'Histórico' },
     { key: 'rules', label: 'Regras' }
-  ];
+  ], []);
+
+  const handleTabChange = useCallback((tabKey: string) => {
+    setActiveTab(tabKey);
+  }, []);
 
   return (
     <div className="min-h-screen bg-surface pb-24 animate-fade-in">
@@ -127,9 +132,9 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
           </Card>
           <Card className="glass text-primary-foreground border-primary-foreground/20 p-4 text-center">
             <CardContent className="pt-4">
-              <div className="text-2xl font-bold font-system">
-                {paidMembers}/{group.members.length}
-              </div>
+                <div className="text-2xl font-bold font-system">
+                  {paidMembers}/{group.members.length}
+                </div>
               <div className="text-xs text-primary-foreground/80 mt-1">
                 Pagamentos
               </div>
@@ -187,7 +192,7 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
           {tabs.map((tab) => (
             <Button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               variant="ghost"
               size="sm"
               className={`ios-button font-medium ${
@@ -472,4 +477,4 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
       </div>
     </div>
   );
-};
+});

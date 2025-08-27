@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   Bell, Wallet, Upload, Download, History, Eye, EyeOff, Crown, 
   Plus, Search, Calendar, Lock, Sparkles, Users
@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { Avatar } from '@/components/design-system/Avatar';
 import { SkeletonCard } from '@/components/design-system/SkeletonCard';
 import { mockUser, mockGroups, formatCurrency, formatDate, type Group } from '@/data/mockData';
+import { useMemoizedFilteredGroups, useMemoizedGroupProgress } from '@/lib/performance';
 
 interface DashboardScreenProps {
   onOpenNotifications: () => void;
@@ -22,7 +23,7 @@ interface DashboardScreenProps {
   isLoading?: boolean;
 }
 
-export const DashboardScreen: React.FC<DashboardScreenProps> = ({
+export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
   onOpenNotifications,
   onOpenWallet,
   onOpenDeposit,
@@ -36,7 +37,30 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
 
-  const unreadNotifications = notifications.filter(n => !n.read).length;
+  // Memoized calculations
+  const unreadNotifications = useMemo(() => 
+    notifications.filter(n => !n.read).length, 
+    [notifications]
+  );
+
+  const filteredGroups = useMemoizedFilteredGroups(mockGroups, activeTab);
+
+  // Memoized handlers
+  const toggleBalanceVisibility = useCallback(() => {
+    setBalanceVisible(prev => !prev);
+  }, []);
+
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+  }, []);
+
+  // Memoized tab data
+  const tabs = useMemo(() => [
+    { key: 'all', label: 'Todos' },
+    { key: 'active', label: 'Ativos' },
+    { key: 'pending', label: 'Pendentes' },
+    { key: 'completed', label: 'Concluídos' }
+  ], []);
 
   if (isLoading) {
     return (
@@ -110,7 +134,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </span>
               </div>
               <button
-                onClick={() => setBalanceVisible(!balanceVisible)}
+                onClick={toggleBalanceVisibility}
                 className="text-primary-foreground/60 hover:text-primary-foreground transition-colors ios-button"
                 aria-label={balanceVisible ? "Ocultar saldo" : "Mostrar saldo"}
               >
@@ -239,15 +263,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
           {/* Group Tabs */}
           <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-            {[
-              { key: 'all', label: 'Todos' },
-              { key: 'active', label: 'Ativos' },
-              { key: 'pending', label: 'Pendentes' },
-              { key: 'completed', label: 'Concluídos' }
-            ].map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => handleTabChange(tab.key)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium font-system transition-all whitespace-nowrap ${
                   activeTab === tab.key 
                     ? 'bg-primary text-primary-foreground shadow-sm' 
@@ -261,112 +280,122 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
           {/* Groups List */}
           <div className="space-y-4">
-            {mockGroups.filter((group) => {
-              if (activeTab === 'all') return true;
-              if (activeTab === 'active') return group.status === 'active' || group.status === 'ready_for_draw';
-              if (activeTab === 'pending') return group.status === 'pending';
-              if (activeTab === 'completed') return group.status === 'completed';
-              return true;
-            }).map((group) => {
-              const paidMembers = group.members.filter(m => m.paid).length;
-              const totalMembers = group.members.length;
-              const progress = (paidMembers / totalMembers) * 100;
-              
-              return (
-                <Card 
-                  key={group.id} 
-                  className="ios-card p-5 hover:shadow-lg hover:scale-[1.02] transition-all duration-base cursor-pointer"
-                  onClick={() => onSelectGroup(group)}
-                >
-                  <CardContent className="p-0">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-bold font-system text-foreground text-lg">
-                            {group.name}
-                          </h3>
-                          {group.groupType === 'lottery' && (
-                            <StatusBadge status="winner" size="xs">
-                              <Sparkles className="w-3 h-3 mr-1" />
-                              Sorteio
-                            </StatusBadge>
-                          )}
-                          {group.privacy === 'private' && (
-                            <Lock className="w-4 h-4 text-muted-foreground" />
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-                          {group.description}
-                        </p>
-                        
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="font-semibold font-system text-primary">
-                            {formatCurrency(group.contributionAmount)}/mês
-                          </span>
-                          <span className="text-muted-foreground">
-                            {group.currentMembers}/{group.maxMembers} membros
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <div className="text-2xl font-bold font-system text-foreground">
-                          {formatCurrency(group.totalPool)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">valor total</div>
-                      </div>
-                    </div>
-                    
-                    {/* Progress Bar */}
-                    <div className="mb-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-medium font-system text-muted-foreground">
-                          Progresso do ciclo
-                        </span>
-                        <span className="text-xs font-bold font-system text-foreground">
-                          {progress.toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-primary to-primary-hover rounded-full transition-all duration-500"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex -space-x-2">
-                        {group.members.slice(0, 5).map((member) => (
-                          <Avatar 
-                            key={member.id} 
-                            name={member.avatar} 
-                            size="sm" 
-                            online={member.paid}
-                            className="ring-2 ring-background hover:scale-110 transition-transform"
-                          />
-                        ))}
-                        {group.members.length > 5 && (
-                          <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-xs font-semibold font-system text-muted-foreground ring-2 ring-background">
-                            +{group.members.length - 5}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-xs">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground font-system">
-                          Próximo: {formatDate(group.nextPaymentDate)}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
+            {filteredGroups.map((group) => {
+              return <GroupCard key={group.id} group={group} onSelect={onSelectGroup} />;
             })}
           </div>
         </div>
       </div>
     </div>
   );
-};
+});
+
+// Memoized Group Card Component
+interface GroupCardProps {
+  group: Group;
+  onSelect: (group: Group) => void;
+}
+
+const GroupCard: React.FC<GroupCardProps> = React.memo(({ group, onSelect }) => {
+  const { paidMembers, totalMembers, progress } = useMemoizedGroupProgress(group.members);
+
+  const handleClick = useCallback(() => {
+    onSelect(group);
+  }, [group, onSelect]);
+
+  const memberAvatars = useMemo(() => 
+    group.members.slice(0, 5), 
+    [group.members]
+  );
+
+  return (
+    <Card 
+      className="ios-card p-5 hover:shadow-lg hover:scale-[1.02] transition-all duration-base cursor-pointer"
+      onClick={handleClick}
+    >
+      <CardContent className="p-0">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="font-bold font-system text-foreground text-lg">
+                {group.name}
+              </h3>
+              {group.groupType === 'lottery' && (
+                <StatusBadge status="winner" size="xs">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Sorteio
+                </StatusBadge>
+              )}
+              {group.privacy === 'private' && (
+                <Lock className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+              {group.description}
+            </p>
+            
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-semibold font-system text-primary">
+                {formatCurrency(group.contributionAmount)}/mês
+              </span>
+              <span className="text-muted-foreground">
+                {group.currentMembers}/{group.maxMembers} membros
+              </span>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <div className="text-2xl font-bold font-system text-foreground">
+              {formatCurrency(group.totalPool)}
+            </div>
+            <div className="text-xs text-muted-foreground">valor total</div>
+          </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-medium font-system text-muted-foreground">
+              Progresso do ciclo
+            </span>
+            <span className="text-xs font-bold font-system text-foreground">
+              {progress.toFixed(0)}%
+            </span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-primary to-primary-hover rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex -space-x-2">
+            {memberAvatars.map((member) => (
+              <Avatar 
+                key={member.id} 
+                name={member.avatar} 
+                size="sm" 
+                online={member.paid}
+                className="ring-2 ring-background hover:scale-110 transition-transform"
+              />
+            ))}
+            {group.members.length > 5 && (
+              <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-xs font-semibold font-system text-muted-foreground ring-2 ring-background">
+                +{group.members.length - 5}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2 text-xs">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-muted-foreground font-system">
+              Próximo: {formatDate(group.nextPaymentDate)}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
