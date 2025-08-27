@@ -2,6 +2,7 @@ import React from 'react';
 import { Users, Shield, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import kixikilaLogo from '@/assets/kixikila-logo.png';
 interface OnboardingScreenProps {
   step: number;
   onNext: () => void;
@@ -60,7 +61,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
           </Card> : <Card className="ios-card p-8 text-center animate-scale-in">
             <CardContent className="pt-6 space-y-6">
               <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary to-primary-hover rounded-3xl flex items-center justify-center shadow-lg">
-                <Users className="w-12 h-12 text-primary-foreground" />
+                <img src={kixikilaLogo} alt="KIXIKILA" className="w-12 h-12" />
               </div>
               
               <div className="space-y-3">
