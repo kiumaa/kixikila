@@ -14,6 +14,12 @@ import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { ThemeToggle } from '@/components/design-system/ThemeToggle';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { NotificationsScreen } from '@/components/screens/NotificationsScreen';
+import { GroupDetailsScreen } from '@/components/screens/GroupDetailsScreen';
+import { RegisterScreen } from '@/components/screens/RegisterScreen';
+import { CreateGroupModal } from '@/components/modals/CreateGroupModal';
+import { DepositModal } from '@/components/modals/DepositModal';
+import { WithdrawModal } from '@/components/modals/WithdrawModal';
+import { PaymentModal } from '@/components/modals/PaymentModal';
 import { 
   mockUser, 
   mockGroups, 
@@ -38,6 +44,13 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [groupFilter, setGroupFilter] = useState('all');
   const [transactionFilter, setTransactionFilter] = useState('all');
+  
+  // Modal states
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showDeposit, setShowDeposit] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  
   const { toast } = useToast();
   const { theme } = useDarkMode();
 
@@ -311,7 +324,7 @@ const Index = () => {
                 <Button
                   size="sm"
                   className="ios-button bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
-                  onClick={() => setCurrentScreen('deposit')}
+                  onClick={() => setShowDeposit(true)}
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Depositar
@@ -319,7 +332,7 @@ const Index = () => {
                 <Button
                   size="sm"
                   className="ios-button bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
-                  onClick={() => setCurrentScreen('withdraw')}
+                  onClick={() => setShowWithdraw(true)}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Levantar
@@ -425,12 +438,7 @@ const Index = () => {
                 <Button
                   size="sm"
                   className="ios-button bg-primary hover:bg-primary-hover text-primary-foreground"
-                  onClick={() => {
-                    toast({
-                      title: "Criar grupo",
-                      description: "Funcionalidade em desenvolvimento"
-                    });
-                  }}
+                  onClick={() => setShowCreateGroup(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Criar
@@ -666,12 +674,7 @@ const Index = () => {
                 <Button
                   size="sm"
                   className="ios-button bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-                  onClick={() => {
-                    toast({
-                      title: "Depositar",
-                      description: "Funcionalidade em desenvolvimento"
-                    });
-                  }}
+                  onClick={() => setShowDeposit(true)}
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Depositar
@@ -679,12 +682,7 @@ const Index = () => {
                 <Button
                   size="sm"
                   className="ios-button bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-0"
-                  onClick={() => {
-                    toast({
-                      title: "Levantar",
-                      description: "Funcionalidade em desenvolvimento"
-                    });
-                  }}
+                  onClick={() => setShowWithdraw(true)}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Levantar
@@ -1002,12 +1000,7 @@ const Index = () => {
               item.isFloating ? (
                 <Button
                   key={item.key}
-                  onClick={() => {
-                    toast({
-                      title: "Criar Grupo",
-                      description: "Funcionalidade em desenvolvimento",
-                    });
-                  }}
+                  onClick={() => setShowCreateGroup(true)}
                   className="w-12 h-12 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground shadow-lg ios-button transform hover:scale-105 transition-all duration-200"
                 >
                   <item.icon className="w-6 h-6" />
@@ -1042,12 +1035,59 @@ const Index = () => {
       {/* Screens */}
       {currentScreen === 'onboarding' && <OnboardingScreen />}
       {currentScreen === 'login' && <LoginScreen />}
+      {currentScreen === 'register' && (
+        <RegisterScreen 
+          onBack={() => setCurrentScreen('onboarding')}
+          onSuccess={() => {
+            setIsLoggedIn(true);
+            setCurrentScreen('dashboard');
+          }}
+        />
+      )}
       {currentScreen === 'notifications' && (
         <NotificationsScreen onBack={() => setCurrentScreen('dashboard')} />
+      )}
+      {currentScreen === 'groupDetails' && selectedGroup && (
+        <GroupDetailsScreen
+          group={selectedGroup}
+          onBack={() => setCurrentScreen('dashboard')}
+          onPay={() => setShowPayment(true)}
+          onInvite={() => {
+            toast({
+              title: "Link de convite copiado!",
+              description: "Partilhe com os seus amigos"
+            });
+          }}
+          currentUserId={mockUser.id}
+        />
       )}
       {isLoggedIn && currentScreen === 'dashboard' && <DashboardScreen />}
       {isLoggedIn && currentScreen === 'wallet' && <WalletScreen />}
       {isLoggedIn && currentScreen === 'profile' && <ProfileScreen />}
+      
+      {/* Modals */}
+      <CreateGroupModal 
+        isOpen={showCreateGroup} 
+        onClose={() => setShowCreateGroup(false)} 
+      />
+      <DepositModal 
+        isOpen={showDeposit} 
+        onClose={() => setShowDeposit(false)}
+        currentBalance={mockUser.walletBalance}
+      />
+      <WithdrawModal 
+        isOpen={showWithdraw} 
+        onClose={() => setShowWithdraw(false)}
+        currentBalance={mockUser.walletBalance}
+      />
+      {selectedGroup && (
+        <PaymentModal 
+          isOpen={showPayment} 
+          onClose={() => setShowPayment(false)}
+          group={selectedGroup}
+          currentBalance={mockUser.walletBalance}
+        />
+      )}
       
       {/* Bottom Navigation */}
       {isLoggedIn && <BottomNavigation />}
