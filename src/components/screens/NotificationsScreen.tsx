@@ -3,12 +3,12 @@ import { ArrowLeft, Bell, Calendar, Crown, Users, TrendingUp } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { mockNotifications, formatDate } from '@/data/mockData';
-
 interface NotificationsScreenProps {
   onBack: () => void;
 }
-
-export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack }) => {
+export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
+  onBack
+}) => {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'payment':
@@ -23,18 +23,11 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
         return <Bell className="w-5 h-5 text-muted-foreground" />;
     }
   };
-
-  return (
-    <div className="min-h-screen bg-surface pb-24 animate-fade-in">
+  return <div className="min-h-screen bg-surface pb-24 animate-fade-in">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary to-primary-hover px-6 pt-14 pb-8">
+      <div className="bg-gradient-to-br from-primary to-primary-hover px-6 pt-14 pb-8 py-[71px] my-0">
         <div className="flex items-center gap-4">
-          <Button
-            onClick={onBack}
-            variant="ghost"
-            size="sm"
-            className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 ios-button"
-          >
+          <Button onClick={onBack} variant="ghost" size="sm" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 ios-button">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-bold font-system text-primary-foreground">
@@ -44,25 +37,16 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
       </div>
 
       {/* Notifications List */}
-      <div className="px-6 space-y-3">
-        {mockNotifications.length > 0 ? (
-          mockNotifications.map((notification) => (
-            <Card
-              key={notification.id}
-              className={`ios-card cursor-pointer ${
-                !notification.read ? 'ring-2 ring-primary/20 bg-primary-subtle/30' : ''
-              }`}
-            >
-              <CardContent className="p-4">
+      <div className="px-6 space-y-3 my-[15px]">
+        {mockNotifications.length > 0 ? mockNotifications.map(notification => <Card key={notification.id} className={`ios-card cursor-pointer ${!notification.read ? 'ring-2 ring-primary/20 bg-primary-subtle/30' : ''}`}>
+              <CardContent className="p-4 my-0">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-1">
                     {getNotificationIcon(notification.type)}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium font-system ${
-                      !notification.read ? 'text-foreground' : 'text-muted-foreground'
-                    }`}>
+                    <p className={`text-sm font-medium font-system ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {notification.text}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -70,15 +54,10 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
                     </p>
                   </div>
                   
-                  {!notification.read && (
-                    <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2" />
-                  )}
+                  {!notification.read && <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2" />}
                 </div>
               </CardContent>
-            </Card>
-          ))
-        ) : (
-          <Card className="ios-card">
+            </Card>) : <Card className="ios-card">
             <CardContent className="p-8 text-center space-y-4">
               <Bell className="w-12 h-12 text-muted mx-auto" />
               <div>
@@ -90,9 +69,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
                 </p>
               </div>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
       </div>
-    </div>
-  );
+    </div>;
 };
