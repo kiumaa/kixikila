@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useForm } from 'react-hook-form';
-import kixikilaLogo from '@/assets/kixikila-logo.png';
+import { Lock, AlertCircle } from 'lucide-react';
 import AdminSetup from './AdminSetup';
 
 interface LoginForm {
@@ -17,7 +18,6 @@ interface LoginForm {
 
 const AdminLogin: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [showSetup, setShowSetup] = useState(false);
   
@@ -26,10 +26,10 @@ const AdminLogin: React.FC = () => {
   
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
 
-  // Verificar se precisa mostrar setup
   useEffect(() => {
-    // Se houver erro de "user not found" ou similar, mostrar setup
-    if (error.includes('Invalid login credentials') || authError?.includes('Invalid login credentials')) {
+    setError(authError || '');
+    if (authError?.includes('Admin não encontrado')) {
+      setShowSetup(true);
       // Pode ser que o admin não exista ainda
     }
   }, [error, authError]);
@@ -37,10 +37,10 @@ const AdminLogin: React.FC = () => {
   // Redirecionar para dashboard após login bem-sucedido
   useEffect(() => {
     if (isAuthenticated && currentUser && currentUser.role === 'admin') {
-      // Aguardar um ciclo para garantir que o estado está atualizado
-      setTimeout(() => {
+      // Usar startTransition para evitar problemas com lazy loading
+      startTransition(() => {
         navigate('/admin/dashboard', { replace: true });
-      }, 100);
+      });
     }
   }, [isAuthenticated, currentUser, navigate]);
 
@@ -50,160 +50,96 @@ const AdminLogin: React.FC = () => {
     clearError();
     
     try {
-      const result = await login(data.email, data.password);
-      
-      if (result.success) {
-        // O login foi bem-sucedido, aguardar atualização do estado
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 100);
-      } else {
-        setError(result.message || 'Credenciais inválidas');
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setError('Erro ao fazer login. Tente novamente.');
+      await login(data.email, data.password, 'admin');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Erro ao fazer login');
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Mostrar setup se solicitado
   if (showSetup) {
-    return <AdminSetup />;
+    return <AdminSetup onComplete={() => setShowSetup(false)} />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center p-8">
-      <div className="w-full max-w-lg">
-        <div className="w-full max-w-6xl mx-auto">{/* Constrain max width for better desktop layout */}
-          <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="text-center pb-8 pt-12">
-              <img src={kixikilaLogo} alt="KIXIKILA" className="w-20 h-20 mx-auto mb-6" />
-              <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
-                Painel Administrativo
-              </CardTitle>
-              <p className="text-gray-600 text-lg">
-                Acesso restrito para administradores
-              </p>
-            </CardHeader>
-
-            <CardContent className="px-12 pb-12">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-md mx-auto">{/* Center form with max width */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    type="email"
-                    {...register('email', { 
-                      required: 'Email é obrigatório',
-                      pattern: {
-                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                        message: 'Email inválido'
-                      }
-                    })}
-                    className="pl-12 py-3 text-base"
-                    placeholder="admin@kixikila.pro"
-                  />
-                </div>
-                {errors.email && (
-                  <p className="text-red-600 text-sm">{errors.email.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Senha
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    {...register('password', { 
-                      required: 'Senha é obrigatória',
-                      minLength: {
-                        value: 6,
-                        message: 'Senha deve ter pelo menos 6 caracteres'
-                      }
-                    })}
-                    className="pl-12 pr-12 py-3 text-base"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="text-red-600 text-sm">{errors.password.message}</p>
-                )}
-              </div>
-
-              {(error || authError) && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                    <p className="text-red-700 text-sm font-medium">{error || authError}</p>
-                  </div>
-                </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center space-y-2">
+          <div className="w-16 h-16 mx-auto bg-gradient-to-br from-indigo-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-xl">
+            <Lock className="w-8 h-8 text-white" />
+          </div>
+          <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
+          <p className="text-gray-600">Acesso ao painel administrativo</p>
+        </CardHeader>
+        
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                {...register('email', { 
+                  required: 'Email é obrigatório',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Email inválido'
+                  }
+                })}
+                placeholder="admin@kixikila.com"
+                className="mt-1"
+              />
+              {errors.email && (
+                <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
               )}
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 text-base font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-              >
-                {isLoading ? (
-                  <>
-                    <LoadingSpinner />
-                    <span className="ml-2">Autenticando...</span>
-                  </>
-                ) : (
-                  'Entrar'
-                )}
-              </Button>
-              </form>
-
-              {/* Credenciais do admin */}
-              <div className="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-200 max-w-md mx-auto">
-                <p className="text-sm font-semibold text-blue-700 mb-3">
-                  🔐 Credenciais de Administrador:
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-blue-600">admin@kixikila.pro</span>
-                    <code className="bg-blue-100 px-2 py-1 rounded text-blue-700">@Kixikila2025!</code>
-                  </div>
-                </div>
-                
-                <div className="mt-4 p-3 bg-blue-100 rounded-lg">
-                  <p className="text-xs text-blue-600">
-                    💡 <strong>Nota:</strong> Este é o painel administrativo oficial do Kixikila. Acesso restrito apenas para administradores autorizados.
-                  </p>
-                </div>
-
-                {/* Botão para setup caso admin não exista */}
-                <div className="mt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setShowSetup(true)}
-                  >
-                    Criar Usuário Admin
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                {...register('password', { 
+                  required: 'Password é obrigatória',
+                  minLength: {
+                    value: 6,
+                    message: 'Password deve ter pelo menos 6 caracteres'
+                  }
+                })}
+                placeholder="••••••••"
+                className="mt-1"
+              />
+              {errors.password && (
+                <p className="text-sm text-red-600 mt-1">{errors.password.message}</p>
+              )}
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  Entrando...
+                </>
+              ) : (
+                'Entrar'
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
