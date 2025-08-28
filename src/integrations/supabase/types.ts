@@ -313,6 +313,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "otp_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       security_configurations: {
@@ -638,7 +645,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      users_public_safe: {
+        Row: {
+          avatar_url: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string | null
+          is_vip: boolean | null
+          masked_email: string | null
+          trust_score: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          display_name?: never
+          id?: string | null
+          is_vip?: boolean | null
+          masked_email?: never
+          trust_score?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          display_name?: never
+          id?: string | null
+          is_vip?: boolean | null
+          masked_email?: never
+          trust_score?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_data: {
