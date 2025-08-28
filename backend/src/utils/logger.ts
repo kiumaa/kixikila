@@ -1,5 +1,5 @@
 import winston from 'winston';
-import { config } from '../config/index.ts';
+import { config } from '../config/index.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';

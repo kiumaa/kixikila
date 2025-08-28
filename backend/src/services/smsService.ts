@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { config } from '../config/index.ts';
-import { logger } from '../utils/logger.ts';
+import { config } from '../config/index.js';
+import { logger } from '../utils/logger';
 
 interface SMSOptions {
   to: string;
@@ -101,30 +101,17 @@ class SMSService {
   }
 
   /**
-   * Format phone number for international format
+   * Check if SMS service is configured
    */
-  private formatPhoneNumber(phoneNumber: string): string {
-    // Remove all non-digit characters
-    let cleaned = phoneNumber.replace(/\D/g, '');
-    
-    // If number starts with 0, assume it's a local number and add country code
-    if (cleaned.startsWith('0')) {
-      cleaned = '244' + cleaned.substring(1); // Angola country code
-    }
-    
-    // If number doesn't start with country code, add it
-    if (!cleaned.startsWith('244')) {
-      cleaned = '244' + cleaned;
-    }
-    
-    return '+' + cleaned;
+  isConfigured(): boolean {
+    return bulkSmsService.isServiceConfigured();
   }
 
   /**
    * Send OTP SMS for phone verification
    */
   async sendPhoneVerificationSMS(phoneNumber: string, fullName: string, otp: string): Promise<boolean> {
-    const message = `KIXIKILA: Olá ${fullName}! Seu código de verificação é: ${otp}. Este código expira em 10 minutos. Nunca compartilhe este código.`;
+    const message = `KIXIKILA: Olá ${fullName}! Seu código de verificação é: ${otp}. Este código expira em 5 minutos. Nunca compartilhe este código.`;
     
     return this.sendSMS({
       to: phoneNumber,
@@ -366,21 +353,10 @@ class SMSService {
    */
   async checkHealth(): Promise<boolean> {
     try {
-      // Test with a simple API call to check credits
-      const response = await axios.get('https://api.bulksms.com/v1/profile', {
-        auth: {
-          username: this.username,
-          password: this.password
-        },
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
-      });
-
-      return response.status === 200;
-    } catch (error) {
-      logger.error('SMS service health check failed:', error);
+      const result = await bulkSmsService.testConnection();
+      return result.success;
+    } catch (error: any) {
+      logger.error('SMS service health check failed:', error.message);
       return false;
     }
   }

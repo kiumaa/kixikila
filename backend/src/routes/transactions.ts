@@ -1,5 +1,7 @@
 import { Router } from 'express';
-import { logger } from '../utils/logger.ts';
+import { logger } from '../utils/logger';
+import { financialRateLimit, apiRateLimit } from '../middleware/rateLimiting';
+import { auditFinancialOperation } from '../middleware/auditLogger';
 
 const router = Router();
 
@@ -8,7 +10,7 @@ const router = Router();
  * @desc Get user transactions
  * @access Private
  */
-router.get('/', async (req, res) => {
+router.get('/', apiRateLimit, async (req, res) => {
   try {
     logger.info('Getting transactions', { userId: req.user?.id });
     
@@ -31,7 +33,7 @@ router.get('/', async (req, res) => {
  * @desc Create new transaction
  * @access Private
  */
-router.post('/', async (req, res) => {
+router.post('/', financialRateLimit, auditFinancialOperation, async (req, res) => {
   try {
     logger.info('Creating transaction', { userId: req.user?.id, body: req.body });
     
@@ -59,7 +61,7 @@ router.post('/', async (req, res) => {
  * @desc Get transaction details
  * @access Private
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', apiRateLimit, async (req, res) => {
   try {
     const { id } = req.params;
     logger.info('Getting transaction details', { userId: req.user?.id, transactionId: id });
@@ -89,7 +91,7 @@ router.get('/:id', async (req, res) => {
  * @desc Get group transactions
  * @access Private
  */
-router.get('/group/:groupId', async (req, res) => {
+router.get('/group/:groupId', apiRateLimit, async (req, res) => {
   try {
     const { groupId } = req.params;
     logger.info('Getting group transactions', { userId: req.user?.id, groupId });

@@ -1,8 +1,8 @@
 import Stripe from 'stripe';
-import { config } from '../config/index.ts';
-import { logger } from '../utils/logger.ts';
-import { supabase } from './supabase.ts';
-import { notificationService } from './notificationService.ts';
+import { config } from '../config/index.js';
+import { logger } from '../utils/logger';
+import { supabase } from './supabase';
+import { notificationService } from './notificationService';
 
 interface CreateCustomerData {
   userId: string;

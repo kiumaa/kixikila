@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc --noEmitOnError false",
     "start": "node dist/server.js",
     "start:prod": "NODE_ENV=production node dist/server.js",
     "test": "jest",
@@ -21,6 +21,8 @@
     "db:config": "tsx src/scripts/setupDatabase.ts config",
     "db:admin": "tsx src/scripts/setupDatabase.ts admin",
     "db:drop": "tsx src/scripts/setupDatabase.ts drop",
+    "stripe:setup": "tsx src/scripts/setupStripeProducts.ts setup",
+    "stripe:list": "tsx src/scripts/setupStripeProducts.ts list",
     "clean": "rimraf dist",
     "prebuild": "npm run clean",
     "health": "tsx src/scripts/healthCheck.ts"

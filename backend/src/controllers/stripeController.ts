@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
-import { stripeService } from '../services/stripeService.ts';
-import { supabase } from '../services/supabase.ts';
-import { logger } from '../utils/logger.ts';
+import { stripeService } from '../services/stripeService';
+import { supabase } from '../services/supabase';
+import { logger } from '../utils/logger';
 import { 
   ValidationError, 
   NotFoundError, 
   InternalServerError,
   ConflictError 
-} from '../middleware/errorHandler.ts';
+} from '../middleware/errorHandler';
 
 interface AuthenticatedRequest extends Request {
   user?: {

@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
-import { config } from '../config/index.ts';
-import { logger } from '../utils/logger.ts';
+import { config } from '../config/index.js';
+import { logger } from '../utils/logger';
 
 interface EmailOptions {
   to: string;

@@ -1,6 +1,6 @@
-import { supabase, supabaseAdmin, testConnection } from '../services/supabase.ts';
-import { logger } from '../utils/logger.ts';
-import { config } from '../config/index.ts';
+import { supabase, supabaseAdmin, testConnection } from '../services/supabase';
+import { logger } from '../utils/logger';
+import { config } from '../config/index.js';
 import axios from 'axios';
 
 /**

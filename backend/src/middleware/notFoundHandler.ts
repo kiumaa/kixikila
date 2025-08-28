@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { NotFoundError } from './errorHandler.ts';
-import { logger } from '../utils/logger.ts';
+import { NotFoundError } from './errorHandler';
+import { logger } from '../utils/logger.js';
 
 /**
  * Middleware to handle 404 Not Found errors

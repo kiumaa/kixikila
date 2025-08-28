@@ -1,20 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase, supabaseAdmin } from '../services/supabase.ts';
-import { generateToken, generateRefreshToken, verifyRefreshToken } from '../middleware/auth.ts';
+import { supabase, supabaseAdmin } from '../services/supabase';
+import { generateToken, generateRefreshToken, verifyRefreshToken } from '../middleware/auth';
 import { 
   AuthenticationError, 
   ValidationError, 
   ConflictError, 
   NotFoundError,
   asyncHandler 
-} from '../middleware/errorHandler.ts';
-import { logger } from '../utils/logger.ts';
-import { config } from '../config/index.ts';
-import { otpService } from '../services/otpService.ts';
-import { emailService } from '../services/emailService.ts';
-import { smsService } from '../services/smsService.ts';
+} from '../middleware/errorHandler';
+import { logger } from '../utils/logger';
+import { config } from '../config/index.js';
+import { otpService } from '../services/otpService';
+import { emailService } from '../services/emailService';
+import { smsService } from '../services/smsService';
+import { logAuditEvent, AuditEventType } from '../middleware/auditLogger';
 
 interface AuthResponse {
   success: boolean;
@@ -71,53 +72,90 @@ class AuthController {
       }
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, config.security.bcryptSaltRounds);
-
-    // Create user
-    const userId = uuidv4();
-    const { data: newUser, error } = await supabaseAdmin
-      .from('users')
-      .insert({
-        id: userId,
-        email,
-        full_name: fullName,
-        phone,
-        date_of_birth: dateOfBirth,
-        address,
-        city,
-        country,
-        role: 'user',
-        is_vip: false,
-        is_active: true,
-        email_verified: false,
-        phone_verified: false,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      logger.error('Failed to create user:', error);
-      throw new Error('Failed to create user account');
-    }
-
-    // Store password hash in auth.users (Supabase Auth)
-    const { error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // Create user in Supabase Auth first
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       user_metadata: {
         full_name: fullName,
         phone,
-        user_id: userId,
       },
       email_confirm: false, // We'll handle email verification manually
     });
 
-    if (authError) {
-      // Rollback user creation
-      await supabaseAdmin.from('users').delete().eq('id', userId);
+    if (authError || !authUser.user) {
       logger.error('Failed to create auth user:', authError);
       throw new Error('Failed to create user authentication');
+    }
+
+    const userId = authUser.user.id;
+
+    // Check if user profile already exists (Supabase might have created it via trigger)
+    const { data: existingProfile } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    let newUser;
+    if (existingProfile) {
+      // Update existing profile
+      const { data: updatedUser, error } = await supabaseAdmin
+        .from('users')
+        .update({
+          email,
+          full_name: fullName,
+          phone,
+          date_of_birth: dateOfBirth,
+          address,
+          city,
+          country,
+          role: 'user',
+          is_vip: false,
+          is_active: true,
+          email_verified: false,
+          phone_verified: false,
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        // Rollback auth user creation
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        logger.error('Failed to update user profile:', error);
+        throw new Error('Failed to create user account');
+      }
+      newUser = updatedUser;
+    } else {
+      // Create new user profile
+      const { data: createdUser, error } = await supabaseAdmin
+        .from('users')
+        .insert({
+          id: userId,
+          email,
+          full_name: fullName,
+          phone,
+          date_of_birth: dateOfBirth,
+          address,
+          city,
+          country,
+          role: 'user',
+          is_vip: false,
+          is_active: true,
+          email_verified: false,
+          phone_verified: false,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        // Rollback auth user creation
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        logger.error('Failed to create user profile:', error);
+        throw new Error('Failed to create user account');
+      }
+      newUser = createdUser;
     }
 
     // Generate and send email verification OTP
@@ -126,7 +164,7 @@ class AuthController {
 
     // Generate and send phone verification OTP
     const phoneOtp = await otpService.generateOtp(phone, 'phone_verification');
-    await smsService.sendVerificationSms(phone, phoneOtp);
+    await smsService.sendPhoneVerificationSMS(phone, fullName, phoneOtp);
 
     logger.info('User registered successfully', {
       userId,
@@ -157,90 +195,142 @@ class AuthController {
    */
   login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { email, password, rememberMe } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
 
-    // Get user from database
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
+    try {
+      // Get user from database
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
 
-    if (error || !user) {
-      throw new AuthenticationError('Invalid email or password');
-    }
+      if (error || !user) {
+        // Log failed login attempt
+        await logAuditEvent({
+          eventType: AuditEventType.AUTH_LOGIN_FAILED,
+          userId: null,
+          ipAddress,
+          details: {
+            email,
+            reason: 'User not found',
+            timestamp: new Date().toISOString()
+          }
+        });
+        throw new AuthenticationError('Invalid email or password');
+      }
 
-    // Check if user is active
-    if (!user.is_active) {
-      throw new AuthenticationError('Account is deactivated');
-    }
+      // Check if user is active
+      if (!user.is_active) {
+        // Log failed login attempt for inactive account
+        await logAuditEvent({
+          eventType: AuditEventType.AUTH_LOGIN_FAILED,
+          userId: user.id,
+          ipAddress,
+          details: {
+            email,
+            reason: 'Account deactivated',
+            timestamp: new Date().toISOString()
+          }
+        });
+        throw new AuthenticationError('Account is deactivated');
+      }
 
-    // Verify password using Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+      // Verify password using Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (authError || !authData.user) {
-      throw new AuthenticationError('Invalid email or password');
-    }
+      if (authError || !authData.user) {
+        // Log failed login attempt for wrong password
+        await logAuditEvent({
+          eventType: AuditEventType.AUTH_LOGIN_FAILED,
+          userId: user.id,
+          ipAddress,
+          details: {
+            email,
+            reason: 'Invalid password',
+            timestamp: new Date().toISOString()
+          }
+        });
+        throw new AuthenticationError('Invalid email or password');
+      }
 
-    // Update last login
-    await supabaseAdmin
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', user.id);
+      // Update last login
+      await supabaseAdmin
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', user.id);
 
-    // Get user's group memberships
-    const { data: groupMemberships } = await supabase
-      .from('group_members')
-      .select('group_id')
-      .eq('user_id', user.id)
-      .eq('status', 'active');
+      // Get user's group memberships
+      const { data: groupMemberships } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
 
-    const groupIds = groupMemberships?.map(gm => gm.group_id) || [];
+      const groupIds = groupMemberships?.map(gm => gm.group_id) || [];
 
-    // Generate tokens
-    const tokenPayload = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      isVip: user.is_vip,
-      groupIds,
-    };
+      // Generate tokens
+      const tokenPayload = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        isVip: user.is_vip,
+        groupIds,
+      };
 
-    const accessToken = generateToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
+      const accessToken = generateToken(tokenPayload);
+      const refreshToken = generateRefreshToken(tokenPayload);
 
-    logger.info('User logged in successfully', {
-      userId: user.id,
-      email: user.email,
-      rememberMe,
-    });
+      // Log successful login
+      await logAuditEvent({
+        eventType: AuditEventType.AUTH_LOGIN_SUCCESS,
+        userId: user.id,
+        ipAddress,
+        details: {
+          email,
+          rememberMe,
+          userAgent: req.get('User-Agent') || 'unknown',
+          timestamp: new Date().toISOString()
+        }
+      });
 
-    const response: AuthResponse = {
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.full_name,
-          phone: user.phone,
-          role: user.role,
-          isVip: user.is_vip,
-          emailVerified: user.email_verified,
-          phoneVerified: user.phone_verified,
-          avatarUrl: user.avatar_url,
+      logger.info('User logged in successfully', {
+        userId: user.id,
+        email: user.email,
+        rememberMe,
+      });
+
+      const response: AuthResponse = {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            fullName: user.full_name,
+            phone: user.phone,
+            role: user.role,
+            isVip: user.is_vip,
+            emailVerified: user.email_verified,
+            phoneVerified: user.phone_verified,
+            avatarUrl: user.avatar_url,
+          },
+          tokens: {
+            accessToken,
+            refreshToken,
+            expiresIn: config.jwt.expiresIn,
+          },
         },
-        tokens: {
-          accessToken,
-          refreshToken,
-          expiresIn: config.jwt.expiresIn,
-        },
-      },
-      message: 'Login successful',
-    };
+        message: 'Login successful',
+      };
 
-    res.status(200).json(response);
+      res.status(200).json(response);
+    } catch (error) {
+      // Re-throw the error to be handled by the error middleware
+      throw error;
+    }
   });
 
   /**
@@ -412,33 +502,72 @@ class AuthController {
   changePassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user!.id;
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
 
-    // Verify current password
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: req.user!.email,
-      password: currentPassword,
-    });
+    try {
+      // Verify current password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: req.user!.email,
+        password: currentPassword,
+      });
 
-    if (signInError) {
-      throw new AuthenticationError('Current password is incorrect');
+      if (signInError) {
+        // Log failed password change attempt
+        await logAuditEvent({
+          eventType: AuditEventType.AUTH_PASSWORD_CHANGE_FAILED,
+          userId,
+          ipAddress,
+          details: {
+            email: req.user!.email,
+            reason: 'Current password incorrect',
+            timestamp: new Date().toISOString()
+          }
+        });
+        throw new AuthenticationError('Current password is incorrect');
+      }
+
+      // Update password
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        password: newPassword,
+      });
+
+      if (error) {
+        // Log failed password change attempt
+        await logAuditEvent({
+          eventType: AuditEventType.AUTH_PASSWORD_CHANGE_FAILED,
+          userId,
+          ipAddress,
+          details: {
+            email: req.user!.email,
+            reason: 'Database update failed',
+            timestamp: new Date().toISOString()
+          }
+        });
+        logger.error('Failed to change password:', error);
+        throw new Error('Failed to change password');
+      }
+
+      // Log successful password change
+      await logAuditEvent({
+        eventType: AuditEventType.AUTH_PASSWORD_CHANGE_SUCCESS,
+        userId,
+        ipAddress,
+        details: {
+          email: req.user!.email,
+          userAgent: req.get('User-Agent') || 'unknown',
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      logger.info('Password changed successfully', { userId });
+
+      res.status(200).json({
+        success: true,
+        message: 'Password changed successfully',
+      });
+    } catch (error) {
+      throw error;
     }
-
-    // Update password
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      password: newPassword,
-    });
-
-    if (error) {
-      logger.error('Failed to change password:', error);
-      throw new Error('Failed to change password');
-    }
-
-    logger.info('Password changed successfully', { userId });
-
-    res.status(200).json({
-      success: true,
-      message: 'Password changed successfully',
-    });
   });
 
   /**
@@ -503,10 +632,24 @@ class AuthController {
    * Logout
    */
   logout = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    
     // In a stateless JWT system, logout is handled client-side
     // Here we could implement token blacklisting if needed
     
     if (req.user) {
+      // Log logout event
+      await logAuditEvent({
+        eventType: AuditEventType.AUTH_LOGOUT,
+        userId: req.user.id,
+        ipAddress,
+        details: {
+          email: req.user.email,
+          userAgent: req.get('User-Agent') || 'unknown',
+          timestamp: new Date().toISOString()
+        }
+      });
+      
       logger.info('User logged out', { userId: req.user.id });
     }
 

@@ -1,5 +1,5 @@
-import { supabaseAdmin } from '../services/supabase.ts';
-import { logger } from '../utils/logger.ts';
+import { supabaseAdmin } from '../services/supabase';
+import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

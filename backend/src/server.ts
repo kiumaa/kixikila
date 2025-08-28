@@ -3,27 +3,27 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 
 // Import configurations
-import { config } from './config/index.ts';
-import { logger } from './utils/logger.ts';
-import { errorHandler } from './middleware/errorHandler.ts';
-import { notFoundHandler } from './middleware/notFoundHandler.ts';
-import { authMiddleware } from './middleware/auth.ts';
+import { config } from './config/index.js';
+import { logger } from './utils/logger.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { notFoundHandler } from './middleware/notFoundHandler.js';
+import { authMiddleware } from './middleware/auth.js';
+import { generalRateLimit } from './middleware/rateLimiting.js';
 
 // Import routes
-import authRoutes from './routes/auth.ts';
-import userRoutes from './routes/users.ts';
-import groupRoutes from './routes/groups.ts';
-import transactionRoutes from './routes/transactions.ts';
-import notificationRoutes from './routes/notifications.ts';
-import adminRoutes from './routes/admin.ts';
-import stripeRoutes from './routes/stripe.ts';
-import webhookRoutes from './routes/webhooks.ts';
-import healthRoutes from './routes/health.ts';
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import groupRoutes from './routes/groups.js';
+import transactionRoutes from './routes/transactions.js';
+import notificationRoutes from './routes/notifications.js';
+import adminRoutes from './routes/admin.js';
+import stripeRoutes from './routes/stripe.js';
+import webhookRoutes from './routes/webhooks.js';
+import healthRoutes from './routes/health.js';
 
 // Load environment variables
 dotenv.config();
@@ -31,17 +31,7 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: config.rateLimiting.windowMs,
-  max: config.rateLimiting.maxRequests,
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: Math.ceil(config.rateLimiting.windowMs / 1000)
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Rate limiting is now handled by specific middlewares in routes
 
 // Security middleware
 app.use(helmet({
@@ -67,7 +57,7 @@ app.use(cors({
 // General middleware
 app.use(compression());
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
-app.use(limiter);
+app.use(generalRateLimit);
 
 // Body parsing middleware
 app.use('/api/webhooks', express.raw({ type: 'application/json' })); // Raw body for webhooks

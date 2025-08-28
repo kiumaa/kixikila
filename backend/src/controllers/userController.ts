@@ -1,18 +1,18 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { supabase, supabaseAdmin } from '../services/supabase.ts';
+import { supabase, supabaseAdmin } from '../services/supabase';
 import { 
   ValidationError, 
   NotFoundError, 
   ConflictError,
   AuthorizationError,
   asyncHandler 
-} from '../middleware/errorHandler.ts';
-import { logger } from '../utils/logger.ts';
-import { config } from '../config/index.ts';
-import { otpService } from '../services/otpService.ts';
-import { emailService } from '../services/emailService.ts';
-import { smsService } from '../services/smsService.ts';
+} from '../middleware/errorHandler';
+import { logger } from '../utils/logger';
+import { config } from '../config/index.js';
+import { otpService } from '../services/otpService';
+import { emailService } from '../services/emailService';
+import { smsService } from '../services/smsService';
 
 class UserController {
   /**
@@ -259,7 +259,7 @@ class UserController {
     try {
       await smsService.sendSMS({
         to: user.phone,
-        message: `Your KIXIKILA verification code is: ${otp}. This code expires in 10 minutes.`
+        message: `Your KIXIKILA verification code is: ${otp}. This code expires in 5 minutes.`
       });
 
       logger.info('Phone verification OTP sent', { userId, phone: user.phone });

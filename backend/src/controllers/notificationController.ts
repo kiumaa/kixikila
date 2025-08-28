@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
-import { supabase } from '../services/supabase.ts';
-import { smsService } from '../services/smsService.ts';
-import { emailService } from '../services/emailService.ts';
-import { logger } from '../utils/logger.ts';
+import { supabase } from '../services/supabase';
+import { smsService } from '../services/smsService';
+import { emailService } from '../services/emailService';
+import { logger } from '../utils/logger';
 import { 
   ValidationError, 
   NotFoundError, 
   InternalServerError 
-} from '../middleware/errorHandler.ts';
+} from '../middleware/errorHandler';
 
 interface AuthenticatedRequest extends Request {
   user?: {

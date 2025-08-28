@@ -56,7 +56,36 @@ export const userValidation = {
         .optional()
         .messages({
           'string.uri': 'Avatar URL must be a valid URL'
-        })
+        }),
+      
+      // Explicitly forbid sensitive fields that should only be modified by admins
+      role: Joi.forbidden().messages({
+        'any.unknown': 'Role cannot be modified through this endpoint'
+      }),
+      
+      is_vip: Joi.forbidden().messages({
+        'any.unknown': 'VIP status cannot be modified through this endpoint'
+      }),
+      
+      isVip: Joi.forbidden().messages({
+        'any.unknown': 'VIP status cannot be modified through this endpoint'
+      }),
+      
+      is_active: Joi.forbidden().messages({
+        'any.unknown': 'Account status cannot be modified through this endpoint'
+      }),
+      
+      isActive: Joi.forbidden().messages({
+        'any.unknown': 'Account status cannot be modified through this endpoint'
+      }),
+      
+      email_verified: Joi.forbidden().messages({
+        'any.unknown': 'Email verification status cannot be modified through this endpoint'
+      }),
+      
+      phone_verified: Joi.forbidden().messages({
+        'any.unknown': 'Phone verification status cannot be modified through this endpoint'
+      })
     }).min(1).messages({
       'object.min': 'At least one field must be provided for update'
     })

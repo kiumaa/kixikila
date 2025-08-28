@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middleware/auth.ts';
-import { validateRequest } from '../middleware/validation.ts';
-import { notificationValidation } from '../validations/notificationValidation.ts';
-import { notificationController } from '../controllers/notificationController.ts';
+import { authMiddleware } from '../middleware/auth';
+import { validateRequest } from '../middleware/validation';
+import { notificationValidation } from '../validations/notificationValidation';
+import { notificationController } from '../controllers/notificationController';
 
 const router = Router();
 

@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { logger } from '../utils/logger.ts';
-import { asyncHandler } from '../middleware/errorHandler.ts';
-import { emailService } from '../services/emailService.ts';
-import { smsService } from '../services/smsService.ts';
+import { logger } from '../utils/logger';
+import { asyncHandler } from '../middleware/errorHandler';
+import { emailService } from '../services/emailService';
+import { smsService } from '../services/smsService';
+import { logAuditEvent, AuditEventType } from '../middleware/auditLogger';
 
 interface EmailCredentials {
   host: string;
@@ -63,6 +64,8 @@ class AdminController {
    * Update email configuration
    */
   updateEmailConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    
     try {
       const { host, port, secure, user, password, fromName, fromAddress } = req.body as EmailCredentials;
       
@@ -79,6 +82,26 @@ class AdminController {
       }
       await this.updateEnvVariable('EMAIL_FROM_NAME', fromName);
       await this.updateEnvVariable('EMAIL_FROM_ADDRESS', fromAddress);
+      
+      // Log admin action
+      await logAuditEvent({
+        eventType: AuditEventType.ADMIN_CONFIG_UPDATE,
+        userId: req.user?.id || 'unknown',
+        ipAddress,
+        details: {
+          configType: 'email',
+          changes: {
+            host,
+            port,
+            secure,
+            user,
+            fromName,
+            fromAddress,
+            passwordUpdated: !!password
+          },
+          timestamp: new Date().toISOString()
+        }
+      });
       
       res.json({
         success: true,
@@ -162,6 +185,8 @@ class AdminController {
    * Update Stripe configuration
    */
   updateStripeConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    
     try {
       const { secretKey, publicKey, webhookSecret } = req.body as StripeCredentials;
       
@@ -177,6 +202,22 @@ class AdminController {
       if (webhookSecret) {
         await this.updateEnvVariable('STRIPE_WEBHOOK_SECRET', webhookSecret);
       }
+      
+      // Log admin action
+      await logAuditEvent({
+        eventType: AuditEventType.ADMIN_CONFIG_UPDATE,
+        userId: req.user?.id || 'unknown',
+        ipAddress,
+        details: {
+          configType: 'stripe',
+          changes: {
+            secretKeyUpdated: !!secretKey,
+            publicKeyUpdated: !!publicKey,
+            webhookSecretUpdated: !!webhookSecret
+          },
+          timestamp: new Date().toISOString()
+        }
+      });
       
       res.json({
         success: true,
@@ -220,18 +261,31 @@ class AdminController {
    * Update BulkSMS configuration
    */
   updateBulkSMSConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    
     try {
       const { tokenId, tokenSecret } = req.body as BulkSMSCredentials;
       
       logger.info('Admin updating BulkSMS config', { adminId: req.user?.id });
       
       // Update environment variables
-      if (tokenId) {
-        await this.updateEnvVariable('BULKSMS_TOKEN_ID', tokenId);
-      }
-      if (tokenSecret) {
-        await this.updateEnvVariable('BULKSMS_TOKEN_SECRET', tokenSecret);
-      }
+      await this.updateEnvVariable('BULKSMS_TOKEN_ID', tokenId);
+      await this.updateEnvVariable('BULKSMS_TOKEN_SECRET', tokenSecret);
+      
+      // Log admin action
+      await logAuditEvent({
+        eventType: AuditEventType.ADMIN_CONFIG_UPDATE,
+        userId: req.user?.id || 'unknown',
+        ipAddress,
+        details: {
+          configType: 'bulksms',
+          changes: {
+            tokenIdUpdated: !!tokenId,
+            tokenSecretUpdated: !!tokenSecret
+          },
+          timestamp: new Date().toISOString()
+        }
+      });
       
       res.json({
         success: true,
@@ -243,6 +297,8 @@ class AdminController {
         success: false,
         message: 'Erro interno do servidor'
       });
+    }
+  });
     }
   });
 

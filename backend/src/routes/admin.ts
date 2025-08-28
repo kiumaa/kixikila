@@ -1,10 +1,18 @@
 import { Router } from 'express';
-import { supabase } from '../services/supabase.ts';
-import { logger } from '../utils/logger.ts';
-import { authenticateToken, requireAdmin } from '../middleware/auth.ts';
-import { adminController } from '../controllers/adminController.ts';
+import { supabase } from '../services/supabase';
+import { logger } from '../utils/logger';
+import { authMiddleware, requireAdmin } from '../middleware/auth';
+import { adminController } from '../controllers/adminController';
+import { adminRateLimit } from '../middleware/rateLimiting';
+import { auditAdminAction } from '../middleware/auditLogger';
 
 const router = Router();
+
+// Apply authentication, rate limiting and audit logging middleware to all admin routes
+router.use(authMiddleware);
+router.use(requireAdmin);
+router.use(adminRateLimit);
+router.use(auditAdminAction);
 
 /**
  * @route GET /api/v1/admin/users

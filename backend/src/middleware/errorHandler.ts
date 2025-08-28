@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../utils/logger.ts';
-import { config } from '../config/index.ts';
+import { logger } from '../utils/logger.js';
+import { config } from '../config/index.js';
 
 export interface ApiError extends Error {
   statusCode?: number;

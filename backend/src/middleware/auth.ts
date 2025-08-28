@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../config/index.ts';
-import { AuthenticationError, AuthorizationError } from './errorHandler.ts';
-import { supabase } from '../services/supabase.ts';
-import { logger } from '../utils/logger.ts';
+import { config } from '../config/index.js';
+import { AuthenticationError, AuthorizationError } from './errorHandler';
+import { supabase } from '../services/supabase';
+import { logger } from '../utils/logger.js';
 
 // Extend Request interface to include user
 declare global {

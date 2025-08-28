@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { config } from '../config/index.ts';
-import { logger } from '../utils/logger.ts';
+import { config } from '../config/index.js';
+import { logger } from '../utils/logger.js';
 
 // Database types based on the frontend structure
 export interface Database {

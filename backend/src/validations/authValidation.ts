@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { commonValidations } from '../middleware/validation.ts';
+import { commonValidations } from '../middleware/validation';
 
 export const authValidation = {
   // User registration

@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { testConnection } from '../services/supabase.ts';
-import { logger } from '../utils/logger.ts';
-import { config } from '../config/index.ts';
+import { testConnection } from '../services/supabase';
+import { logger } from '../utils/logger.js';
+import { config } from '../config/index.js';
 
 const router = Router();
 

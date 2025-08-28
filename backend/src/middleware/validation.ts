@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
-import { ValidationError } from './errorHandler.ts';
-import { logger } from '../utils/logger.ts';
+import { ValidationError } from './errorHandler';
+import { logger } from '../utils/logger';
 
 interface ValidationSchema {
   body?: Joi.ObjectSchema;
@@ -133,20 +133,66 @@ export const commonValidations = {
   name: Joi.string().trim().min(2).max(100).required(),
   optionalName: Joi.string().trim().min(2).max(100).optional(),
   
-  // Amount validation (for financial transactions)
-  amount: Joi.number().positive().precision(2).required(),
-  optionalAmount: Joi.number().positive().precision(2).optional(),
+  // Amount validation (for financial transactions) - Enhanced security
+  amount: Joi.number()
+    .positive()
+    .precision(2)
+    .min(0.01) // Minimum 1 cent
+    .max(999999.99) // Maximum $999,999.99 to prevent overflow
+    .required()
+    .messages({
+      'number.min': 'Amount must be at least 0.01',
+      'number.max': 'Amount cannot exceed 999,999.99',
+      'number.positive': 'Amount must be positive'
+    }),
+  optionalAmount: Joi.number()
+    .positive()
+    .precision(2)
+    .min(0.01)
+    .max(999999.99)
+    .optional()
+    .messages({
+      'number.min': 'Amount must be at least 0.01',
+      'number.max': 'Amount cannot exceed 999,999.99',
+      'number.positive': 'Amount must be positive'
+    }),
   
   // Date validation
   date: Joi.date().iso().required(),
   optionalDate: Joi.date().iso().optional(),
   
-  // Pagination
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(20),
+  // Pagination - Enhanced security limits
+  page: Joi.number()
+    .integer()
+    .min(1)
+    .max(10000) // Prevent excessive pagination
+    .default(1)
+    .messages({
+      'number.min': 'Page must be at least 1',
+      'number.max': 'Page cannot exceed 10,000'
+    }),
+  limit: Joi.number()
+    .integer()
+    .min(1)
+    .max(100) // Strict limit to prevent DoS
+    .default(20)
+    .messages({
+      'number.min': 'Limit must be at least 1',
+      'number.max': 'Limit cannot exceed 100'
+    }),
   
-  // Search
-  search: Joi.string().trim().min(1).max(100).optional(),
+  // Search - Enhanced security
+  search: Joi.string()
+    .trim()
+    .min(1)
+    .max(100)
+    .pattern(/^[a-zA-Z0-9\s\-_.@]+$/) // Only allow safe characters
+    .optional()
+    .messages({
+      'string.min': 'Search term must be at least 1 character',
+      'string.max': 'Search term cannot exceed 100 characters',
+      'string.pattern.base': 'Search term contains invalid characters'
+    }),
   
   // Sort
   sortBy: Joi.string().trim().optional(),
@@ -171,26 +217,80 @@ export const commonValidations = {
 };
 
 /**
- * Sanitize input data
+ * Sanitize input data - Enhanced security
  */
 export const sanitizeInput = (data: any): any => {
   if (typeof data === 'string') {
-    return data.trim();
+    return data
+      .trim()
+      // Remove potential XSS patterns
+      .replace(/<script[^>]*>.*?<\/script>/gi, '')
+      .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      // Remove SQL injection patterns
+      .replace(/('|(\-\-)|(;)|(\|)|(\*)|(%))/g, '')
+      // Limit length to prevent buffer overflow
+      .substring(0, 10000);
   }
   
   if (Array.isArray(data)) {
+    // Limit array size to prevent DoS
+    if (data.length > 1000) {
+      throw new ValidationError('Array size exceeds maximum allowed limit');
+    }
     return data.map(sanitizeInput);
   }
   
   if (data && typeof data === 'object') {
+    // Limit object depth and size
+    const keys = Object.keys(data);
+    if (keys.length > 100) {
+      throw new ValidationError('Object has too many properties');
+    }
+    
     const sanitized: any = {};
     for (const [key, value] of Object.entries(data)) {
-      sanitized[key] = sanitizeInput(value);
+      // Sanitize key names
+      const sanitizedKey = key.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 100);
+      if (sanitizedKey) {
+        sanitized[sanitizedKey] = sanitizeInput(value);
+      }
     }
     return sanitized;
   }
   
   return data;
+};
+
+/**
+ * Additional security validation for sensitive operations
+ */
+export const validateSensitiveOperation = (req: Request): void => {
+  // Check for suspicious patterns in headers
+  const userAgent = req.headers['user-agent'] || '';
+  const suspiciousPatterns = [
+    /sqlmap/i,
+    /nikto/i,
+    /nessus/i,
+    /burp/i,
+    /scanner/i
+  ];
+  
+  if (suspiciousPatterns.some(pattern => pattern.test(userAgent))) {
+    logger.warn('Suspicious user agent detected', {
+      userAgent,
+      ip: req.ip,
+      url: req.originalUrl
+    });
+    throw new ValidationError('Request blocked for security reasons');
+  }
+  
+  // Check request size
+  const contentLength = parseInt(req.headers['content-length'] || '0');
+  if (contentLength > 10 * 1024 * 1024) { // 10MB limit
+    throw new ValidationError('Request payload too large');
+  }
 };
 
 export default validateRequest;

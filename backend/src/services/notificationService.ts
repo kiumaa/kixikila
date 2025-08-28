@@ -1,8 +1,8 @@
-import { supabase } from './supabase.ts';
-import { emailService } from './emailService.ts';
-import { smsService } from './smsService.ts';
-import { logger } from '../utils/logger.ts';
-import { Database } from './supabase.ts';
+import { supabase } from './supabase';
+import { emailService } from './emailService';
+import { smsService } from './smsService';
+import { logger } from '../utils/logger';
+import { Database } from './supabase';
 
 type NotificationType = Database['public']['Enums']['notification_type'];
 type NotificationStatus = Database['public']['Enums']['notification_status'];
