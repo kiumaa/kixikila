@@ -644,6 +644,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      classify_user_data_sensitivity: {
+        Args: { column_name: string }
+        Returns: string
+      }
       cleanup_expired_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -669,6 +673,40 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_secure_user_data: {
+        Args: {
+          include_financial?: boolean
+          include_pii?: boolean
+          target_user_id?: string
+        }
+        Returns: {
+          active_groups: number
+          address: string
+          avatar_url: string
+          city: string
+          completed_cycles: number
+          country: string
+          created_at: string
+          date_of_birth: string
+          email: string
+          email_verified: boolean
+          full_name: string
+          id: string
+          is_active: boolean
+          is_vip: boolean
+          kyc_status: string
+          last_login: string
+          phone: string
+          phone_verified: boolean
+          role: string
+          total_earned: string
+          total_saved: string
+          total_withdrawn: string
+          trust_score: number
+          updated_at: string
+          wallet_balance: string
+        }[]
       }
       get_security_alerts: {
         Args: Record<PropertyKey, never>
@@ -728,6 +766,19 @@ export type Database = {
       log_suspicious_access: {
         Args: { access_pattern: string; entity_type: string; metadata?: Json }
         Returns: undefined
+      }
+      mask_financial_data: {
+        Args: { requesting_user_id?: string; user_id: string; value: number }
+        Returns: string
+      }
+      mask_personal_data: {
+        Args: {
+          field_type: string
+          requesting_user_id?: string
+          user_id: string
+          value: string
+        }
+        Returns: string
       }
       security_audit_report: {
         Args: Record<PropertyKey, never>
