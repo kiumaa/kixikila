@@ -56,37 +56,35 @@ const AdminPanel: React.FC = () => {
           {/* Dashboard */}
           <Route path="dashboard" element={<AdminDashboard />} />
           
-          {/* Gestão */}
-          <Route path="gestao/users" element={<UsersManagement />} />
-          <Route path="gestao/groups" element={<GroupsManagement />} />
-          <Route path="gestao/plans" element={<PlansManagement />} />
-          
-          {/* Sistema */}
-          <Route path="sistema/settings" element={<SystemSettings />} />
-          <Route path="sistema/advanced" element={<AdvancedSystemSettings />} />
-          <Route path="sistema/branding" element={<BrandingManagement />} />
-          <Route path="sistema/pwa" element={<PWAManagement />} />
-          
-          {/* Segurança */}
-          <Route path="seguranca/security" element={<SecurityDashboard />} />
-          <Route path="seguranca/logs" element={<ActivityLogs />} />
-          <Route path="seguranca/monitoring" element={<MonitoringDashboard />} />
-          
-          {/* Comunicação */}
-          <Route path="comunicacao/notifications" element={<NotificationsManagement />} />
-          <Route path="comunicacao/templates" element={<MessageTemplates />} />
-          <Route path="comunicacao/bulk" element={<BulkMessaging />} />
+          {/* Flattened Routes - New Structure */}
+          <Route path="users" element={<UsersManagement />} />
+          <Route path="groups" element={<GroupsManagement />} />
+          <Route path="plans" element={<PlansManagement />} />
+          <Route path="settings" element={<SystemSettings />} />
+          <Route path="advanced-settings" element={<AdvancedSystemSettings />} />
+          <Route path="branding" element={<BrandingManagement />} />
+          <Route path="pwa" element={<PWAManagement />} />
+          <Route path="security" element={<SecurityDashboard />} />
+          <Route path="logs" element={<ActivityLogs />} />
+          <Route path="monitoring" element={<MonitoringDashboard />} />
+          <Route path="notifications" element={<NotificationsManagement />} />
+          <Route path="templates" element={<MessageTemplates />} />
+          <Route path="bulk" element={<BulkMessaging />} />
 
-          {/* Backwards compatibility - redirect old routes */}
-          <Route path="users" element={<Navigate to="gestao/users" replace />} />
-          <Route path="groups" element={<Navigate to="gestao/groups" replace />} />
-          <Route path="plans" element={<Navigate to="gestao/plans" replace />} />
-          <Route path="settings" element={<Navigate to="sistema/settings" replace />} />
-          <Route path="advanced-settings" element={<Navigate to="sistema/advanced" replace />} />
-          <Route path="branding" element={<Navigate to="sistema/branding" replace />} />
-          <Route path="pwa" element={<Navigate to="sistema/pwa" replace />} />
-          <Route path="security" element={<Navigate to="seguranca/security" replace />} />
-          <Route path="logs" element={<Navigate to="seguranca/logs" replace />} />
+          {/* Backwards compatibility - redirect old grouped routes */}
+          <Route path="gestao/users" element={<Navigate to="/admin/users" replace />} />
+          <Route path="gestao/groups" element={<Navigate to="/admin/groups" replace />} />
+          <Route path="gestao/plans" element={<Navigate to="/admin/plans" replace />} />
+          <Route path="sistema/settings" element={<Navigate to="/admin/settings" replace />} />
+          <Route path="sistema/advanced" element={<Navigate to="/admin/advanced-settings" replace />} />
+          <Route path="sistema/branding" element={<Navigate to="/admin/branding" replace />} />
+          <Route path="sistema/pwa" element={<Navigate to="/admin/pwa" replace />} />
+          <Route path="seguranca/security" element={<Navigate to="/admin/security" replace />} />
+          <Route path="seguranca/logs" element={<Navigate to="/admin/logs" replace />} />
+          <Route path="seguranca/monitoring" element={<Navigate to="/admin/monitoring" replace />} />
+          <Route path="comunicacao/notifications" element={<Navigate to="/admin/notifications" replace />} />
+          <Route path="comunicacao/templates" element={<Navigate to="/admin/templates" replace />} />
+          <Route path="comunicacao/bulk" element={<Navigate to="/admin/bulk" replace />} />
         </Routes>
       </Suspense>
     </AdminLayout>

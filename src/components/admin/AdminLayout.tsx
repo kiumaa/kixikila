@@ -41,19 +41,19 @@ const sidebarItems = [
   { 
     icon: Users, 
     label: 'Utilizadores', 
-    path: '/admin/gestao/users',
+    path: '/admin/users',
     group: 'gestao'
   },
   { 
     icon: FileText, 
     label: 'Grupos', 
-    path: '/admin/gestao/groups',
+    path: '/admin/groups',
     group: 'gestao'
   },
   { 
     icon: CreditCard, 
     label: 'Planos', 
-    path: '/admin/gestao/plans',
+    path: '/admin/plans',
     group: 'gestao'
   },
   
@@ -61,25 +61,25 @@ const sidebarItems = [
   { 
     icon: Settings, 
     label: 'Configurações', 
-    path: '/admin/sistema/settings',
+    path: '/admin/settings',
     group: 'sistema'
   },
   { 
     icon: Settings, 
     label: 'Config. Avançadas', 
-    path: '/admin/sistema/advanced',
+    path: '/admin/advanced-settings',
     group: 'sistema'
   },
   { 
     icon: Palette, 
     label: 'Identidade Visual', 
-    path: '/admin/sistema/branding',
+    path: '/admin/branding',
     group: 'sistema'
   },
   { 
     icon: Smartphone, 
     label: 'PWA Settings', 
-    path: '/admin/sistema/pwa',
+    path: '/admin/pwa',
     group: 'sistema'
   },
   
@@ -87,19 +87,19 @@ const sidebarItems = [
   { 
     icon: Shield, 
     label: 'Segurança', 
-    path: '/admin/seguranca/security',
+    path: '/admin/security',
     group: 'seguranca'
   },
   { 
     icon: Activity, 
     label: 'Logs', 
-    path: '/admin/seguranca/logs',
+    path: '/admin/logs',
     group: 'seguranca'
   },
   { 
     icon: Activity, 
     label: 'Monitoramento', 
-    path: '/admin/seguranca/monitoring',
+    path: '/admin/monitoring',
     group: 'seguranca'
   },
   
@@ -107,19 +107,19 @@ const sidebarItems = [
   { 
     icon: Bell, 
     label: 'Notificações', 
-    path: '/admin/comunicacao/notifications',
+    path: '/admin/notifications',
     group: 'comunicacao'
   },
   { 
     icon: FileText, 
     label: 'Templates', 
-    path: '/admin/comunicacao/templates',
+    path: '/admin/templates',
     group: 'comunicacao'
   },
   { 
     icon: Bell, 
     label: 'Mensagens em Massa', 
-    path: '/admin/comunicacao/bulk',
+    path: '/admin/bulk',
     group: 'comunicacao'
   }
 ];

@@ -1,10 +1,9 @@
 import React, { useMemo, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Wallet, User, Plus, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface BottomNavigationProps {
-  currentScreen: string;
-  onNavigate: (screen: string) => void;
   onCreateGroup: () => void;
   notificationCount?: number;
 }
@@ -12,24 +11,25 @@ interface BottomNavigationProps {
 // Moved inside component for memoization
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = React.memo(({
-  currentScreen,
-  onNavigate,
   onCreateGroup,
   notificationCount = 0
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // Memoized navigation items
   const navItems = useMemo(() => [
-    { key: 'dashboard', icon: Home, label: 'Início' },
-    { key: 'wallet', icon: Wallet, label: 'Carteira' },
+    { key: 'dashboard', icon: Home, label: 'Início', path: '/app/dashboard' },
+    { key: 'wallet', icon: Wallet, label: 'Carteira', path: '/app/wallet' },
     { key: 'create', icon: Plus, label: 'Criar', isAction: true },
-    { key: 'notifications', icon: Bell, label: 'Notificações' },
-    { key: 'profile', icon: User, label: 'Perfil' }
+    { key: 'notifications', icon: Bell, label: 'Notificações', path: '/app/notifications' },
+    { key: 'profile', icon: User, label: 'Perfil', path: '/app/profile' }
   ], []);
 
   // Memoized handlers
-  const handleNavigation = useCallback((screen: string) => {
-    onNavigate(screen);
-  }, [onNavigate]);
+  const handleNavigation = useCallback((path: string) => {
+    navigate(path);
+  }, [navigate]);
   // Hide bottom navigation on auth pages and admin routes
   const isHomePage = window.location.pathname === '/';
   const isAuthPage = window.location.pathname === '/entrar';
@@ -44,7 +44,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = React.memo(({
       <div className="max-w-md mx-auto px-4 py-2">
         <div className="flex justify-around items-center">
           {navItems.map((item) => {
-            const isActive = currentScreen === item.key;
+            const isActive = location.pathname === item.path;
             const isCreateButton = item.isAction;
             
             if (isCreateButton) {
@@ -64,7 +64,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = React.memo(({
             return (
               <button
                 key={item.key}
-                onClick={() => handleNavigation(item.key)}
+                onClick={() => handleNavigation(item.path!)}
                 className={`relative flex flex-col items-center gap-1 py-3 px-4 rounded-xl transition-all duration-200 ios-button ${
                   isActive 
                     ? 'text-primary bg-primary/10 scale-105' 

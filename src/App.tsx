@@ -32,7 +32,7 @@ const App = () => {
             
             {/* Main App - Protected */}
             <Route 
-              path="/app" 
+              path="/app/*" 
               element={
                 <ProtectedRoute requireAuth={true} redirectTo="/entrar">
                   <AppPage />
