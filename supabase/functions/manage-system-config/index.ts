@@ -263,8 +263,8 @@ async function getSMSConfiguration(supabaseClient: any) {
       brandName: 'KIXIKILA',
       allowedCountries: ['PT', 'BR'],
       templates: {
-        verification: '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.',
-        login: '{{brandName}}: Código de login: {{code}}. Se não foi você, ignore esta mensagem.'
+        otp: '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.',
+        reminder: '{{brandName}}: Lembrete de pagamento. Código: {{code}}. Se não foi você, ignore esta mensagem.'
       },
       rateLimits: {
         perPhone: 5,

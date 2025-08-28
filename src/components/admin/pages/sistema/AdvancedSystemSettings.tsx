@@ -40,8 +40,8 @@ interface SMSConfig {
   brandName?: string;
   allowedCountries?: string[];
   templates?: {
-    verification?: string;
-    login?: string;
+    otp?: string;
+    reminder?: string;
   };
   rateLimits?: {
     perPhone?: number;
@@ -69,10 +69,10 @@ const AdvancedSystemSettings: React.FC = () => {
     senderId: 'KB Agency',
     brandName: 'KIXIKILA',
     allowedCountries: ['PT', 'BR'],
-    templates: {
-      verification: '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.',
-      login: '{{brandName}}: Código de login: {{code}}. Se não foi você, ignore esta mensagem.'
-    },
+      templates: {
+        otp: '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.',
+        reminder: '{{brandName}}: Lembrete de pagamento. Código: {{code}}. Se não foi você, ignore esta mensagem.'
+      },
     rateLimits: {
       perPhone: 5,
       global: 100
@@ -295,15 +295,15 @@ const AdvancedSystemSettings: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="verificationTemplate">Template de Verificação</Label>
+                    <Label htmlFor="otpTemplate">Template OTP</Label>
                     <Textarea
-                      id="verificationTemplate"
-                      value={smsConfig.templates?.verification || ''}
+                      id="otpTemplate"
+                      value={smsConfig.templates?.otp || ''}
                       onChange={(e) => setSmsConfig({
                         ...smsConfig,
                         templates: {
                           ...smsConfig.templates,
-                          verification: e.target.value
+                          otp: e.target.value
                         }
                       })}
                       placeholder="{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos."
@@ -311,18 +311,18 @@ const AdvancedSystemSettings: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="loginTemplate">Template de Login</Label>
+                    <Label htmlFor="reminderTemplate">Template Lembrete</Label>
                     <Textarea
-                      id="loginTemplate"
-                      value={smsConfig.templates?.login || ''}
+                      id="reminderTemplate"
+                      value={smsConfig.templates?.reminder || ''}
                       onChange={(e) => setSmsConfig({
                         ...smsConfig,
                         templates: {
                           ...smsConfig.templates,
-                          login: e.target.value
+                          reminder: e.target.value
                         }
                       })}
-                      placeholder="{{brandName}}: Código de login: {{code}}. Se não foi você, ignore esta mensagem."
+                      placeholder="{{brandName}}: Lembrete de pagamento. Código: {{code}}. Se não foi você, ignore esta mensagem."
                       rows={4}
                     />
                   </div>
@@ -340,15 +340,15 @@ const AdvancedSystemSettings: React.FC = () => {
                 <div className="space-y-4">
                   <Label>Preview da Mensagem</Label>
                   <div className="bg-muted p-4 rounded-lg border">
-                    <div className="text-sm font-medium mb-2">Verificação:</div>
+                    <div className="text-sm font-medium mb-2">OTP:</div>
                     <div className="bg-background p-3 rounded border text-sm font-mono">
-                      {smsConfig.templates?.verification?.replace('{{brandName}}', smsConfig.brandName || 'KIXIKILA')
+                      {smsConfig.templates?.otp?.replace('{{brandName}}', smsConfig.brandName || 'KIXIKILA')
                         .replace('{{code}}', '123456')
                         .replace('{{minutes}}', '10') || 'Template não definido'}
                     </div>
-                    <div className="text-sm font-medium mt-4 mb-2">Login:</div>
+                    <div className="text-sm font-medium mt-4 mb-2">Lembrete:</div>
                     <div className="bg-background p-3 rounded border text-sm font-mono">
-                      {smsConfig.templates?.login?.replace('{{brandName}}', smsConfig.brandName || 'KIXIKILA')
+                      {smsConfig.templates?.reminder?.replace('{{brandName}}', smsConfig.brandName || 'KIXIKILA')
                         .replace('{{code}}', '123456') || 'Template não definido'}
                     </div>
                   </div>
