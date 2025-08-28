@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
-import { mockGroups } from '@/data/mockData';
-import { useAdminStore } from '@/store/useAdminStore';
+import React, { useState, useMemo } from 'react';
+import { useAdminGroups, useGroupAnalytics } from '@/hooks/useAdminGroups';
+import type { AdminGroup } from '@/services/groupService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/design-system/Avatar';
-import EditGroupModal from '@/components/admin/modals/EditGroupModal';
 import { useToast } from '@/hooks/use-toast';
-import { type Group } from '@/data/mockData';
+import { formatCurrency, formatDate } from '@/data/mockData';
 import { 
   FileText, 
   Search, 
@@ -38,40 +37,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatCurrency, formatDate } from '@/data/mockData';
 
 const GroupsManagement: React.FC = () => {
-  const { deleteGroup, freezeGroup } = useAdminStore();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<AdminGroup | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const filteredGroups = mockGroups.filter(group => {
-    const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         group.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || group.status === statusFilter;
-    const matchesCategory = categoryFilter === 'all' || group.category === categoryFilter;
-    
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
+  // Use real Supabase data with filters
+  const searchOptions = useMemo(() => ({
+    search: searchTerm || undefined,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    category: categoryFilter === 'all' ? undefined : categoryFilter,
+    limit: 50
+  }), [searchTerm, statusFilter, categoryFilter]);
 
-  const handleDeleteGroup = (groupId: number, groupName: string) => {
+  const { groups: filteredGroups, totalCount, isLoading, updateGroupStatus, deleteGroup } = useAdminGroups(searchOptions);
+  const { analytics } = useGroupAnalytics();
+
+  const handleDeleteGroup = async (groupId: string, groupName: string) => {
     if (confirm(`Tem certeza que deseja eliminar o grupo "${groupName}"? Esta ação não pode ser desfeita.`)) {
-      deleteGroup(groupId);
+      try {
+        await deleteGroup(groupId);
+        toast({
+          title: "Grupo eliminado",
+          description: `O grupo "${groupName}" foi eliminado com sucesso`,
+        });
+      } catch (error) {
+        console.error('Error deleting group:', error);
+      }
     }
   };
 
-  const handleFreezeGroup = (groupId: number, groupName: string) => {
-    if (confirm(`Tem certeza que deseja congelar o grupo "${groupName}"?`)) {
-      freezeGroup(groupId);
+  const handleSuspendGroup = async (groupId: string, groupName: string) => {
+    const reason = prompt(`Motivo da suspensão do grupo "${groupName}":`);
+    if (reason) {
+      try {
+        await updateGroupStatus(groupId, 'suspended', reason);
+        toast({
+          title: "Grupo suspenso",
+          description: `O grupo "${groupName}" foi suspenso: ${reason}`,
+        });
+      } catch (error) {
+        console.error('Error suspending group:', error);
+      }
     }
   };
 
-  const handleEditGroup = (group: Group) => {
+  const handleEditGroup = (group: AdminGroup) => {
     setSelectedGroup(group);
     setIsEditModalOpen(true);
   };
@@ -125,7 +140,7 @@ const GroupsManagement: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestão de Grupos</h2>
           <p className="text-gray-600">
-            {filteredGroups.length} de {mockGroups.length} grupos
+            {isLoading ? 'Carregando...' : `${filteredGroups.length} de ${totalCount} grupos`}
           </p>
         </div>
         
@@ -185,8 +200,13 @@ const GroupsManagement: React.FC = () => {
 
       {/* Groups List */}
       <div className="grid gap-6">
-        {filteredGroups.map((group) => {
-          const progress = (group.members.filter(m => m.paid).length / group.members.length) * 100;
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+            <p className="text-gray-500">Carregando grupos...</p>
+          </div>
+        ) : filteredGroups.map((group) => {
+          const progress = (group.members.filter(m => m.paid).length / group.members.length) * 100 || 0;
           
           return (
             <Card key={group.id} className="hover:shadow-lg transition-shadow">
@@ -215,19 +235,19 @@ const GroupsManagement: React.FC = () => {
                       <div className="flex items-center gap-2 text-sm">
                         <Euro className="w-4 h-4 text-green-600" />
                         <span className="text-gray-600">Contribuição:</span>
-                        <span className="font-semibold">{formatCurrency(group.contributionAmount)}</span>
+                        <span className="font-semibold">{formatCurrency(group.contribution_amount)}</span>
                       </div>
                       
                       <div className="flex items-center gap-2 text-sm">
                         <Users className="w-4 h-4 text-blue-600" />
                         <span className="text-gray-600">Membros:</span>
-                        <span className="font-semibold">{group.currentMembers}/{group.maxMembers}</span>
+                        <span className="font-semibold">{group.current_members}/{group.max_members}</span>
                       </div>
                       
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4 text-purple-600" />
                         <span className="text-gray-600">Próximo:</span>
-                        <span className="font-semibold">{formatDate(group.nextPaymentDate)}</span>
+                        <span className="font-semibold">{formatDate(group.next_payment_date)}</span>
                       </div>
                       
                       <div className="flex items-center gap-2 text-sm">
@@ -276,7 +296,7 @@ const GroupsManagement: React.FC = () => {
                       
                       <div className="text-right">
                         <div className="text-lg font-bold text-gray-900">
-                          {formatCurrency(group.totalPool)}
+                          {formatCurrency(group.total_pool)}
                         </div>
                         <div className="text-sm text-gray-500">Pool total</div>
                       </div>
@@ -300,22 +320,22 @@ const GroupsManagement: React.FC = () => {
                           Editar Grupo
                         </DropdownMenuItem>
                       
-                      <DropdownMenuItem 
-                        onClick={() => handleFreezeGroup(group.id, group.name)}
-                      >
-                        <Pause className="w-4 h-4 mr-2" />
-                        Congelar Grupo
-                      </DropdownMenuItem>
+                       <DropdownMenuItem 
+                         onClick={() => handleSuspendGroup(group.id, group.name)}
+                       >
+                         <Pause className="w-4 h-4 mr-2" />
+                         Suspender Grupo
+                       </DropdownMenuItem>
                       
                       <DropdownMenuSeparator />
                       
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteGroup(group.id, group.name)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Eliminar Grupo
-                      </DropdownMenuItem>
+                     <DropdownMenuItem 
+                       onClick={() => handleDeleteGroup(group.id, group.name)}
+                       className="text-red-600"
+                     >
+                       <Trash2 className="w-4 h-4 mr-2" />
+                       Eliminar Grupo
+                     </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -324,7 +344,7 @@ const GroupsManagement: React.FC = () => {
           );
         })}
 
-        {filteredGroups.length === 0 && (
+        {!isLoading && filteredGroups.length === 0 && (
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -339,14 +359,14 @@ const GroupsManagement: React.FC = () => {
         )}
       </div>
 
-      <EditGroupModal
+      {/*<EditGroupModal
         group={selectedGroup}
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
           setSelectedGroup(null);
         }}
-      />
+      />*/}
     </div>
   );
 };
