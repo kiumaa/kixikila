@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAdminStore } from '@/store/useAdminStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useDarkMode } from '@/hooks/use-dark-mode';
 import {
   BarChart3,
@@ -134,9 +134,10 @@ const groupLabels = {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentAdmin, adminLogout, sessionTimeout, extendSession } = useAdminStore();
+  const { user, logout } = useAuthStore();
   const { isDark } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sessionTimeout, setSessionTimeout] = useState(Date.now() + 30 * 60 * 1000); // 30 minutes
   const [timeRemaining, setTimeRemaining] = useState(0);
 
   // Session timeout management
@@ -146,19 +147,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       setTimeRemaining(remaining);
       
       if (remaining === 0) {
-        adminLogout();
-        navigate('/admin');
+        handleLogout();
       } else if (remaining < 60000) { // Less than 1 minute
         // Could show warning here
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [sessionTimeout, adminLogout, navigate]);
+  }, [sessionTimeout]);
 
   // Extend session on user activity
   useEffect(() => {
-    const handleActivity = () => extendSession();
+    const handleActivity = () => {
+      setSessionTimeout(Date.now() + 30 * 60 * 1000); // Extend by 30 minutes
+    };
     
     window.addEventListener('mousedown', handleActivity);
     window.addEventListener('keydown', handleActivity);
@@ -169,11 +171,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       window.removeEventListener('keydown', handleActivity);
       window.removeEventListener('scroll', handleActivity);
     };
-  }, [extendSession]);
+  }, []);
 
-  const handleLogout = () => {
-    adminLogout();
-    navigate('/admin');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/admin');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force navigation even if logout fails
+      navigate('/admin');
+    }
   };
 
   const formatTimeRemaining = (ms: number): string => {
@@ -248,16 +256,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center gap-3 mb-3">
               <Avatar 
-                name={currentAdmin?.avatar || 'AD'} 
+                name={user?.full_name?.split(' ').map(n => n[0]).join('') || 'AD'} 
                 size="sm"
                 verified={true}
               />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  {currentAdmin?.name}
+                  {user?.full_name || 'Admin'}
                 </p>
                 <p className="text-xs text-gray-500 capitalize">
-                  {currentAdmin?.role}
+                  {user?.role || 'admin'}
                 </p>
               </div>
             </div>
