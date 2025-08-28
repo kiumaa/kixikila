@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
-import Index from "./pages/Index";
+import HomePage from "./pages/HomePage";
+import AuthPage from "./pages/AuthPage";
+import AppPage from "./pages/AppPage";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -22,14 +24,27 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Main Application - handles internal routing via state management */}
-            <Route path="/*" element={<Index />} />
+            {/* Homepage - Onboarding */}
+            <Route path="/" element={<HomePage />} />
             
-            {/* Admin Panel - uses React Router internally */}
+            {/* Authentication Page - Login/Register */}
+            <Route path="/entrar" element={<AuthPage />} />
+            
+            {/* Main App - Protected */}
+            <Route 
+              path="/app" 
+              element={
+                <ProtectedRoute requireAuth={true} redirectTo="/entrar">
+                  <AppPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Admin Panel - Protected */}
             <Route 
               path="/admin/*" 
               element={
-                <ProtectedRoute requireAuth={true} redirectTo="/">
+                <ProtectedRoute requireAuth={true} redirectTo="/entrar">
                   <AdminPanel />
                 </ProtectedRoute>
               } 

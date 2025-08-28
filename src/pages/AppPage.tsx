@@ -1,4 +1,5 @@
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { LoadingScreen } from '@/components/screens/LoadingScreen';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
@@ -25,9 +26,6 @@ import {
   VIPManagementScreen,
   GroupDetailsScreen,
   NotificationsScreen,
-  OnboardingScreen,
-  LoginScreen,
-  RegisterScreen,
   CreateGroupModal,
   InviteGroupModal,
   DepositModal,
@@ -36,29 +34,20 @@ import {
   JoinGroupModal
 } from '@/routes/LazyRoutes';
 
-const Index = () => {
-  // Auth state
+const AppPage = () => {
+  const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
   
+  // Redirect unauthenticated users to login
+  if (!isAuthenticated) {
+    return <Navigate to="/entrar" replace />;
+  }
+  
   // App state
-  const [currentScreen, setCurrentScreen] = useState('loading');
+  const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
 
-  // Initialize screen based on authentication status
-  useEffect(() => {
-    console.log('[Index] Auth state changed:', { isAuthenticated, user: !!user });
-    
-    if (isAuthenticated && user) {
-      console.log('[Index] User authenticated, showing dashboard');
-      setCurrentScreen('dashboard');
-    } else {
-      console.log('[Index] User not authenticated, showing onboarding');
-      setCurrentScreen('onboarding');
-    }
-  }, [isAuthenticated, user]);
-  
   // Modal states
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showJoinGroup, setShowJoinGroup] = useState(false);
@@ -71,25 +60,17 @@ const Index = () => {
   const { canCreateGroup } = useAppStore();
 
   // Navigation handlers
-  const handleLogin = () => {
-    setCurrentScreen('dashboard');
-  };
-
   const handleLogout = async () => {
     try {
       await logout();
-      setCurrentScreen('onboarding');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
-      setCurrentScreen('onboarding');
+      navigate('/');
     }
   };
 
   const handleNavigation = (screen: string) => {
-    if (!isAuthenticated && !['onboarding', 'login', 'register'].includes(screen)) {
-      setCurrentScreen('login');
-      return;
-    }
     setCurrentScreen(screen);
   };
 
@@ -108,40 +89,6 @@ const Index = () => {
 
   const renderCurrentScreen = () => {
     switch (currentScreen) {
-      case 'onboarding':
-        return (
-          <OnboardingScreen
-            step={step}
-            onNext={() => {
-              if (step < 2) {
-                setStep(step + 1);
-              } else if (step === 2) {
-                setStep(3);
-              } else {
-                setCurrentScreen('register');
-              }
-            }}
-            onSkip={() => setCurrentScreen('login')}
-          />
-        );
-
-      case 'login':
-        return (
-          <LoginScreen
-            onBack={() => setCurrentScreen('onboarding')}
-            onSuccess={handleLogin}
-            onRegister={() => setCurrentScreen('register')}
-          />
-        );
-
-      case 'register':
-        return (
-          <RegisterScreen
-            onBack={() => setCurrentScreen('onboarding')}
-            onSuccess={handleLogin}
-          />
-        );
-
       case 'dashboard':
         return (
           <DashboardScreen
@@ -257,9 +204,6 @@ const Index = () => {
           />
         ) : null;
 
-      case 'loading':
-        return <LoadingScreen message="Inicializando aplicação..." />;
-
       default:
         return <LoadingScreen message="Carregando aplicação..." />;
     }
@@ -326,14 +270,12 @@ const Index = () => {
         </Suspense>
 
         {/* Bottom Navigation */}
-        {isAuthenticated && (
-          <BottomNavigation
-            currentScreen={currentScreen}
-            onNavigate={handleNavigation}
-            onCreateGroup={handleCreateGroup}
-            notificationCount={unreadNotifications}
-          />
-        )}
+        <BottomNavigation
+          currentScreen={currentScreen}
+          onNavigate={handleNavigation}
+          onCreateGroup={handleCreateGroup}
+          notificationCount={unreadNotifications}
+        />
 
         {/* Loading Overlay */}
         {isLoading && (
@@ -346,4 +288,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default AppPage;

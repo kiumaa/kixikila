@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAuth = true,
-  redirectTo = '/'
+  redirectTo = '/entrar'
 }) => {
   const { isAuthenticated, isLoading } = useAuthStore();
   const location = useLocation();
@@ -46,8 +46,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // If route doesn't require authentication but user is authenticated
   // (e.g., login page when already logged in)
   if (!requireAuth && isAuthenticated) {
-    // Redirect to dashboard or intended page
-    const from = location.state?.from || '/dashboard';
+    // Redirect to app or intended page
+    const from = location.state?.from || '/app';
     return <Navigate to={from} replace />;
   }
 

@@ -1,193 +1,267 @@
 # KIXIKILA - Documentação de Rotas
 
-## Estrutura de Rotas Organizadas
+## Estrutura de URLs
 
-### 1. Backend Routes (API)
+### URLs Implementadas
+- **`kixikila.pro/`** - Página inicial com onboarding
+- **`kixikila.pro/entrar`** - Login e registro (?type=login|register)
+- **`kixikila.pro/app`** - Aplicação principal (protegida)
+- **`kixikila.pro/admin/*`** - Painel administrativo (protegido)
 
-**Base URL:** `/api/v1/`
+## Arquitetura de Roteamento
 
-#### Rotas Públicas
-- `POST /auth/register` - Registro de usuário
-- `POST /auth/login` - Login de usuário  
-- `POST /auth/verify-otp` - Verificação OTP
-- `POST /auth/resend-otp` - Reenvio OTP
-- `POST /auth/forgot-password` - Recuperação de senha
-- `POST /auth/reset-password` - Reset de senha
-- `POST /auth/refresh-token` - Renovar token
-- `GET /health` - Health check
+### 1. React Router (Nível Superior)
+```typescript
+// App.tsx - Roteamento principal
+<Routes>
+  <Route path="/" element={<HomePage />} />
+  <Route path="/entrar" element={<AuthPage />} />
+  <Route path="/app" element={<ProtectedRoute><AppPage /></ProtectedRoute>} />
+  <Route path="/admin/*" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+</Routes>
+```
 
-#### Rotas Protegidas (Requer Autenticação)
-- `GET /users/profile` - Perfil do usuário
-- `PUT /users/profile` - Atualizar perfil
-- `POST /auth/logout` - Logout
-- `POST /auth/change-password` - Alterar senha
+### 2. State-based Navigation (App Principal)
+```typescript
+// AppPage.tsx - Navegação interna por estado
+const [currentScreen, setCurrentScreen] = useState('dashboard');
+// Telas: dashboard, wallet, profile, notifications, etc.
+```
 
-#### Rotas de Grupos (Protegidas)
-- `GET /groups` - Listar grupos do usuário
-- `POST /groups` - Criar grupo
-- `GET /groups/:id` - Detalhes do grupo
-- `PUT /groups/:id` - Atualizar grupo
-- `DELETE /groups/:id` - Deletar grupo
-- `POST /groups/:id/join` - Entrar em grupo
-- `POST /groups/:id/leave` - Sair do grupo
+### 3. Proteção de Rotas
+```typescript
+// ProtectedRoute.tsx
+- Verifica autenticação
+- Redireciona não autenticados para /entrar
+- Redireciona autenticados de páginas públicas para /app
+```
 
-#### Rotas de Transações (Protegidas)
-- `GET /transactions` - Histórico de transações
-- `POST /transactions/deposit` - Depósito
-- `POST /transactions/withdraw` - Levantamento
+## Páginas Implementadas
 
-#### Rotas de Notificações (Protegidas)
-- `GET /notifications` - Listar notificações
-- `PUT /notifications/:id/read` - Marcar como lida
+### HomePage (/)
+- **Função**: Onboarding para novos usuários
+- **Redirecionamento**: Usuários logados → `/app`
+- **Navegação**: 
+  - Próximo → `/entrar?type=register`
+  - Pular → `/entrar?type=login`
 
-#### Rotas de Admin (Requer Admin)
-- `GET /admin/users` - Gestão de usuários
-- `GET /admin/groups` - Gestão de grupos
-- `GET /admin/transactions` - Todas as transações
-- `GET /admin/stats` - Estatísticas do sistema
-- `GET /admin/config` - Configurações do sistema
-- `PUT /admin/config` - Atualizar configurações
+### AuthPage (/entrar)
+- **Função**: Login e registro combinados
+- **Parâmetros URL**: `?type=login|register`
+- **Redirecionamento**: Usuários logados → `/app`
+- **Estados**: Alterna entre login e registro
 
-#### Rotas do Stripe
-- `POST /stripe/create-payment-intent` - Criar intenção de pagamento
-- `POST /stripe/confirm-payment` - Confirmar pagamento
+### AppPage (/app)
+- **Função**: Aplicação principal protegida
+- **Proteção**: Requer autenticação
+- **Navegação**: State-based para telas internas
+- **Features**: Dashboard, carteira, perfil, grupos, etc.
 
-#### Webhooks
-- `POST /webhooks/stripe` - Webhook do Stripe
+### AdminPanel (/admin/*)
+- **Função**: Painel administrativo
+- **Proteção**: Requer autenticação + role admin
+- **Navegação**: React Router interno
+- **URLs**: `/admin/dashboard`, `/admin/users`, etc.
 
-### 2. Frontend Routes
+## Sistema de Navegação
 
-#### Aplicação Principal (`/`)
+### Bottom Navigation
+- **Visibilidade**: Apenas em `/app`
+- **Controle**: State-based dentro da AppPage
+- **Itens**: Dashboard, Carteira, Criar, Notificações, Perfil
 
-**Rotas Públicas (não autenticadas):**
-- `/onboarding` - Tela de apresentação
-- `/login` - Tela de login
-- `/register` - Tela de registro
+### Redirecionamentos Automáticos
+```typescript
+// Fluxo de autenticação
+Não autenticado + rota protegida → /entrar
+Autenticado + página pública → /app
+Login/Register success → /app
+Logout → /
+```
 
-**Rotas Protegidas:**
-- `/` (redirect para `/dashboard`)
-- `/dashboard` - Dashboard principal
-- `/wallet` - Carteira digital
-- `/notifications` - Notificações
-- `/group/:id` - Detalhes do grupo
+## Proteção e Segurança
 
-**Rotas de Perfil:**
-- `/profile` - Perfil principal
-- `/profile/personal-data` - Dados pessoais
-- `/profile/kyc` - Verificação KYC
-- `/profile/payment-methods` - Métodos de pagamento
-- `/profile/notification-settings` - Configurações de notificação
-- `/profile/security` - Segurança
-- `/profile/terms` - Termos e condições
-- `/profile/support` - Suporte
-- `/profile/vip-management` - Gestão VIP
+### ProtectedRoute Component
+- Verifica `isAuthenticated` do store
+- Mostra loading durante verificação
+- Preserva URL de destino para redirect pós-login
+- Funciona com todas as rotas protegidas
 
-#### Painel de Admin (`/admin/*`)
+### Middleware de Autenticação
+- Store Zustand persiste estado
+- Supabase gerencia sessões
+- Auto-refresh de tokens
+- Logout automático em erro
 
-**Rotas de Admin:**
-- `/admin/dashboard` - Dashboard administrativo
-- `/admin/users` - Gestão de usuários
-- `/admin/groups` - Gestão de grupos
-- `/admin/plans` - Gestão de planos
-- `/admin/branding` - Gestão de marca
-- `/admin/pwa` - Gestão PWA
-- `/admin/advanced-settings` - Configurações avançadas
-- `/admin/security` - Dashboard de segurança
-- `/admin/logs` - Logs de atividade
-- `/admin/settings` - Configurações do sistema
+## Backend API Routes
 
-### 3. Organização de Arquivos
+### Base URL
+- **Desenvolvimento**: `http://localhost:3001/api/v1/`
+- **Produção**: `https://kixikila-backend.railway.app/api/v1/`
 
-#### Backend
+### Categorias de Rotas
+
+#### 🔓 Rotas Públicas
+```
+POST /auth/register           # Registro de usuário
+POST /auth/login              # Login 
+POST /auth/send-otp           # Enviar OTP
+POST /auth/verify-otp         # Verificar OTP
+POST /auth/resend-otp         # Reenviar OTP
+POST /auth/refresh-token      # Atualizar token
+GET  /health                  # Status da API
+```
+
+#### 🔒 Rotas Protegidas (JWT Required)
+```
+# Usuários
+GET    /users/profile         # Perfil do usuário
+PUT    /users/profile         # Atualizar perfil
+GET    /users/stats           # Estatísticas do usuário
+
+# Grupos
+GET    /groups                # Listar grupos do usuário
+POST   /groups                # Criar grupo
+GET    /groups/:id            # Detalhes do grupo
+PUT    /groups/:id            # Atualizar grupo
+DELETE /groups/:id            # Deletar grupo
+POST   /groups/:id/join       # Entrar no grupo
+POST   /groups/:id/leave      # Sair do grupo
+POST   /groups/:id/pay        # Pagar contribuição
+
+# Transações
+GET    /transactions          # Histórico de transações
+POST   /transactions/deposit  # Depositar fundos
+POST   /transactions/withdraw # Sacar fundos
+
+# Notificações
+GET    /notifications         # Listar notificações
+PUT    /notifications/:id/read # Marcar como lida
+POST   /notifications/settings # Configurar notificações
+```
+
+#### 👑 Rotas Admin (Admin Role Required)
+```
+GET    /admin/dashboard       # Dashboard admin
+GET    /admin/users           # Gerenciar usuários
+GET    /admin/groups          # Gerenciar grupos
+GET    /admin/transactions    # Todas as transações
+GET    /admin/analytics       # Analytics
+POST   /admin/notifications/broadcast # Enviar notificação em massa
+```
+
+#### 💳 Rotas Stripe
+```
+POST   /stripe/create-payment-intent    # Criar intenção de pagamento
+POST   /stripe/webhook                  # Webhook do Stripe
+GET    /stripe/payment-methods          # Métodos de pagamento
+```
+
+#### 🎣 Webhooks
+```
+POST   /webhooks/stripe       # Webhook do Stripe
+POST   /webhooks/sms          # Webhook SMS
+```
+
+## Vantagens da Nova Arquitetura
+
+### URLs Limpos e Profissionais
+- ✅ Estrutura intuitiva para usuários
+- ✅ Melhor para SEO e compartilhamento
+- ✅ URLs memoráveis e brandeable
+
+### Separação Clara de Contextos
+- ✅ Onboarding isolado na homepage
+- ✅ Auth centralizado em uma página
+- ✅ App principal protegido e funcional
+- ✅ Admin separado com roteamento próprio
+
+### Melhor UX
+- ✅ Redirecionamentos automáticos inteligentes
+- ✅ Preservação de estado na app principal
+- ✅ Loading states consistentes
+- ✅ Navegação fluida e responsiva
+
+### Manutenibilidade
+- ✅ Código organizado por contexto
+- ✅ Responsabilidades bem definidas
+- ✅ Fácil adição de novas rotas/páginas
+- ✅ Sistema de proteção reutilizável
+
+## Considerações Técnicas
+
+### Performance
+- Lazy loading de componentes pesados
+- Suspense boundaries estratégicos
+- Memoização de navegação
+- Code splitting automático
+
+### Compatibilidade
+- Funciona em todos os browsers modernos
+- URLs funcionam com bookmark e refresh
+- Histórico de navegação preservado
+- Suporte a PWA nativo
+
+### Escalabilidade
+- Fácil adição de novas rotas principais
+- Sistema de modais mantido na app
+- Admin panel pode crescer independentemente
+- Store centralizado para estado global
+
+## Organização de Arquivos
+
+### Frontend Atualizado
+```
+src/
+├── pages/           # Páginas principais
+│   ├── HomePage.tsx    # Homepage com onboarding (/)
+│   ├── AuthPage.tsx    # Login/Register (/entrar)
+│   ├── AppPage.tsx     # App principal (/app)
+│   ├── AdminPanel.tsx  # Painel admin (/admin/*)
+│   └── NotFound.tsx    # 404
+├── routes/          # Configuração de rotas
+│   └── LazyRoutes.tsx  # Lazy loading
+└── components/      # Componentes
+    ├── layout/
+    │   └── BottomNavigation.tsx
+    └── auth/
+        └── ProtectedRoute.tsx
+```
+
+### Backend
 ```
 backend/src/routes/
 ├── auth.ts          # Rotas de autenticação
 ├── users.ts         # Rotas de usuários
 ├── groups.ts        # Rotas de grupos
-├── transactions.ts  # Rotas de transações  
+├── transactions.ts  # Rotas de transações
 ├── notifications.ts # Rotas de notificações
-├── admin.ts         # Rotas administrativas
+├── admin.ts         # Rotas admin
 ├── stripe.ts        # Integração Stripe
-├── webhooks.ts      # Webhooks externos
-└── health.ts        # Health checks
+├── webhooks.ts      # Webhooks
+└── health.ts        # Health check
 ```
 
-#### Frontend
-```
-src/
-├── pages/
-│   ├── Index.tsx       # Aplicação principal
-│   ├── AdminPanel.tsx  # Painel administrativo
-│   └── NotFound.tsx    # Página 404
-├── routes/
-│   └── LazyRoutes.tsx  # Lazy loading de componentes
-└── components/
-    ├── layout/
-    │   └── BottomNavigation.tsx  # Navegação inferior
-    └── auth/
-        └── ProtectedRoute.tsx    # Proteção de rotas
-```
+## Convenções
 
-### 4. Middleware de Segurança
-
+### Nomenclatura
 #### Backend
-- **Rate Limiting**: Diferentes limites por tipo de rota
-- **Authentication**: JWT token validation
-- **Authorization**: Role-based access control
-- **Audit Logging**: Log de todas as ações importantes
-- **CORS**: Configuração de CORS apropriada
+- Rotas em inglês, kebab-case
+- Verbos HTTP semânticos
+- Parâmetros em camelCase
 
 #### Frontend  
-- **Route Protection**: Proteção baseada em autenticação
-- **Admin Protection**: Verificação de permissões de admin
-- **Lazy Loading**: Carregamento sob demanda de componentes
+- URLs em português quando apropriado
+- Componentes em PascalCase
+- Hooks com prefixo `use`
 
-### 5. Estado de Navegação
+### Estrutura de Arquivos
+- Agrupamento por funcionalidade
+- Separação clara de responsabilidades
+- Reutilização de componentes
 
-#### Sistema Atual
-- Usa estado local (`currentScreen`) para navegação interna
-- Mantém histórico de navegação
-- Suporte a modais sobrepostos
-- Bottom navigation sincronizada
-
-#### Benefícios
-- ✅ Controle total sobre navegação
-- ✅ Modais gerenciados centralmente
-- ✅ Estado de loading consistente
-- ✅ Fácil depuração e debug
-
-### 6. Próximos Passos de Otimização
-
-1. **React Router Migration** (Futuro)
-   - Migrar para React Router completo
-   - URLs diretos para telas específicas
-   - Melhor SEO e compartilhamento
-
-2. **Route Preloading**
-   - Pre-carregar rotas críticas
-   - Otimizar lazy loading
-
-3. **Deep Linking**
-   - Suporte a links diretos
-   - Parâmetros de rota
-
-4. **Route Guards**
-   - Guards mais granulares
-   - Verificações de permissão por rota
-
-### 7. Convenções
-
-#### Naming
-- Rotas backend: kebab-case (`/user-profile`)
-- Rotas frontend: camelCase internal, kebab-case URL
-- Componentes: PascalCase
-
-#### Structure  
-- Grouping relacionado por funcionalidade
-- Separation of concerns clara
-- Consistent error handling
-
-#### Security
-- Todas as rotas protegidas validadas
-- Rate limiting apropriado
-- Audit logging completo
+### Segurança
+- Todas as rotas protegidas requerem JWT válido
+- Rate limiting em todas as rotas públicas
+- Audit log para ações sensíveis
+- Validação de entrada em todas as rotas
