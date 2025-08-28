@@ -1,0 +1,43 @@
+name: KIXIKILA Frontend Deploy
+
+description: |
+  Deploy do frontend do KIXIKILA App utilizando o builder visual da Lovable. O domínio personalizado usado é `kixikila.pro`, já associado ao projeto na Lovable. O frontend consome APIs externas (backend Trae/Vercel, Supabase, BulkSMS, Stripe) e está sincronizado com o repositório no GitHub.
+
+platform: Lovable
+type: frontend
+environment: production
+
+domain:
+  primary: kixikila.pro
+  fallback: kixikila.lovable.app
+  preview: preview--kixikila.lovable.app
+
+build:
+  source: lovable-builder
+  repo: https://github.com/kiumaa/kixikila
+  autoDeployOnPush: true
+  branch: main
+
+env:
+  SUPABASE_URL: https://db.hkesrohuaurcyonpktyt.supabase.co
+  SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrZXNyb2h1YXVyY3lvbnBrdHl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMjIzMjksImV4cCI6MjA3MTg5ODMyOX0.SNDuFuzRerlL4qmlKGWFm8cf4UH21MmsbhxV4B8SVcg
+  STRIPE_PUBLIC_KEY: pk_test_51S0p9TEh6u0EmewTK7b5rFwRnbZknlO3rtAKKQf6YBMjAMWmujXqXNQPhJCLLVGtMTHXCvcOgprjdQrFkMhkWcRf00oHBLnaQ4
+  API_BASE_URL: https://api.kixikila.com
+  APP_MODE: production
+
+deployment:
+  steps:
+    - step: "Verificar conexão com domínio kixikila.pro"
+    - step: "Verificar ligação com Supabase e endpoints de login/signup"
+    - step: "Testar integração Stripe e simular subscrição"
+    - step: "Validar envio de OTP e notificações com BulkSMS"
+    - step: "Publicar nova versão no domínio kixikila.pro"
+
+monitoring:
+  analytics: Lovable Insights
+  visitors: true
+  logs: true
+
+notifications:
+  onSuccess: true
+  onFailure: true
