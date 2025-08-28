@@ -3,481 +3,262 @@
 /**
  * KIXIKILA Domain Setup Script
  * 
- * This script helps configure custom domain and SSL certificates
- * for the KIXIKILA application across different hosting platforms.
+ * Este script verifica a configuração de DNS e a conectividade
+ * dos domínios de produção.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+const https = require('https');
+const http = require('http');
+const dns = require('dns');
+const { promisify } = require('util');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const resolveDns = promisify(dns.resolve4);
+const resolveCname = promisify(dns.resolveCname);
 
-const colors = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m'
+console.log('🌐 KIXIKILA - Verificação de Configuração de Domínio');
+console.log('==================================================\n');
+
+// Configurações de domínio
+const DOMAINS = {
+  frontend: {
+    primary: 'kixikila.pro',
+    www: 'www.kixikila.pro',
+    expectedIP: '185.158.133.1'
+  },
+  backend: {
+    api: 'api.kixikila.pro',
+    expectedTarget: '.railway.app' // Sufixo esperado
+  }
 };
 
-const log = {
-  info: (msg) => console.log(`${colors.blue}ℹ${colors.reset} ${msg}`),
-  success: (msg) => console.log(`${colors.green}✅${colors.reset} ${msg}`),
-  warning: (msg) => console.log(`${colors.yellow}⚠️${colors.reset} ${msg}`),
-  error: (msg) => console.log(`${colors.red}❌${colors.reset} ${msg}`),
-  title: (msg) => console.log(`\n${colors.bright}${colors.cyan}🌐 ${msg}${colors.reset}\n`),
-  step: (msg) => console.log(`\n${colors.magenta}📋 ${msg}${colors.reset}\n`)
-};
-
-class DomainSetup {
-  constructor() {
-    this.rootDir = path.join(__dirname, '..');
-    this.platforms = {
-      netlify: 'Netlify',
-      railway: 'Railway',
-      render: 'Render',
-      vercel: 'Vercel',
-      heroku: 'Heroku'
-    };
-  }
-
-  /**
-   * Display domain setup instructions
-   */
-  displayInstructions() {
-    log.title('KIXIKILA Domain Setup Guide');
+// Verificar resolução DNS
+async function checkDNSResolution(domain, expectedIP = null) {
+  try {
+    console.log(`🔍 Verificando DNS para: ${domain}`);
     
-    console.log(`
-${colors.bright}📋 Overview${colors.reset}`);
-    console.log('This guide will help you configure a custom domain for your KIXIKILA application.');
-    console.log('The process varies depending on your hosting platform and domain registrar.');
-    
-    console.log(`\n${colors.bright}🎯 What you\'ll need:${colors.reset}`);
-    console.log('• A registered domain name');
-    console.log('• Access to your domain registrar\'s DNS settings');
-    console.log('• Your hosting platform dashboard access');
-    console.log('• SSL certificate (usually provided automatically)');
-  }
-
-  /**
-   * Netlify domain setup
-   */
-  setupNetlifyDomain() {
-    log.step('Netlify Domain Setup');
-    
-    const instructions = [
-      '1. 🌐 Login to Netlify Dashboard',
-      '   • Go to https://app.netlify.com',
-      '   • Select your KIXIKILA site',
-      '',
-      '2. 📝 Add Custom Domain',
-      '   • Go to Site settings > Domain management',
-      '   • Click "Add custom domain"',
-      '   • Enter your domain (e.g., kixikila.com)',
-      '   • Click "Verify"',
-      '',
-      '3. 🔧 Configure DNS Records',
-      '   • In your domain registrar, add these records:',
-      '   ',
-      '   For apex domain (kixikila.com):',
-      '   Type: A',
-      '   Name: @',
-      '   Value: 75.2.60.5',
-      '   ',
-      '   For www subdomain:',
-      '   Type: CNAME',
-      '   Name: www',
-      '   Value: [your-site-name].netlify.app',
-      '',
-      '4. 🔒 SSL Certificate',
-      '   • Netlify automatically provisions SSL',
-      '   • Wait 24-48 hours for DNS propagation',
-      '   • Certificate will be issued automatically',
-      '',
-      '5. ✅ Verification',
-      '   • Check "HTTPS" is enabled in Domain settings',
-      '   • Test your domain: https://yourdomain.com',
-      '   • Verify redirect from HTTP to HTTPS'
-    ];
-
-    instructions.forEach(instruction => console.log(instruction));
-  }
-
-  /**
-   * Railway domain setup
-   */
-  setupRailwayDomain() {
-    log.step('Railway Domain Setup');
-    
-    const instructions = [
-      '1. 🌐 Login to Railway Dashboard',
-      '   • Go to https://railway.app',
-      '   • Select your KIXIKILA project',
-      '',
-      '2. 📝 Add Custom Domain',
-      '   • Go to your service settings',
-      '   • Click "Domains" tab',
-      '   • Click "Custom Domain"',
-      '   • Enter your domain (e.g., api.kixikila.com)',
-      '',
-      '3. 🔧 Configure DNS Records',
-      '   • Railway will provide CNAME target',
-      '   • In your domain registrar, add:',
-      '   ',
-      '   Type: CNAME',
-      '   Name: api (or your chosen subdomain)',
-      '   Value: [provided by Railway]',
-      '',
-      '4. 🔒 SSL Certificate',
-      '   • Railway automatically provisions SSL',
-      '   • Certificate issued via Let\'s Encrypt',
-      '   • Usually takes 5-10 minutes',
-      '',
-      '5. ✅ Verification',
-      '   • Check domain status in Railway dashboard',
-      '   • Test API: https://api.yourdomain.com/api/v1/health',
-      '   • Update frontend API URLs'
-    ];
-
-    instructions.forEach(instruction => console.log(instruction));
-  }
-
-  /**
-   * Render domain setup
-   */
-  setupRenderDomain() {
-    log.step('Render Domain Setup');
-    
-    const instructions = [
-      '1. 🌐 Login to Render Dashboard',
-      '   • Go to https://dashboard.render.com',
-      '   • Select your KIXIKILA service',
-      '',
-      '2. 📝 Add Custom Domain',
-      '   • Go to Settings tab',
-      '   • Scroll to "Custom Domains"',
-      '   • Click "Add Custom Domain"',
-      '   • Enter your domain',
-      '',
-      '3. 🔧 Configure DNS Records',
-      '   • Render will provide CNAME target',
-      '   • In your domain registrar, add:',
-      '   ',
-      '   Type: CNAME',
-      '   Name: api (or your chosen subdomain)',
-      '   Value: [provided by Render]',
-      '',
-      '4. 🔒 SSL Certificate',
-      '   • Render automatically provisions SSL',
-      '   • Uses Let\'s Encrypt certificates',
-      '   • Usually takes 10-15 minutes',
-      '',
-      '5. ✅ Verification',
-      '   • Check "Verified" status in dashboard',
-      '   • Test API endpoint',
-      '   • Update environment variables if needed'
-    ];
-
-    instructions.forEach(instruction => console.log(instruction));
-  }
-
-  /**
-   * Vercel domain setup
-   */
-  setupVercelDomain() {
-    log.step('Vercel Domain Setup');
-    
-    const instructions = [
-      '1. 🌐 Login to Vercel Dashboard',
-      '   • Go to https://vercel.com/dashboard',
-      '   • Select your KIXIKILA project',
-      '',
-      '2. 📝 Add Custom Domain',
-      '   • Go to Settings > Domains',
-      '   • Enter your domain',
-      '   • Click "Add"',
-      '',
-      '3. 🔧 Configure DNS Records',
-      '   • Vercel will show required DNS records',
-      '   • In your domain registrar, add:',
-      '   ',
-      '   For apex domain:',
-      '   Type: A',
-      '   Name: @',
-      '   Value: 76.76.19.61',
-      '   ',
-      '   For www:',
-      '   Type: CNAME',
-      '   Name: www',
-      '   Value: cname.vercel-dns.com',
-      '',
-      '4. 🔒 SSL Certificate',
-      '   • Vercel automatically provisions SSL',
-      '   • Uses Let\'s Encrypt certificates',
-      '   • Usually instant after DNS propagation',
-      '',
-      '5. ✅ Verification',
-      '   • Check domain status in Vercel dashboard',
-      '   • Test your application',
-      '   • Verify HTTPS redirect'
-    ];
-
-    instructions.forEach(instruction => console.log(instruction));
-  }
-
-  /**
-   * Generate DNS configuration file
-   */
-  generateDNSConfig(domain, platform) {
-    log.step('Generating DNS Configuration');
-    
-    const dnsConfigs = {
-      netlify: {
-        apex: {
-          type: 'A',
-          name: '@',
-          value: '75.2.60.5',
-          ttl: '3600'
-        },
-        www: {
-          type: 'CNAME',
-          name: 'www',
-          value: `${domain.replace('.', '-')}.netlify.app`,
-          ttl: '3600'
-        }
-      },
-      railway: {
-        api: {
-          type: 'CNAME',
-          name: 'api',
-          value: '[PROVIDED_BY_RAILWAY]',
-          ttl: '3600'
-        }
-      },
-      render: {
-        api: {
-          type: 'CNAME',
-          name: 'api',
-          value: '[PROVIDED_BY_RENDER]',
-          ttl: '3600'
-        }
-      },
-      vercel: {
-        apex: {
-          type: 'A',
-          name: '@',
-          value: '76.76.19.61',
-          ttl: '3600'
-        },
-        www: {
-          type: 'CNAME',
-          name: 'www',
-          value: 'cname.vercel-dns.com',
-          ttl: '3600'
-        }
+    // Tentar resolução A record
+    try {
+      const addresses = await resolveDns(domain);
+      console.log(`   A Record: ${addresses.join(', ')}`);
+      
+      if (expectedIP && addresses.includes(expectedIP)) {
+        console.log(`   ✅ IP correto (${expectedIP})`);
+        return { status: 'ok', type: 'A', addresses };
+      } else if (expectedIP) {
+        console.log(`   ⚠️  IP esperado: ${expectedIP}`);
+        return { status: 'incorrect', type: 'A', addresses, expected: expectedIP };
       }
-    };
-
-    const config = dnsConfigs[platform];
-    if (!config) {
-      log.error(`Platform ${platform} not supported`);
-      return;
+      
+      return { status: 'ok', type: 'A', addresses };
+    } catch (error) {
+      // Se A record falhar, tentar CNAME
+      try {
+        const cnames = await resolveCname(domain);
+        console.log(`   CNAME: ${cnames.join(', ')}`);
+        return { status: 'ok', type: 'CNAME', cnames };
+      } catch (cnameError) {
+        console.log(`   ❌ DNS não resolvido: ${error.message}`);
+        return { status: 'failed', error: error.message };
+      }
     }
-
-    const dnsFile = {
-      domain: domain,
-      platform: platform,
-      records: config,
-      instructions: [
-        'Add these DNS records to your domain registrar:',
-        '',
-        ...Object.entries(config).map(([key, record]) => 
-          `${record.type} Record:\n  Name: ${record.name}\n  Value: ${record.value}\n  TTL: ${record.ttl}\n`
-        ),
-        'Note: DNS propagation can take up to 48 hours.',
-        'SSL certificates are usually issued automatically after DNS verification.'
-      ]
-    };
-
-    const configPath = path.join(this.rootDir, `dns-config-${domain}-${platform}.json`);
-    fs.writeFileSync(configPath, JSON.stringify(dnsFile, null, 2));
-    
-    log.success(`DNS configuration saved to: ${configPath}`);
-    return configPath;
-  }
-
-  /**
-   * Update frontend configuration
-   */
-  updateFrontendConfig(domain, platform) {
-    log.step('Updating Frontend Configuration');
-    
-    const apiUrls = {
-      netlify: `https://${domain}`,
-      railway: `https://api.${domain}`,
-      render: `https://api.${domain}`,
-      vercel: `https://${domain}`,
-      heroku: `https://api.${domain}`
-    };
-
-    const apiUrl = apiUrls[platform];
-    if (!apiUrl) {
-      log.error(`Platform ${platform} not supported`);
-      return;
-    }
-
-    const envUpdates = [
-      '# Update these environment variables in your frontend:',
-      '',
-      `VITE_API_URL=${apiUrl}`,
-      `VITE_API_BASE_URL=${apiUrl}/api/v1`,
-      '',
-      '# For Netlify deployment:',
-      '# Add these to your netlify.toml [build.environment] section',
-      '',
-      '# For local development:',
-      '# Update your .env.local file',
-      '',
-      '# Don\'t forget to:',
-      '# 1. Update CORS settings in backend',
-      '# 2. Update Stripe webhook URLs',
-      '# 3. Test all API endpoints',
-      '# 4. Update any hardcoded URLs in the code'
-    ];
-
-    const envPath = path.join(this.rootDir, `frontend-env-${domain}.txt`);
-    fs.writeFileSync(envPath, envUpdates.join('\n'));
-    
-    log.success(`Frontend configuration saved to: ${envPath}`);
-    log.info(`API URL: ${apiUrl}`);
-    
-    return apiUrl;
-  }
-
-  /**
-   * Generate SSL verification checklist
-   */
-  generateSSLChecklist(domain) {
-    log.step('SSL Certificate Checklist');
-    
-    const checklist = [
-      '🔒 SSL Certificate Verification Checklist',
-      '=' .repeat(50),
-      '',
-      '✅ Pre-verification:',
-      '□ Domain DNS records are configured',
-      '□ DNS propagation completed (check with dig/nslookup)',
-      '□ Domain points to correct hosting platform',
-      '',
-      '✅ Certificate issuance:',
-      '□ SSL certificate requested by hosting platform',
-      '□ Certificate status shows "Active" or "Issued"',
-      '□ Certificate covers both apex and www domains',
-      '',
-      '✅ HTTPS verification:',
-      `□ https://${domain} loads correctly`,
-      `□ https://www.${domain} redirects properly`,
-      '□ HTTP automatically redirects to HTTPS',
-      '□ No mixed content warnings',
-      '□ SSL Labs test shows A+ rating',
-      '',
-      '✅ Application testing:',
-      '□ Frontend loads correctly',
-      '□ API endpoints respond properly',
-      '□ Authentication works',
-      '□ Payment processing functions',
-      '□ All features work as expected',
-      '',
-      '🔧 Troubleshooting:',
-      '• DNS propagation: https://dnschecker.org',
-      '• SSL test: https://www.ssllabs.com/ssltest/',
-      '• Certificate details: Check browser security tab',
-      '• Mixed content: Check browser console for errors',
-      '',
-      '📞 Support contacts:',
-      '• Netlify: https://docs.netlify.com/domains-https/',
-      '• Railway: https://docs.railway.app/deploy/custom-domains',
-      '• Render: https://render.com/docs/custom-domains',
-      '• Vercel: https://vercel.com/docs/concepts/projects/custom-domains'
-    ];
-
-    const checklistPath = path.join(this.rootDir, `ssl-checklist-${domain}.txt`);
-    fs.writeFileSync(checklistPath, checklist.join('\n'));
-    
-    log.success(`SSL checklist saved to: ${checklistPath}`);
-    return checklistPath;
-  }
-
-  /**
-   * Main setup process
-   */
-  setup(domain, platform) {
-    if (!domain || !platform) {
-      this.displayInstructions();
-      console.log(`\n${colors.bright}Usage:${colors.reset}`);
-      console.log('node setup-domain.js <domain> <platform>');
-      console.log('');
-      console.log('Examples:');
-      console.log('node setup-domain.js kixikila.com netlify');
-      console.log('node setup-domain.js myapp.com railway');
-      console.log('');
-      console.log('Supported platforms: netlify, railway, render, vercel, heroku');
-      return;
-    }
-
-    if (!this.platforms[platform]) {
-      log.error(`Platform '${platform}' not supported`);
-      log.info(`Supported platforms: ${Object.keys(this.platforms).join(', ')}`);
-      return;
-    }
-
-    log.title(`Setting up ${domain} for ${this.platforms[platform]}`);
-
-    // Display platform-specific instructions
-    switch (platform) {
-      case 'netlify':
-        this.setupNetlifyDomain();
-        break;
-      case 'railway':
-        this.setupRailwayDomain();
-        break;
-      case 'render':
-        this.setupRenderDomain();
-        break;
-      case 'vercel':
-        this.setupVercelDomain();
-        break;
-      default:
-        log.warning(`Detailed instructions for ${platform} not available`);
-    }
-
-    // Generate configuration files
-    this.generateDNSConfig(domain, platform);
-    this.updateFrontendConfig(domain, platform);
-    this.generateSSLChecklist(domain);
-
-    log.title('Setup Complete!');
-    log.success('Configuration files generated successfully');
-    log.info('Follow the platform-specific instructions above');
-    log.info('DNS propagation can take up to 48 hours');
-    log.warning('Don\'t forget to update your frontend environment variables!');
+  } catch (error) {
+    console.log(`   ❌ Erro na resolução DNS: ${error.message}`);
+    return { status: 'error', error: error.message };
   }
 }
 
-// CLI interface
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const args = process.argv.slice(2);
-  const domain = args[0];
-  const platform = args[1];
-
-  const domainSetup = new DomainSetup();
-  domainSetup.setup(domain, platform);
+// Verificar conectividade HTTP/HTTPS
+async function checkHTTPConnectivity(domain, path = '/', expectedStatus = [200, 301, 302]) {
+  return new Promise((resolve) => {
+    console.log(`🌐 Testando conectividade: https://${domain}${path}`);
+    
+    const req = https.get(`https://${domain}${path}`, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'KIXIKILA-Health-Check/1.0'
+      }
+    }, (res) => {
+      const isSuccess = expectedStatus.includes(res.statusCode);
+      const status = isSuccess ? '✅' : '⚠️';
+      
+      console.log(`   ${status} Status: ${res.statusCode}`);
+      
+      resolve({
+        status: isSuccess ? 'ok' : 'warning',
+        statusCode: res.statusCode,
+        headers: res.headers
+      });
+    });
+    
+    req.on('error', (error) => {
+      console.log(`   ❌ Erro de conectividade: ${error.message}`);
+      resolve({ status: 'failed', error: error.message });
+    });
+    
+    req.on('timeout', () => {
+      req.destroy();
+      console.log(`   ❌ Timeout na conexão`);
+      resolve({ status: 'timeout' });
+    });
+  });
 }
 
-export default DomainSetup;
+// Verificar certificado SSL
+function checkSSLCertificate(domain) {
+  return new Promise((resolve) => {
+    console.log(`🔒 Verificando certificado SSL: ${domain}`);
+    
+    const req = https.get(`https://${domain}`, {
+      timeout: 10000,
+      checkServerIdentity: () => undefined // Não verificar identidade para debug
+    }, (res) => {
+      const cert = res.socket.getPeerCertificate();
+      
+      if (cert && Object.keys(cert).length > 0) {
+        console.log(`   ✅ Certificado válido`);
+        console.log(`   📅 Válido até: ${cert.valid_to}`);
+        console.log(`   🏢 Emissor: ${cert.issuer.O || 'N/A'}`);
+        
+        resolve({
+          status: 'ok',
+          validTo: cert.valid_to,
+          issuer: cert.issuer
+        });
+      } else {
+        console.log(`   ❌ Certificado não encontrado`);
+        resolve({ status: 'no_cert' });
+      }
+    });
+    
+    req.on('error', (error) => {
+      console.log(`   ❌ Erro SSL: ${error.message}`);
+      resolve({ status: 'failed', error: error.message });
+    });
+    
+    req.on('timeout', () => {
+      req.destroy();
+      console.log(`   ❌ Timeout na verificação SSL`);
+      resolve({ status: 'timeout' });
+    });
+  });
+}
+
+// Verificar health endpoint da API
+async function checkHealthEndpoint() {
+  const domain = DOMAINS.backend.api;
+  const path = '/api/v1/health';
+  
+  console.log(`🏥 Verificando health endpoint...`);
+  
+  const result = await checkHTTPConnectivity(domain, path, [200]);
+  
+  if (result.status === 'ok') {
+    console.log(`   ✅ API funcionando corretamente`);
+  } else {
+    console.log(`   ❌ API não está respondendo`);
+  }
+  
+  return result;
+}
+
+// Relatório final
+function generateReport(results) {
+  console.log('\n📊 RELATÓRIO DE CONFIGURAÇÃO DE DOMÍNIO');
+  console.log('=======================================\n');
+  
+  let allOk = true;
+  
+  // Frontend
+  console.log('🖥️  FRONTEND:');
+  if (results.frontend.dns.status === 'ok') {
+    console.log(`   ✅ DNS configurado corretamente`);
+  } else {
+    console.log(`   ❌ DNS precisa ser configurado`);
+    allOk = false;
+  }
+  
+  if (results.frontend.ssl.status === 'ok') {
+    console.log(`   ✅ SSL funcionando`);
+  } else {
+    console.log(`   ❌ SSL precisa ser configurado`);
+    allOk = false;
+  }
+  
+  // Backend
+  console.log('\n🖥️  BACKEND:');
+  if (results.backend.dns.status === 'ok') {
+    console.log(`   ✅ DNS configurado`);
+  } else {
+    console.log(`   ❌ DNS precisa ser configurado`);
+    allOk = false;
+  }
+  
+  if (results.backend.health.status === 'ok') {
+    console.log(`   ✅ API funcionando`);
+  } else {
+    console.log(`   ❌ API não está funcionando`);
+    allOk = false;
+  }
+  
+  // Status geral
+  console.log('\n🎯 STATUS GERAL:');
+  if (allOk) {
+    console.log('   ✅ Todos os serviços estão funcionando corretamente!');
+    console.log('   🚀 KIXIKILA está pronto para produção');
+  } else {
+    console.log('   ⚠️  Algumas configurações ainda precisam ser ajustadas');
+    console.log('   📚 Consulte PRODUCTION_DEPLOYMENT_CHECKLIST.md');
+  }
+  
+  return allOk;
+}
+
+// Função principal
+async function main() {
+  try {
+    const results = {
+      frontend: {},
+      backend: {}
+    };
+    
+    // Verificar frontend
+    console.log('🔍 VERIFICANDO FRONTEND...\n');
+    results.frontend.dns = await checkDNSResolution(
+      DOMAINS.frontend.primary, 
+      DOMAINS.frontend.expectedIP
+    );
+    results.frontend.connectivity = await checkHTTPConnectivity(DOMAINS.frontend.primary);
+    results.frontend.ssl = await checkSSLCertificate(DOMAINS.frontend.primary);
+    
+    // Verificar backend
+    console.log('\n🔍 VERIFICANDO BACKEND...\n');
+    results.backend.dns = await checkDNSResolution(DOMAINS.backend.api);
+    results.backend.connectivity = await checkHTTPConnectivity(DOMAINS.backend.api, '/api/v1/health');
+    results.backend.health = await checkHealthEndpoint();
+    
+    // Gerar relatório
+    const allOk = generateReport(results);
+    
+    // Instruções finais
+    if (!allOk) {
+      console.log('\n📋 PRÓXIMOS PASSOS:');
+      console.log('1. Configure os registros DNS conforme instruções');
+      console.log('2. Aguarde propagação (24-48h)');
+      console.log('3. Execute este script novamente para verificar');
+      console.log('4. Configure SSL se necessário');
+    }
+    
+    process.exit(allOk ? 0 : 1);
+    
+  } catch (error) {
+    console.error('\n❌ Erro durante verificação:', error.message);
+    process.exit(1);
+  }
+}
+
+// Executar script
+if (require.main === module) {
+  main();
+}
+
+module.exports = { main };
