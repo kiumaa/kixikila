@@ -142,25 +142,31 @@ const AdminLogin: React.FC = () => {
               </form>
 
               {/* Demo credentials */}
-              <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200 max-w-md mx-auto">{/* Center demo box */}
-              <p className="text-sm font-semibold text-gray-700 mb-3">
-                🔐 Credenciais para demonstração:
-              </p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-600">admin@kixikila.com</span>
-                  <span className="text-gray-500">admin123</span>
+              <div className="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-200 max-w-md mx-auto">
+                <p className="text-sm font-semibold text-blue-700 mb-3">
+                  🔐 Credenciais para demonstração:
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-blue-600">admin@kixikila.com</span>
+                    <code className="bg-blue-100 px-2 py-1 rounded text-blue-700">admin123</code>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-blue-600">pedro.silva@admin.com</span>
+                    <code className="bg-blue-100 px-2 py-1 rounded text-blue-700">pedro123</code>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-blue-600">maria.costa@admin.com</span>
+                    <code className="bg-blue-100 px-2 py-1 rounded text-blue-700">maria123</code>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-600">pedro.silva@admin.com</span>
-                  <span className="text-gray-500">pedro123</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-600">maria.costa@admin.com</span>
-                  <span className="text-gray-500">maria123</span>
+                
+                <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                  <p className="text-xs text-blue-600">
+                    💡 <strong>Dica:</strong> Se você já está logado na aplicação principal e tem permissões de admin, o login será automático.
+                  </p>
                 </div>
               </div>
-            </div>
             </CardContent>
           </Card>
         </div>

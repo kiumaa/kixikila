@@ -1,6 +1,7 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAdminStore } from '@/store/useAdminStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminLogin from '@/components/admin/AdminLogin';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
@@ -18,7 +19,22 @@ const ActivityLogs = lazy(() => import('@/components/admin/screens/ActivityLogs'
 const SystemSettings = lazy(() => import('@/components/admin/screens/SystemSettings'));
 
 const AdminPanel: React.FC = () => {
-  const { isAdminLoggedIn } = useAdminStore();
+  const { isAdminLoggedIn, adminLogin, allUsers } = useAdminStore();
+  const { user, isAuthenticated } = useAuthStore();
+
+  // Auto-login for admin users from main app
+  useEffect(() => {
+    if (isAuthenticated && user && !isAdminLoggedIn) {
+      // Check if current user is admin in the admin users list
+      const adminUser = allUsers.find(adminUser => 
+        adminUser.email === user.email && adminUser.role === 'admin'
+      );
+      
+      if (adminUser) {
+        adminLogin(adminUser);
+      }
+    }
+  }, [isAuthenticated, user, isAdminLoggedIn, adminLogin, allUsers]);
 
   if (!isAdminLoggedIn) {
     return <AdminLogin />;
