@@ -316,13 +316,6 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "otp_codes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users_public_safe"
-            referencedColumns: ["id"]
-          },
         ]
       }
       security_configurations: {
@@ -648,39 +641,7 @@ export type Database = {
       }
     }
     Views: {
-      users_public_safe: {
-        Row: {
-          avatar_url: string | null
-          city: string | null
-          country: string | null
-          created_at: string | null
-          display_name: string | null
-          id: string | null
-          is_vip: boolean | null
-          trust_score: number | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          city?: string | null
-          country?: string | null
-          created_at?: string | null
-          display_name?: never
-          id?: string | null
-          is_vip?: boolean | null
-          trust_score?: number | null
-        }
-        Update: {
-          avatar_url?: string | null
-          city?: string | null
-          country?: string | null
-          created_at?: string | null
-          display_name?: never
-          id?: string | null
-          is_vip?: boolean | null
-          trust_score?: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       cleanup_expired_data: {
@@ -704,37 +665,6 @@ export type Database = {
       encrypt_sensitive_config: {
         Args: { config_value: Json; is_sensitive?: boolean }
         Returns: Json
-      }
-      get_all_users_safe_data: {
-        Args: { limit_count?: number; offset_count?: number }
-        Returns: {
-          active_groups: number
-          address: string
-          avatar_url: string
-          city: string
-          completed_cycles: number
-          country: string
-          created_at: string
-          date_of_birth: string
-          email: string
-          email_verified: boolean
-          full_name: string
-          id: string
-          is_active: boolean
-          is_vip: boolean
-          kyc_status: string
-          last_login: string
-          phone: string
-          phone_verified: boolean
-          role: string
-          total_earned: number
-          total_saved: number
-          total_withdrawn: number
-          trust_score: number
-          updated_at: string
-          vip_expiry_date: string
-          wallet_balance: number
-        }[]
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
@@ -762,37 +692,6 @@ export type Database = {
       }
       get_user_safe_data: {
         Args: { target_user_id?: string }
-        Returns: {
-          active_groups: number
-          address: string
-          avatar_url: string
-          city: string
-          completed_cycles: number
-          country: string
-          created_at: string
-          date_of_birth: string
-          email: string
-          email_verified: boolean
-          full_name: string
-          id: string
-          is_active: boolean
-          is_vip: boolean
-          kyc_status: string
-          last_login: string
-          phone: string
-          phone_verified: boolean
-          role: string
-          total_earned: number
-          total_saved: number
-          total_withdrawn: number
-          trust_score: number
-          updated_at: string
-          vip_expiry_date: string
-          wallet_balance: number
-        }[]
-      }
-      get_users_safe_list: {
-        Args: { limit_count?: number; offset_count?: number }
         Returns: {
           active_groups: number
           address: string
