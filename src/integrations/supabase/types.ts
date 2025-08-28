@@ -53,6 +53,179 @@ export type Database = {
         }
         Relationships: []
       }
+      email_configurations: {
+        Row: {
+          auto_retry_enabled: boolean | null
+          bounce_handling_enabled: boolean | null
+          created_at: string
+          id: string
+          max_retry_attempts: number | null
+          rate_limit_per_email: number | null
+          rate_limit_window_minutes: number | null
+          template_notification: string | null
+          template_otp: string | null
+          template_password_reset: string | null
+          template_welcome: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_retry_enabled?: boolean | null
+          bounce_handling_enabled?: boolean | null
+          created_at?: string
+          id?: string
+          max_retry_attempts?: number | null
+          rate_limit_per_email?: number | null
+          rate_limit_window_minutes?: number | null
+          template_notification?: string | null
+          template_otp?: string | null
+          template_password_reset?: string | null
+          template_welcome?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_retry_enabled?: boolean | null
+          bounce_handling_enabled?: boolean | null
+          created_at?: string
+          id?: string
+          max_retry_attempts?: number | null
+          rate_limit_per_email?: number | null
+          rate_limit_window_minutes?: number | null
+          template_notification?: string | null
+          template_otp?: string | null
+          template_password_reset?: string | null
+          template_welcome?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_configurations_template_notification_fkey"
+            columns: ["template_notification"]
+            isOneToOne: false
+            referencedRelation: "message_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_configurations_template_otp_fkey"
+            columns: ["template_otp"]
+            isOneToOne: false
+            referencedRelation: "message_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_configurations_template_password_reset_fkey"
+            columns: ["template_password_reset"]
+            isOneToOne: false
+            referencedRelation: "message_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_configurations_template_welcome_fkey"
+            columns: ["template_welcome"]
+            isOneToOne: false
+            referencedRelation: "message_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_templates: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          language: string
+          name: string
+          subject: string | null
+          type: string
+          updated_at: string
+          variables: Json | null
+          version: number | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          language?: string
+          name: string
+          subject?: string | null
+          type: string
+          updated_at?: string
+          variables?: Json | null
+          version?: number | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          language?: string
+          name?: string
+          subject?: string | null
+          type?: string
+          updated_at?: string
+          variables?: Json | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      notification_configurations: {
+        Row: {
+          apns_certificate: string | null
+          created_at: string
+          email_notifications_enabled: boolean | null
+          fcm_server_key: string | null
+          id: string
+          max_notifications_per_day: number | null
+          notification_frequency: string | null
+          push_notifications_enabled: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          sms_notifications_enabled: boolean | null
+          updated_at: string
+          weekend_notifications: boolean | null
+        }
+        Insert: {
+          apns_certificate?: string | null
+          created_at?: string
+          email_notifications_enabled?: boolean | null
+          fcm_server_key?: string | null
+          id?: string
+          max_notifications_per_day?: number | null
+          notification_frequency?: string | null
+          push_notifications_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          sms_notifications_enabled?: boolean | null
+          updated_at?: string
+          weekend_notifications?: boolean | null
+        }
+        Update: {
+          apns_certificate?: string | null
+          created_at?: string
+          email_notifications_enabled?: boolean | null
+          fcm_server_key?: string | null
+          id?: string
+          max_notifications_per_day?: number | null
+          notification_frequency?: string | null
+          push_notifications_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          sms_notifications_enabled?: boolean | null
+          updated_at?: string
+          weekend_notifications?: boolean | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -142,6 +315,192 @@ export type Database = {
           },
         ]
       }
+      security_configurations: {
+        Row: {
+          created_at: string
+          id: string
+          ip_blacklist: string[] | null
+          ip_whitelist: string[] | null
+          max_concurrent_sessions: number | null
+          password_min_length: number | null
+          password_require_lowercase: boolean | null
+          password_require_numbers: boolean | null
+          password_require_symbols: boolean | null
+          password_require_uppercase: boolean | null
+          rate_limit_api: number | null
+          rate_limit_login: number | null
+          rate_limit_window_minutes: number | null
+          session_timeout_minutes: number | null
+          suspicious_activity_threshold: number | null
+          two_factor_required: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_blacklist?: string[] | null
+          ip_whitelist?: string[] | null
+          max_concurrent_sessions?: number | null
+          password_min_length?: number | null
+          password_require_lowercase?: boolean | null
+          password_require_numbers?: boolean | null
+          password_require_symbols?: boolean | null
+          password_require_uppercase?: boolean | null
+          rate_limit_api?: number | null
+          rate_limit_login?: number | null
+          rate_limit_window_minutes?: number | null
+          session_timeout_minutes?: number | null
+          suspicious_activity_threshold?: number | null
+          two_factor_required?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_blacklist?: string[] | null
+          ip_whitelist?: string[] | null
+          max_concurrent_sessions?: number | null
+          password_min_length?: number | null
+          password_require_lowercase?: boolean | null
+          password_require_numbers?: boolean | null
+          password_require_symbols?: boolean | null
+          password_require_uppercase?: boolean | null
+          rate_limit_api?: number | null
+          rate_limit_login?: number | null
+          rate_limit_window_minutes?: number | null
+          session_timeout_minutes?: number | null
+          suspicious_activity_threshold?: number | null
+          two_factor_required?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      service_status: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          last_check: string
+          response_time_ms: number | null
+          service_name: string
+          status: string
+          uptime_percentage: number | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_check?: string
+          response_time_ms?: number | null
+          service_name: string
+          status: string
+          uptime_percentage?: number | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_check?: string
+          response_time_ms?: number | null
+          service_name?: string
+          status?: string
+          uptime_percentage?: number | null
+        }
+        Relationships: []
+      }
+      sms_configurations: {
+        Row: {
+          allowed_countries: string[] | null
+          blacklisted_numbers: string[] | null
+          created_at: string
+          default_template_notification: string | null
+          default_template_otp: string | null
+          id: string
+          max_attempts: number | null
+          rate_limit_per_number: number | null
+          rate_limit_window_minutes: number | null
+          sender_id: string | null
+          timeout_seconds: number | null
+          updated_at: string
+        }
+        Insert: {
+          allowed_countries?: string[] | null
+          blacklisted_numbers?: string[] | null
+          created_at?: string
+          default_template_notification?: string | null
+          default_template_otp?: string | null
+          id?: string
+          max_attempts?: number | null
+          rate_limit_per_number?: number | null
+          rate_limit_window_minutes?: number | null
+          sender_id?: string | null
+          timeout_seconds?: number | null
+          updated_at?: string
+        }
+        Update: {
+          allowed_countries?: string[] | null
+          blacklisted_numbers?: string[] | null
+          created_at?: string
+          default_template_notification?: string | null
+          default_template_otp?: string | null
+          id?: string
+          max_attempts?: number | null
+          rate_limit_per_number?: number | null
+          rate_limit_window_minutes?: number | null
+          sender_id?: string | null
+          timeout_seconds?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_configurations_default_template_notification_fkey"
+            columns: ["default_template_notification"]
+            isOneToOne: false
+            referencedRelation: "message_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_configurations_default_template_otp_fkey"
+            columns: ["default_template_otp"]
+            isOneToOne: false
+            referencedRelation: "message_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_configurations: {
+        Row: {
+          config_key: string
+          config_type: string
+          config_value: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_sensitive: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          config_key: string
+          config_type?: string
+          config_value: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          config_key?: string
+          config_type?: string
+          config_value?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           active_groups: number | null
@@ -226,6 +585,54 @@ export type Database = {
           updated_at?: string | null
           vip_expiry_date?: string | null
           wallet_balance?: number | null
+        }
+        Relationships: []
+      }
+      webhook_configurations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          events: string[]
+          headers: Json | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          name: string
+          retry_attempts: number | null
+          secret_key: string | null
+          timeout_seconds: number | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          events: string[]
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name: string
+          retry_attempts?: number | null
+          secret_key?: string | null
+          timeout_seconds?: number | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          events?: string[]
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string
+          retry_attempts?: number | null
+          secret_key?: string | null
+          timeout_seconds?: number | null
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }
