@@ -130,6 +130,168 @@ export type Database = {
           },
         ]
       }
+      group_members: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          current_balance: number
+          group_id: string
+          id: string
+          invitation_token: string | null
+          invited_by: string | null
+          joined_at: string
+          last_payout_date: string | null
+          left_at: string | null
+          payout_position: number | null
+          role: Database["public"]["Enums"]["member_role"]
+          status: Database["public"]["Enums"]["member_status"]
+          total_contributed: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          current_balance?: number
+          group_id: string
+          id?: string
+          invitation_token?: string | null
+          invited_by?: string | null
+          joined_at?: string
+          last_payout_date?: string | null
+          left_at?: string | null
+          payout_position?: number | null
+          role?: Database["public"]["Enums"]["member_role"]
+          status?: Database["public"]["Enums"]["member_status"]
+          total_contributed?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          current_balance?: number
+          group_id?: string
+          id?: string
+          invitation_token?: string | null
+          invited_by?: string | null
+          joined_at?: string
+          last_payout_date?: string | null
+          left_at?: string | null
+          payout_position?: number | null
+          role?: Database["public"]["Enums"]["member_role"]
+          status?: Database["public"]["Enums"]["member_status"]
+          total_contributed?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          auto_withdraw: boolean
+          contribution_amount: number
+          contribution_frequency: string
+          created_at: string
+          creator_id: string
+          current_members: number
+          description: string | null
+          end_date: string | null
+          group_type: Database["public"]["Enums"]["group_type"]
+          id: string
+          is_private: boolean
+          max_members: number
+          name: string
+          next_payout_date: string | null
+          requires_approval: boolean
+          rules: Json | null
+          settings: Json | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["group_status"]
+          total_pool: number
+          updated_at: string
+        }
+        Insert: {
+          auto_withdraw?: boolean
+          contribution_amount?: number
+          contribution_frequency?: string
+          created_at?: string
+          creator_id: string
+          current_members?: number
+          description?: string | null
+          end_date?: string | null
+          group_type?: Database["public"]["Enums"]["group_type"]
+          id?: string
+          is_private?: boolean
+          max_members?: number
+          name: string
+          next_payout_date?: string | null
+          requires_approval?: boolean
+          rules?: Json | null
+          settings?: Json | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["group_status"]
+          total_pool?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_withdraw?: boolean
+          contribution_amount?: number
+          contribution_frequency?: string
+          created_at?: string
+          creator_id?: string
+          current_members?: number
+          description?: string | null
+          end_date?: string | null
+          group_type?: Database["public"]["Enums"]["group_type"]
+          id?: string
+          is_private?: boolean
+          max_members?: number
+          name?: string
+          next_payout_date?: string | null
+          requires_approval?: boolean
+          rules?: Json | null
+          settings?: Json | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["group_status"]
+          total_pool?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_templates: {
         Row: {
           category: string
@@ -504,6 +666,91 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string
+          failed_reason: string | null
+          group_id: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_reference: string | null
+          processed_at: string | null
+          reference: string
+          related_transaction_id: string | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          description: string
+          failed_reason?: string | null
+          group_id?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_reference?: string | null
+          processed_at?: string | null
+          reference?: string
+          related_transaction_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string
+          failed_reason?: string | null
+          group_id?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_reference?: string | null
+          processed_at?: string | null
+          reference?: string
+          related_transaction_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_related_transaction_id_fkey"
+            columns: ["related_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           active_groups: number | null
@@ -678,6 +925,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_group_statistics: {
+        Args: { target_group_id: string }
+        Returns: {
+          active_members: number
+          avg_contribution: number
+          current_pool: number
+          total_contributed: number
+          total_members: number
+          total_withdrawn: number
+        }[]
+      }
       get_masked_config_value: {
         Args: { config_key: string; config_value: Json; is_sensitive: boolean }
         Returns: Json
@@ -743,6 +1001,20 @@ export type Database = {
           total_users: number
           unread_notifications: number
           vip_users: number
+        }[]
+      }
+      get_user_groups: {
+        Args: { target_user_id?: string }
+        Returns: {
+          current_balance: number
+          group_id: string
+          group_name: string
+          group_status: Database["public"]["Enums"]["group_status"]
+          group_type: Database["public"]["Enums"]["group_type"]
+          member_role: Database["public"]["Enums"]["member_role"]
+          member_status: Database["public"]["Enums"]["member_status"]
+          next_payout_date: string
+          total_contributed: number
         }[]
       }
       get_user_safe_data: {
@@ -892,7 +1164,24 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      group_status: "draft" | "active" | "paused" | "completed" | "cancelled"
+      group_type: "savings" | "investment" | "emergency" | "goal_based"
+      member_role: "creator" | "admin" | "member" | "pending"
+      member_status: "active" | "pending" | "suspended" | "left"
+      payment_method: "stripe" | "bank_transfer" | "mobile_money" | "cash"
+      transaction_status:
+        | "pending"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "cancelled"
+      transaction_type:
+        | "deposit"
+        | "withdrawal"
+        | "contribution"
+        | "reward"
+        | "fee"
+        | "transfer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1019,6 +1308,27 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      group_status: ["draft", "active", "paused", "completed", "cancelled"],
+      group_type: ["savings", "investment", "emergency", "goal_based"],
+      member_role: ["creator", "admin", "member", "pending"],
+      member_status: ["active", "pending", "suspended", "left"],
+      payment_method: ["stripe", "bank_transfer", "mobile_money", "cash"],
+      transaction_status: [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
+      transaction_type: [
+        "deposit",
+        "withdrawal",
+        "contribution",
+        "reward",
+        "fee",
+        "transfer",
+      ],
+    },
   },
 } as const
