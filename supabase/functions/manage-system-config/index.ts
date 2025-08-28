@@ -66,7 +66,7 @@ serve(async (req) => {
       case 'get_sms_config':
         return await getSMSConfiguration(supabaseClient);
       
-      case 'update_sms_config':
+      case 'update_sms_configuration':
         return await updateSMSConfiguration(supabaseClient, requestData);
       
       case 'get_security_config':
@@ -224,7 +224,171 @@ async function updateMessageTemplate(supabaseClient: any, requestData: any) {
   );
 }
 
+// SMS Configuration Functions
 async function getSMSConfiguration(supabaseClient: any) {
+  try {
+    // Get basic SMS configuration
+    const { data: smsData, error: smsError } = await supabaseClient
+      .from('system_configurations')
+      .select('*')
+      .eq('config_type', 'sms')
+      .single();
+
+    if (smsError && smsError.code !== 'PGRST116') {
+      throw smsError;
+    }
+
+    // Get SMS templates
+    const { data: templatesData, error: templatesError } = await supabaseClient
+      .from('message_templates')
+      .select('*')
+      .eq('type', 'sms')
+      .eq('is_active', true);
+
+    if (templatesError) {
+      throw templatesError;
+    }
+
+    // Process templates into the expected format
+    const templates: any = {};
+    templatesData?.forEach((template: any) => {
+      if (template.category) {
+        templates[template.category] = template.content;
+      }
+    });
+
+    // Default configuration if none exists
+    const defaultConfig = {
+      senderId: 'KB Agency',
+      brandName: 'KIXIKILA',
+      allowedCountries: ['PT', 'BR'],
+      templates: {
+        verification: '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.',
+        login: '{{brandName}}: Código de login: {{code}}. Se não foi você, ignore esta mensagem.'
+      },
+      rateLimits: {
+        perPhone: 5,
+        global: 100
+      },
+      otpExpiry: 10,
+      security: {
+        blockInternational: false,
+        enableBlacklist: false,
+        requirePhoneVerification: true
+      },
+      delivery: {
+        allowedTimeStart: '08:00',
+        allowedTimeEnd: '22:00',
+        maxRetries: 3,
+        allowedDays: [0, 1, 2, 3, 4, 5, 6]
+      }
+    };
+
+    // Merge with existing configuration
+    const config = smsData?.config_value ? { ...defaultConfig, ...smsData.config_value, templates } : { ...defaultConfig, templates };
+
+    return new Response(
+      JSON.stringify(config), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error getting SMS configuration:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+async function updateSMSConfiguration(supabaseClient: any, requestData: any) {
+  try {
+    const { config } = requestData;
+    
+    if (!config) {
+      throw new Error('Configuration data is required');
+    }
+
+    // Extract templates from config
+    const { templates, ...smsConfig } = config;
+
+    // Update main SMS configuration
+    const { error: configError } = await supabaseClient
+      .from('system_configurations')
+      .upsert({
+        config_type: 'sms',
+        config_key: 'sms_configuration',
+        config_value: smsConfig,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'config_key'
+      });
+
+    if (configError) {
+      throw configError;
+    }
+
+    // Update templates if provided
+    if (templates) {
+      for (const [category, content] of Object.entries(templates)) {
+        if (content && typeof content === 'string') {
+          // Check if template exists
+          const { data: existingTemplate } = await supabaseClient
+            .from('message_templates')
+            .select('id')
+            .eq('type', 'sms')
+            .eq('category', category)
+            .single();
+
+          if (existingTemplate) {
+            // Update existing template
+            const { error: updateError } = await supabaseClient
+              .from('message_templates')
+              .update({
+                content: content,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingTemplate.id);
+
+            if (updateError) {
+              throw updateError;
+            }
+          } else {
+            // Create new template
+            const { error: insertError } = await supabaseClient
+              .from('message_templates')
+              .insert({
+                type: 'sms',
+                category: category,
+                name: `SMS ${category} template`,
+                content: content,
+                is_active: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+
+            if (insertError) {
+              throw insertError;
+            }
+          }
+        }
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, message: 'SMS configuration updated successfully' }), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error updating SMS configuration:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+// Keep the original function as well for backward compatibility
+async function getSMSConfiguration_old(supabaseClient: any) {
   const { data, error } = await supabaseClient
     .from('sms_configurations')
     .select(`
@@ -242,37 +406,7 @@ async function getSMSConfiguration(supabaseClient: any) {
   );
 }
 
-async function updateSMSConfiguration(supabaseClient: any, requestData: any) {
-  const { data: existing } = await supabaseClient
-    .from('sms_configurations')
-    .select('id')
-    .single();
-
-  let result;
-  if (existing) {
-    const { data, error } = await supabaseClient
-      .from('sms_configurations')
-      .update(requestData)
-      .eq('id', existing.id)
-      .select()
-      .single();
-    if (error) throw error;
-    result = data;
-  } else {
-    const { data, error } = await supabaseClient
-      .from('sms_configurations')
-      .insert(requestData)
-      .select()
-      .single();
-    if (error) throw error;
-    result = data;
-  }
-
-  return new Response(
-    JSON.stringify({ success: true, data: result }), 
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
-}
+// Remove the duplicate/old SMS configuration function
 
 async function getSecurityConfiguration(supabaseClient: any) {
   const { data, error } = await supabaseClient

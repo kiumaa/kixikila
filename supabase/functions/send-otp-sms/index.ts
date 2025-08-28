@@ -11,11 +11,74 @@ interface SendOtpRequest {
   type: 'phone_verification' | 'login';
 }
 
+// Replace template variables with actual values
+function processTemplate(template: string, variables: Record<string, any>): string {
+  let processed = template;
+  for (const [key, value] of Object.entries(variables)) {
+    const placeholder = `{{${key}}}`;
+    processed = processed.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value.toString());
+  }
+  return processed;
+}
+
+// Get SMS configuration from system settings
+async function getSMSConfiguration(supabase: any) {
+  try {
+    // Get SMS configuration
+    const { data: smsData } = await supabase
+      .from('system_configurations')
+      .select('*')
+      .eq('config_type', 'sms')
+      .single();
+
+    // Get SMS templates
+    const { data: templatesData } = await supabase
+      .from('message_templates')
+      .select('*')
+      .eq('type', 'sms')
+      .eq('is_active', true);
+
+    // Process templates
+    const templates: any = {};
+    templatesData?.forEach((template: any) => {
+      if (template.category) {
+        templates[template.category] = template.content;
+      }
+    });
+
+    // Default configuration
+    const defaultConfig = {
+      senderId: 'KB Agency',
+      brandName: 'KIXIKILA',
+      templates: {
+        verification: '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.',
+        login: '{{brandName}}: Código de login: {{code}}. Se não foi você, ignore esta mensagem.'
+      },
+      otpExpiry: 10
+    };
+
+    return smsData?.config_value ? 
+      { ...defaultConfig, ...smsData.config_value, templates } : 
+      { ...defaultConfig, templates };
+  } catch (error) {
+    console.error('Error getting SMS configuration:', error);
+    return {
+      senderId: 'KB Agency',
+      brandName: 'KIXIKILA',
+      templates: {
+        verification: '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.',
+        login: '{{brandName}}: Código de login: {{code}}. Se não foi você, ignore esta mensagem.'
+      },
+      otpExpiry: 10
+    };
+  }
+}
+
 const generateOtpCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-const sendBulkSms = async (phone: string, message: string): Promise<boolean> => {
+const sendBulkSms = async (phone: string, message: string, senderId?: string): Promise<boolean> => {
   const username = Deno.env.get('BULKSMS_USERNAME');
   const password = Deno.env.get('BULKSMS_PASSWORD');
   
@@ -35,7 +98,7 @@ const sendBulkSms = async (phone: string, message: string): Promise<boolean> => 
       body: JSON.stringify({
         to: phone.startsWith('+') ? phone : `+351${phone}`,
         body: message,
-        from: 'KIXIKILA'
+        from: senderId || 'KIXIKILA'
       })
     });
 
@@ -72,14 +135,18 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // Get SMS configuration
+    const smsConfig = await getSMSConfiguration(supabase);
+
     // Generate OTP code
     const otpCode = generateOtpCode();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiryMinutes = smsConfig.otpExpiry || 10;
+    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
     // Get user_id from phone number
     const { data: userData } = await supabase
       .from('users')
-      .select('id')
+      .select('id, full_name')
       .eq('phone', phone)
       .single();
 
@@ -104,9 +171,22 @@ serve(async (req) => {
       );
     }
 
+    // Prepare SMS message using template
+    const templateKey = type === 'phone_verification' ? 'verification' : 'login';
+    const template = smsConfig.templates?.[templateKey] || smsConfig.templates?.verification || '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.';
+    
+    const variables = {
+      brandName: smsConfig.brandName || 'KIXIKILA',
+      code: otpCode,
+      minutes: expiryMinutes,
+      userName: userData?.full_name || '',
+      phone: phone
+    };
+    
+    const message = processTemplate(template, variables);
+
     // Send SMS
-    const message = `KIXIKILA: O seu código de verificação é: ${otpCode}. Válido por 10 minutos.`;
-    const smsSuccess = await sendBulkSms(phone, message);
+    const smsSuccess = await sendBulkSms(phone, message, smsConfig.senderId);
 
     if (!smsSuccess) {
       return new Response(
@@ -121,7 +201,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: 'OTP sent successfully',
-        expires_in: 600 // 10 minutes in seconds
+        expires_in: expiryMinutes * 60 // seconds
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
