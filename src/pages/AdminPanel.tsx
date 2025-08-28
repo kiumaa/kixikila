@@ -36,8 +36,32 @@ const AdminPanel: React.FC = () => {
     }
   }, [isAuthenticated, user, isAdminLoggedIn, adminLogin, allUsers]);
 
+  // Debug info - remove this after testing
+  console.log('AdminPanel Debug:', {
+    isAdminLoggedIn,
+    isAuthenticated,
+    userEmail: user?.email,
+    allUsersCount: allUsers.length
+  });
+
+  // Temporary debug display
+  const debugInfo = {
+    isAdminLoggedIn,
+    isAuthenticated,
+    userEmail: user?.email || 'No user',
+    allUsersCount: allUsers.length,
+    currentPath: window.location.pathname
+  };
+
   if (!isAdminLoggedIn) {
-    return <AdminLogin />;
+    return (
+      <div>
+        <div style={{ position: 'fixed', top: 0, left: 0, background: 'yellow', padding: '10px', zIndex: 9999, fontSize: '12px' }}>
+          <strong>Debug:</strong> {JSON.stringify(debugInfo, null, 2)}
+        </div>
+        <AdminLogin />
+      </div>
+    );
   }
 
   return (
