@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAdminStore } from '@/store/useAdminStore';
+import { useAdminStats, useAdminActivityLogs } from '@/hooks/useAdminData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Users, 
@@ -56,9 +56,10 @@ const activityData = [
 ];
 
 const AdminDashboard: React.FC = () => {
-  const { adminStats, activityLogs } = useAdminStore();
+  const { stats: adminStats, isLoading: statsLoading, error: statsError } = useAdminStats();
+  const { activityLogs, isLoading: logsLoading } = useAdminActivityLogs(5);
 
-  const recentLogs = activityLogs.slice(0, 5);
+  const recentLogs = activityLogs;
 
   return (
     <div className="space-y-6">
@@ -83,14 +84,14 @@ const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
-              {adminStats.totalUsers}
+              {statsLoading ? '...' : adminStats.totalUsers}
             </div>
             <div className="flex items-center mt-2 text-sm">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
               <span className="text-green-600 font-medium">
-                +{adminStats.monthlyGrowth}%
+                {adminStats.activeUsers} ativos
               </span>
-              <span className="text-gray-500 ml-1">este mês</span>
+              <span className="text-gray-500 ml-1">utilizadores</span>
             </div>
           </CardContent>
         </Card>
@@ -104,12 +105,12 @@ const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
-              {adminStats.totalGroups}
+              {statsLoading ? '...' : '0'}
             </div>
             <div className="flex items-center mt-2 text-sm">
               <Activity className="w-4 h-4 text-blue-500 mr-1" />
               <span className="text-gray-600">
-                {Math.round(adminStats.totalGroups * 0.8)} ativos
+                Em breve
               </span>
             </div>
           </CardContent>
@@ -124,14 +125,14 @@ const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
-              {formatCurrency(adminStats.totalRevenue)}
+              {statsLoading ? '...' : '€0.00'}
             </div>
             <div className="flex items-center mt-2 text-sm">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
               <span className="text-green-600 font-medium">
-                +{formatCurrency(adminStats.totalRevenue * 0.15)}
+                Em breve
               </span>
-              <span className="text-gray-500 ml-1">este mês</span>
+              <span className="text-gray-500 ml-1">receita</span>
             </div>
           </CardContent>
         </Card>
@@ -145,11 +146,11 @@ const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
-              {adminStats.vipUsers}
+              {statsLoading ? '...' : adminStats.vipUsers}
             </div>
             <div className="flex items-center mt-2 text-sm">
               <span className="text-gray-600">
-                {Math.round((adminStats.vipUsers / adminStats.totalUsers) * 100)}% do total
+                {adminStats.totalUsers > 0 ? Math.round((adminStats.vipUsers / adminStats.totalUsers) * 100) : 0}% do total
               </span>
             </div>
           </CardContent>
@@ -257,26 +258,30 @@ const AdminDashboard: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentLogs.map((log) => (
-              <div key={log.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full mt-2 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    {log.action}
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {log.details}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                    <Clock className="w-3 h-3" />
-                    <span>{formatDateTime(log.timestamp)}</span>
-                    <span>• {log.adminName}</span>
+            {logsLoading ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-2"></div>
+                <p className="text-sm">Carregando atividade...</p>
+              </div>
+            ) : recentLogs.length > 0 ? (
+              recentLogs.map((log) => (
+                <div key={log.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-2 h-2 bg-indigo-500 rounded-full mt-2 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {log.action}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {log.entity_type}: {log.entity_id}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      <span>{new Date(log.created_at).toLocaleDateString('pt-PT')}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-
-            {recentLogs.length === 0 && (
+              ))
+            ) : (
               <div className="text-center py-8 text-gray-500">
                 <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">Nenhuma atividade recente</p>

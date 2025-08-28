@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useAdminStore, type AdminUser } from '@/store/useAdminStore';
+import React, { useState, useMemo } from 'react';
+import { useAdminUsers } from '@/hooks/useAdminData';
+import type { AdminUser } from '@/services/adminService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +39,6 @@ import {
 import { formatCurrency, formatDate } from '@/data/mockData';
 
 const UsersManagement: React.FC = () => {
-  const { allUsers, banUser, unbanUser, updateUserPlan } = useAdminStore();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -46,30 +46,56 @@ const UsersManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // ... keep existing code (rest of component implementation)
+  // Use real Supabase data with filters
+  const searchOptions = useMemo(() => ({
+    search: searchTerm || undefined,
+    isActive: statusFilter === 'active' ? true : statusFilter === 'banned' ? false : undefined,
+    isVip: planFilter === 'vip' ? true : planFilter === 'free' ? false : undefined,
+    limit: 50
+  }), [searchTerm, statusFilter, planFilter]);
 
-  const filteredUsers = allUsers.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.phone.includes(searchTerm);
-    
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    const matchesPlan = planFilter === 'all' || 
-                       (planFilter === 'vip' && user.isVIP) ||
-                       (planFilter === 'free' && !user.isVIP);
-    
-    return matchesSearch && matchesStatus && matchesPlan;
-  });
+  const { users: allUsers, totalCount, isLoading, updateUserStatus } = useAdminUsers(searchOptions);
 
-  const handleBanUser = (userId: number) => {
+  // Since we're filtering on the server side, use all users
+  const filteredUsers = allUsers;
+
+  const handleBanUser = async (userId: string) => {
     const reason = prompt('Motivo do banimento:');
     if (reason) {
-      banUser(userId, reason);
+      try {
+        await updateUserStatus(userId, { is_active: false });
+        toast({
+          title: "Utilizador banido",
+          description: `Utilizador foi banido: ${reason}`,
+        });
+      } catch (error) {
+        console.error('Error banning user:', error);
+      }
     }
   };
 
-  const handleTogglePlan = (userId: number, currentIsVIP: boolean) => {
-    updateUserPlan(userId, currentIsVIP ? 'free' : 'vip');
+  const handleUnbanUser = async (userId: string) => {
+    try {
+      await updateUserStatus(userId, { is_active: true });
+      toast({
+        title: "Utilizador reativado",
+        description: "O utilizador foi reativado com sucesso",
+      });
+    } catch (error) {
+      console.error('Error unbanning user:', error);
+    }
+  };
+
+  const handleTogglePlan = async (userId: string, currentIsVIP: boolean) => {
+    try {
+      await updateUserStatus(userId, { is_vip: !currentIsVIP });
+      toast({
+        title: "Plano atualizado",
+        description: `Utilizador ${currentIsVIP ? 'removido do' : 'adicionado ao'} plano VIP`,
+      });
+    } catch (error) {
+      console.error('Error updating user plan:', error);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -97,7 +123,7 @@ const UsersManagement: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestão de Utilizadores</h2>
           <p className="text-gray-600">
-            {filteredUsers.length} de {allUsers.length} utilizadores
+            {isLoading ? 'Carregando...' : `${filteredUsers.length} de ${totalCount} utilizadores`}
           </p>
         </div>
         
@@ -161,19 +187,24 @@ const UsersManagement: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredUsers.map((user) => (
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+                <p className="text-gray-500">Carregando utilizadores...</p>
+              </div>
+            ) : filteredUsers.map((user) => (
               <div key={user.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-4">
                   <Avatar 
-                    name={user.avatar} 
+                    name={user.full_name?.split(' ').map(n => n[0]).join('') || user.email?.substring(0, 2) || 'U'} 
                     size="lg"
-                    verified={user.kycStatus === 'verified'}
+                    verified={user.kyc_status === 'verified'}
                   />
                   
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-gray-900">{user.name}</h4>
-                      {user.isVIP && (
+                      <h4 className="font-semibold text-gray-900">{user.full_name || 'Sem nome'}</h4>
+                      {user.is_vip && (
                         <Crown className="w-4 h-4 text-amber-500" />
                       )}
                       {user.role === 'admin' && (
@@ -188,38 +219,37 @@ const UsersManagement: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Phone className="w-3 h-3" />
-                        <span>{user.phone}</span>
+                        <span>{user.phone || 'Não fornecido'}</span>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Badge className={getStatusColor(user.status)}>
-                        {user.status === 'active' ? 'Ativo' : 
-                         user.status === 'banned' ? 'Banido' : 'Inativo'}
+                      <Badge className={getStatusColor(user.is_active ? 'active' : 'banned')}>
+                        {user.is_active ? 'Ativo' : 'Banido'}
                       </Badge>
                       
-                      <Badge className={getKYCStatusColor(user.kycStatus)}>
-                        KYC: {user.kycStatus === 'verified' ? 'Verificado' : 
-                              user.kycStatus === 'pending' ? 'Pendente' : 'Rejeitado'}
+                      <Badge className={getKYCStatusColor(user.kyc_status || 'pending')}>
+                        KYC: {user.kyc_status === 'verified' ? 'Verificado' : 
+                              user.kyc_status === 'pending' ? 'Pendente' : 'Rejeitado'}
                       </Badge>
                       
-                      <Badge variant={user.isVIP ? "default" : "secondary"}>
-                        {user.isVIP ? 'VIP' : 'Free'}
+                      <Badge variant={user.is_vip ? "default" : "secondary"}>
+                        {user.is_vip ? 'VIP' : 'Free'}
                       </Badge>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="text-right space-y-1">
+                    <div className="text-right space-y-1">
                     <div className="font-semibold text-gray-900">
-                      {formatCurrency(user.walletBalance)}
+                      {formatCurrency(user.wallet_balance || 0)}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {user.activeGroups} grupos
+                      {user.active_groups || 0} grupos
                     </div>
                     <div className="text-xs text-gray-400">
-                      Desde {formatDate(user.joinDate)}
+                      Desde {formatDate(user.created_at || new Date().toISOString())}
                     </div>
                   </div>
 
@@ -240,32 +270,32 @@ const UsersManagement: React.FC = () => {
                          Editar Dados
                        </DropdownMenuItem>
                       
-                      <DropdownMenuItem 
-                        onClick={() => handleTogglePlan(user.id, user.isVIP)}
-                      >
-                        <Crown className="w-4 h-4 mr-2" />
-                        {user.isVIP ? 'Remover VIP' : 'Tornar VIP'}
-                      </DropdownMenuItem>
+                       <DropdownMenuItem 
+                         onClick={() => handleTogglePlan(user.id, user.is_vip || false)}
+                       >
+                         <Crown className="w-4 h-4 mr-2" />
+                         {user.is_vip ? 'Remover VIP' : 'Tornar VIP'}
+                       </DropdownMenuItem>
                       
                       <DropdownMenuSeparator />
                       
-                      {user.status === 'banned' ? (
-                        <DropdownMenuItem 
-                          onClick={() => unbanUser(user.id)}
-                          className="text-green-600"
-                        >
-                          <UserCheck className="w-4 h-4 mr-2" />
-                          Desbanir
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem 
-                          onClick={() => handleBanUser(user.id)}
-                          className="text-red-600"
-                        >
-                          <Ban className="w-4 h-4 mr-2" />
-                          Banir Utilizador
-                        </DropdownMenuItem>
-                      )}
+                       {!user.is_active ? (
+                         <DropdownMenuItem 
+                           onClick={() => handleUnbanUser(user.id)}
+                           className="text-green-600"
+                         >
+                           <UserCheck className="w-4 h-4 mr-2" />
+                           Desbanir
+                         </DropdownMenuItem>
+                       ) : (
+                         <DropdownMenuItem 
+                           onClick={() => handleBanUser(user.id)}
+                           className="text-red-600"
+                         >
+                           <Ban className="w-4 h-4 mr-2" />
+                           Banir Utilizador
+                         </DropdownMenuItem>
+                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -287,11 +317,11 @@ const UsersManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      <EditUserModal
+      {/*<EditUserModal
         user={selectedUser}
         isOpen={isEditModalOpen}
         onClose={() => {setIsEditModalOpen(false); setSelectedUser(null);}}
-      />
+      />*/}
     </div>
   );
 };
