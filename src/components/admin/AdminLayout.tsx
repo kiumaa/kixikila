@@ -30,14 +30,106 @@ interface AdminLayoutProps {
 }
 
 const sidebarItems = [
-  { icon: BarChart3, label: 'Dashboard', path: '/admin/dashboard' },
-  { icon: Users, label: 'Utilizadores', path: '/admin/users' },
-  { icon: FileText, label: 'Grupos', path: '/admin/groups' },
-  { icon: Shield, label: 'Segurança', path: '/admin/security' },
-  { icon: Activity, label: 'Logs', path: '/admin/logs' },
-  { icon: Settings, label: 'Configurações', path: '/admin/settings' },
-  { icon: Settings, label: 'Config. Avançadas', path: '/admin/advanced-settings' }
+  { 
+    icon: BarChart3, 
+    label: 'Dashboard', 
+    path: '/admin/dashboard',
+    group: null 
+  },
+  
+  // Gestão Group
+  { 
+    icon: Users, 
+    label: 'Utilizadores', 
+    path: '/admin/gestao/users',
+    group: 'gestao'
+  },
+  { 
+    icon: FileText, 
+    label: 'Grupos', 
+    path: '/admin/gestao/groups',
+    group: 'gestao'
+  },
+  { 
+    icon: CreditCard, 
+    label: 'Planos', 
+    path: '/admin/gestao/plans',
+    group: 'gestao'
+  },
+  
+  // Sistema Group
+  { 
+    icon: Settings, 
+    label: 'Configurações', 
+    path: '/admin/sistema/settings',
+    group: 'sistema'
+  },
+  { 
+    icon: Settings, 
+    label: 'Config. Avançadas', 
+    path: '/admin/sistema/advanced',
+    group: 'sistema'
+  },
+  { 
+    icon: Palette, 
+    label: 'Identidade Visual', 
+    path: '/admin/sistema/branding',
+    group: 'sistema'
+  },
+  { 
+    icon: Smartphone, 
+    label: 'PWA Settings', 
+    path: '/admin/sistema/pwa',
+    group: 'sistema'
+  },
+  
+  // Segurança Group
+  { 
+    icon: Shield, 
+    label: 'Segurança', 
+    path: '/admin/seguranca/security',
+    group: 'seguranca'
+  },
+  { 
+    icon: Activity, 
+    label: 'Logs', 
+    path: '/admin/seguranca/logs',
+    group: 'seguranca'
+  },
+  { 
+    icon: Activity, 
+    label: 'Monitoramento', 
+    path: '/admin/seguranca/monitoring',
+    group: 'seguranca'
+  },
+  
+  // Comunicação Group
+  { 
+    icon: Bell, 
+    label: 'Notificações', 
+    path: '/admin/comunicacao/notifications',
+    group: 'comunicacao'
+  },
+  { 
+    icon: FileText, 
+    label: 'Templates', 
+    path: '/admin/comunicacao/templates',
+    group: 'comunicacao'
+  },
+  { 
+    icon: Bell, 
+    label: 'Mensagens em Massa', 
+    path: '/admin/comunicacao/bulk',
+    group: 'comunicacao'
+  }
 ];
+
+const groupLabels = {
+  gestao: '👥 Gestão',
+  sistema: '⚙️ Sistema', 
+  seguranca: '🔒 Segurança',
+  comunicacao: '📨 Comunicação'
+};
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
@@ -107,8 +199,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {sidebarItems.map((item) => (
+          <nav className="flex-1 px-4 py-6 space-y-4">
+            {/* Dashboard */}
+            {sidebarItems.filter(item => !item.group).map((item) => (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
@@ -122,6 +215,32 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 <item.icon className="w-5 h-5 flex-shrink-0" />
                 {item.label}
               </button>
+            ))}
+            
+            {/* Grouped Navigation */}
+            {Object.entries(groupLabels).map(([groupKey, groupLabel]) => (
+              <div key={groupKey} className="space-y-2">
+                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {groupLabel}
+                </h3>
+                <div className="space-y-1">
+                  {sidebarItems.filter(item => item.group === groupKey).map((item) => (
+                    <button
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ml-2",
+                        isActivePath(item.path)
+                          ? "bg-indigo-50 text-indigo-700"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      )}
+                    >
+                      <item.icon className="w-4 h-4 flex-shrink-0" />
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
 

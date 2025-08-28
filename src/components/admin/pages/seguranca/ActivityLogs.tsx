@@ -1,0 +1,1 @@
+// Moving ActivityLogs to seguranca folder

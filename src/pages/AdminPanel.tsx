@@ -6,17 +6,29 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import AdminLogin from '@/components/admin/AdminLogin';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 
-// Lazy load admin screens
-const AdminDashboard = lazy(() => import('@/components/admin/screens/AdminDashboard'));
-const UsersManagement = lazy(() => import('@/components/admin/screens/UsersManagement'));
-const GroupsManagement = lazy(() => import('@/components/admin/screens/GroupsManagement'));
-const PlansManagement = lazy(() => import('@/components/admin/screens/PlansManagement'));
-const BrandingManagement = lazy(() => import('@/components/admin/screens/BrandingManagement'));
-const PWAManagement = lazy(() => import('@/components/admin/screens/PWAManagement'));
-const AdvancedSystemSettings = lazy(() => import('@/components/admin/screens/AdvancedSystemSettings'));
-const SecurityDashboard = lazy(() => import('@/components/admin/screens/SecurityDashboard'));
-const ActivityLogs = lazy(() => import('@/components/admin/screens/ActivityLogs'));
-const SystemSettings = lazy(() => import('@/components/admin/screens/SystemSettings'));
+// Lazy load admin pages - New organized structure
+const AdminDashboard = lazy(() => import('@/components/admin/pages/dashboard/AdminDashboard'));
+
+// Gestão
+const UsersManagement = lazy(() => import('@/components/admin/pages/gestao/UsersManagement'));
+const GroupsManagement = lazy(() => import('@/components/admin/pages/gestao/GroupsManagement'));
+const PlansManagement = lazy(() => import('@/components/admin/pages/gestao/PlansManagement'));
+
+// Sistema
+const SystemSettings = lazy(() => import('@/components/admin/pages/sistema/SystemSettings'));
+const AdvancedSystemSettings = lazy(() => import('@/components/admin/pages/sistema/AdvancedSystemSettings'));
+const BrandingManagement = lazy(() => import('@/components/admin/pages/sistema/BrandingManagement'));
+const PWAManagement = lazy(() => import('@/components/admin/pages/sistema/PWAManagement'));
+
+// Segurança
+const SecurityDashboard = lazy(() => import('@/components/admin/pages/seguranca/SecurityDashboard'));
+const ActivityLogs = lazy(() => import('@/components/admin/pages/seguranca/ActivityLogs'));
+const MonitoringDashboard = lazy(() => import('@/components/admin/pages/seguranca/MonitoringDashboard'));
+
+// Comunicação
+const NotificationsManagement = lazy(() => import('@/components/admin/pages/comunicacao/NotificationsManagement'));
+const MessageTemplates = lazy(() => import('@/components/admin/pages/comunicacao/MessageTemplates'));
+const BulkMessaging = lazy(() => import('@/components/admin/pages/comunicacao/BulkMessaging'));
 
 const AdminPanel: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
@@ -40,16 +52,41 @@ const AdminPanel: React.FC = () => {
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           <Route path="/" element={<Navigate to="dashboard" replace />} />
+          
+          {/* Dashboard */}
           <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<UsersManagement />} />
-          <Route path="groups" element={<GroupsManagement />} />
-          <Route path="plans" element={<PlansManagement />} />
-          <Route path="branding" element={<BrandingManagement />} />
-          <Route path="pwa" element={<PWAManagement />} />
-          <Route path="advanced-settings" element={<AdvancedSystemSettings />} />
-          <Route path="security" element={<SecurityDashboard />} />
-          <Route path="logs" element={<ActivityLogs />} />
-          <Route path="settings" element={<SystemSettings />} />
+          
+          {/* Gestão */}
+          <Route path="gestao/users" element={<UsersManagement />} />
+          <Route path="gestao/groups" element={<GroupsManagement />} />
+          <Route path="gestao/plans" element={<PlansManagement />} />
+          
+          {/* Sistema */}
+          <Route path="sistema/settings" element={<SystemSettings />} />
+          <Route path="sistema/advanced" element={<AdvancedSystemSettings />} />
+          <Route path="sistema/branding" element={<BrandingManagement />} />
+          <Route path="sistema/pwa" element={<PWAManagement />} />
+          
+          {/* Segurança */}
+          <Route path="seguranca/security" element={<SecurityDashboard />} />
+          <Route path="seguranca/logs" element={<ActivityLogs />} />
+          <Route path="seguranca/monitoring" element={<MonitoringDashboard />} />
+          
+          {/* Comunicação */}
+          <Route path="comunicacao/notifications" element={<NotificationsManagement />} />
+          <Route path="comunicacao/templates" element={<MessageTemplates />} />
+          <Route path="comunicacao/bulk" element={<BulkMessaging />} />
+
+          {/* Backwards compatibility - redirect old routes */}
+          <Route path="users" element={<Navigate to="gestao/users" replace />} />
+          <Route path="groups" element={<Navigate to="gestao/groups" replace />} />
+          <Route path="plans" element={<Navigate to="gestao/plans" replace />} />
+          <Route path="settings" element={<Navigate to="sistema/settings" replace />} />
+          <Route path="advanced-settings" element={<Navigate to="sistema/advanced" replace />} />
+          <Route path="branding" element={<Navigate to="sistema/branding" replace />} />
+          <Route path="pwa" element={<Navigate to="sistema/pwa" replace />} />
+          <Route path="security" element={<Navigate to="seguranca/security" replace />} />
+          <Route path="logs" element={<Navigate to="seguranca/logs" replace />} />
         </Routes>
       </Suspense>
     </AdminLayout>
