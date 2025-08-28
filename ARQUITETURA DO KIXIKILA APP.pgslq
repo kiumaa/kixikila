@@ -1,0 +1,32 @@
+                                        +-------------------+
+                                        |     Utilizador    |
+                                        +--------+----------+
+                                                 |
+                                                 ▼
+                                        +-------------------+
+                                        |     Frontend      |
+                                        |    (Lovable)      |
+                                        | - Interface UI    |
+                                        | - Login OTP (via  |
+                                        |   Supabase JS SDK)|
+                                        +--------+----------+
+                                                 |
+                     ┌───────────────────────────┴─────────────────────────────┐
+                     ▼                                                         ▼
+        +--------------------------+                               +--------------------------+
+        |   Supabase Auth & DB     |                               |     Backend API (Trae)   |
+        | - Postgres (KIXIKILA DB) |                               | - Stripe Webhooks        |
+        | - Tabela Users, Plans,   |                               | - BulkSMS Notifications  |
+        |   Subscriptions, Logs    |                               | - Endpoints protegidos   |
+        | - OTP Login/Signup       |                               |   (JWT verificados)      |
+        +--------------------------+                               +--------------------------+
+                     ▲                                                         ▲
+                     |                                                         |
+                     └──────────────┐                                ┌──────────┘
+                                    ▼                                ▼
+                           +-----------------+          +-----------------------------+
+                           |     Stripe      |          |         BulkSMS            |
+                           | - Subscrições   |          | - Envio de OTP (backup)    |
+                           | - Pagamentos    |          | - Notificações (push/sms)  |
+                           +-----------------+          +-----------------------------+
+
