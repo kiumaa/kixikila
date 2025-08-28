@@ -57,3 +57,6 @@ verify_jwt = false
 
 [functions.cleanup-expired-data]
 verify_jwt = false
+
+[functions.admin-monitoring]
+verify_jwt = true
