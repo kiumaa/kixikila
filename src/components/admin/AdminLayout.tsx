@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Clock,
-  Shield
+  Shield,
+  TestTube
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -104,6 +105,12 @@ const sidebarItems = [
   },
   
   // Comunicação Group
+  { 
+    icon: TestTube, 
+    label: 'Testes', 
+    path: '/admin/message-testing',
+    group: 'comunicacao'
+  },
   { 
     icon: Bell, 
     label: 'Notificações', 

@@ -26,6 +26,7 @@ const ActivityLogs = lazy(() => import('@/components/admin/pages/seguranca/Activ
 const MonitoringDashboard = lazy(() => import('@/components/admin/pages/seguranca/MonitoringDashboard'));
 
 // Comunicação
+const MessageTesting = lazy(() => import('@/components/admin/pages/comunicacao/MessageTesting'));
 const NotificationsManagement = lazy(() => import('@/components/admin/pages/comunicacao/NotificationsManagement'));
 const MessageTemplates = lazy(() => import('@/components/admin/pages/comunicacao/MessageTemplates'));
 const BulkMessaging = lazy(() => import('@/components/admin/pages/comunicacao/BulkMessaging'));
@@ -67,6 +68,7 @@ const AdminPanel: React.FC = () => {
           <Route path="security" element={<SecurityDashboard />} />
           <Route path="logs" element={<ActivityLogs />} />
           <Route path="monitoring" element={<MonitoringDashboard />} />
+          <Route path="message-testing" element={<MessageTesting />} />
           <Route path="notifications" element={<NotificationsManagement />} />
           <Route path="templates" element={<MessageTemplates />} />
           <Route path="bulk" element={<BulkMessaging />} />
