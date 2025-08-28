@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, startTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -30,9 +31,8 @@ const AdminLogin: React.FC = () => {
     setError(authError || '');
     if (authError?.includes('Admin não encontrado')) {
       setShowSetup(true);
-      // Pode ser que o admin não exista ainda
     }
-  }, [error, authError]);
+  }, [authError]);
 
   // Redirecionar para dashboard após login bem-sucedido
   useEffect(() => {
@@ -50,7 +50,8 @@ const AdminLogin: React.FC = () => {
     clearError();
     
     try {
-      await login(data.email, data.password, 'admin');
+      // Fix: Remove the third parameter as it's not needed
+      await login(data.email, data.password);
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Erro ao fazer login');
@@ -60,7 +61,8 @@ const AdminLogin: React.FC = () => {
   };
 
   if (showSetup) {
-    return <AdminSetup onComplete={() => setShowSetup(false)} />;
+    // Fix: Remove the onComplete prop as it doesn't exist in AdminSetup interface
+    return <AdminSetup />;
   }
 
   return (

@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Shield, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 
-export const AdminSetup: React.FC = () => {
+const AdminSetup: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
