@@ -197,8 +197,7 @@ class SystemConfigService {
       const { data, error } = await supabase.functions.invoke('send-otp-sms', {
         body: {
           phone: testPhone,
-          otpCode: '123456',
-          isTest: true
+          type: 'phone_verification'
         }
       });
 
