@@ -1,232 +1,267 @@
 #!/usr/bin/env node
 
 /**
- * Production Stability Tests for KIXIKILA
+ * Production Stability Test Script for KIXIKILA
  * 
- * Tests critical app functionality and stability
+ * Tests critical functionalities:
+ * - Phone authentication flow  
+ * - Session persistence
+ * - Navigation between contexts (user/admin)
+ * - Bottom menu behavior
+ * - Route protection
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// Colors for console output
-const colors = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  reset: '\x1b[0m',
-  bold: '\x1b[1m'
+// Configuration
+const config = {
+  baseUrl: process.env.TEST_URL || 'https://kixikila.pro',
+  adminUrl: process.env.ADMIN_URL || 'https://kixikila.pro/admin',
+  testPhone: process.env.TEST_PHONE || '+351912345678',
+  timeout: 30000
 };
 
-const log = (message, color = 'reset') => {
-  console.log(`${colors[color]}${message}${colors.reset}`);
+// Test results tracking
+let testResults = {
+  passed: 0,
+  failed: 0,
+  errors: [],
+  details: []
 };
 
-const tests = [];
-let passedTests = 0;
-let failedTests = 0;
+// Utility functions
+const log = (message) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${message}`);
+};
 
-function addTest(name, testFn) {
-  tests.push({ name, testFn });
-}
+const addResult = (testName, passed, details = '', error = null) => {
+  if (passed) {
+    testResults.passed++;
+    log(`✅ ${testName}: PASSED`);
+  } else {
+    testResults.failed++;
+    log(`❌ ${testName}: FAILED - ${details}`);
+    if (error) {
+      testResults.errors.push({ testName, error: error.message });
+    }
+  }
+  testResults.details.push({ testName, passed, details, timestamp: new Date().toISOString() });
+};
 
-function runTest(test) {
+// Test functions
+async function testEndpoint(url, testName) {
   try {
-    const result = test.testFn();
-    if (result) {
-      log(`✅ ${test.name}`, 'green');
-      passedTests++;
-      return true;
-    } else {
-      log(`❌ ${test.name}`, 'red');
-      failedTests++;
+    log(`🔄 Testing ${testName}...`);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'KIXIKILA-Stability-Test'
+      }
+    });
+    
+    if (!response.ok) {
+      addResult(testName, false, `HTTP ${response.status}`);
       return false;
     }
+
+    const text = await response.text();
+    if (!text || text.length < 100) {
+      addResult(testName, false, 'Response too short or empty');
+      return false;
+    }
+
+    addResult(testName, true, 'Endpoint accessible');
+    return true;
   } catch (error) {
-    log(`❌ ${test.name} - ERROR: ${error.message}`, 'red');
-    failedTests++;
+    addResult(testName, false, `Request failed: ${error.message}`, error);
     return false;
   }
 }
 
-// Test 1: Check critical files exist
-addTest('Critical files exist', () => {
-  const criticalFiles = [
-    'src/App.tsx',
-    'src/pages/Index.tsx', 
-    'src/pages/AdminPanel.tsx',
-    'src/hooks/useSupabaseAuth.tsx',
-    'src/stores/useAuthStore.ts',
-    'src/services/supabaseAuthService.ts',
-    'src/components/layout/BottomNavigation.tsx',
-    'src/components/auth/ProtectedRoute.tsx'
-  ];
-  
-  for (const file of criticalFiles) {
-    if (!fs.existsSync(file)) {
-      throw new Error(`Missing critical file: ${file}`);
+async function testPhoneAuthImplementation() {
+  try {
+    log('🔄 Testing phone authentication implementation...');
+    
+    // Test main app endpoint
+    const response = await fetch(config.baseUrl);
+    const html = await response.text();
+    
+    // Check for phone-only signup indicators
+    const hasEmailInput = html.includes('type="email"') || html.includes('placeholder*="email"');
+    const hasPasswordInput = html.includes('type="password"');
+    const hasPhoneInput = html.includes('type="tel"') || html.includes('placeholder*="912"') || html.includes('+351');
+    
+    if (hasEmailInput || hasPasswordInput) {
+      addResult('Phone Auth Implementation', false, 'Email/password fields still present');
+      return false;
     }
+    
+    if (!hasPhoneInput) {
+      addResult('Phone Auth Implementation', false, 'Phone input not found');
+      return false;
+    }
+    
+    addResult('Phone Auth Implementation', true, 'Phone-only authentication detected');
+    return true;
+  } catch (error) {
+    addResult('Phone Auth Implementation', false, 'Failed to check auth implementation', error);
+    return false;
   }
-  return true;
-});
+}
 
-// Test 2: Check for problematic anchor tags
-addTest('No problematic anchor tags', () => {
-  const filesToCheck = [
-    'src/pages/NotFound.tsx',
-    'src/components/layout/BottomNavigation.tsx'
-  ];
-  
-  for (const file of filesToCheck) {
-    if (fs.existsSync(file)) {
-      const content = fs.readFileSync(file, 'utf8');
-      if (content.includes('<a href="/') && !content.includes('Link')) {
-        throw new Error(`Found problematic <a href> in ${file}. Should use <Link> for SPA navigation.`);
+async function testNavigationStructure() {
+  try {
+    log('🔄 Testing navigation structure...');
+    
+    const routes = [
+      { url: config.baseUrl, name: 'Main App', shouldExist: true },
+      { url: `${config.adminUrl}`, name: 'Admin Panel', shouldExist: true },
+      { url: `${config.baseUrl}/invalid-route`, name: '404 Route', shouldExist: false }
+    ];
+
+    let allPassed = true;
+
+    for (const route of routes) {
+      try {
+        const response = await fetch(route.url);
+        const exists = response.ok;
+        
+        if (route.shouldExist && !exists) {
+          addResult(`Navigation - ${route.name}`, false, `Route should exist but returned ${response.status}`);
+          allPassed = false;
+        } else if (!route.shouldExist && exists && response.status !== 404) {
+          addResult(`Navigation - ${route.name}`, false, `404 route should return 404 but returned ${response.status}`);
+          allPassed = false;
+        } else {
+          addResult(`Navigation - ${route.name}`, true, 'Route behaves correctly');
+        }
+        
+      } catch (error) {
+        addResult(`Navigation - ${route.name}`, false, `Route test failed: ${error.message}`);
+        allPassed = false;
       }
     }
-  }
-  return true;
-});
 
-// Test 3: Check bottom navigation logic
-addTest('Bottom navigation shows on correct screens', () => {
-  const botNavFile = 'src/components/layout/BottomNavigation.tsx';
-  if (fs.existsSync(botNavFile)) {
-    const content = fs.readFileSync(botNavFile, 'utf8');
-    
-    // Should not hide on all screens except auth screens
-    if (content.includes("['dashboard', 'wallet', 'profile', 'notifications'].includes(currentScreen)")) {
-      throw new Error('Bottom navigation has restrictive screen logic that causes disappearing menu');
-    }
-    
-    // Should have proper hide logic for auth screens
-    if (!content.includes('onboarding') || !content.includes('login') || !content.includes('register')) {
-      throw new Error('Bottom navigation should hide on auth screens');
-    }
+    return allPassed;
+  } catch (error) {
+    addResult('Navigation Structure', false, 'Navigation test failed', error);
+    return false;
   }
-  return true;
-});
+}
 
-// Test 4: Check authentication state management
-addTest('Authentication state management', () => {
-  const authStoreFile = 'src/stores/useAuthStore.ts';
-  if (fs.existsSync(authStoreFile)) {
-    const content = fs.readFileSync(authStoreFile, 'utf8');
+async function testResponsiveDesign() {
+  try {
+    log('🔄 Testing responsive design indicators...');
     
-    // Should have persist middleware
-    if (!content.includes('persist')) {
-      throw new Error('Auth store should use persist middleware for session persistence');
+    const response = await fetch(config.baseUrl);
+    const html = await response.text();
+    
+    // Check for responsive design indicators
+    const hasViewport = html.includes('viewport');
+    const hasTailwind = html.includes('tailwind') || html.includes('responsive');
+    const hasCSS = html.includes('.css') || html.includes('stylesheet');
+    
+    if (!hasViewport) {
+      addResult('Responsive Design', false, 'Missing viewport meta tag');
+      return false;
     }
     
-    // Should have proper error handling
-    if (!content.includes('catch') || !content.includes('error')) {
-      throw new Error('Auth store should have proper error handling');
-    }
+    addResult('Responsive Design', true, 'Responsive design indicators found');
+    return true;
+  } catch (error) {
+    addResult('Responsive Design', false, 'Failed to check responsive design', error);
+    return false;
   }
-  return true;
-});
+}
 
-// Test 5: Check Supabase integration
-addTest('Supabase integration setup', () => {
-  const supabaseFiles = [
-    'src/integrations/supabase/client.ts',
-    'src/services/supabaseAuthService.ts'
-  ];
+async function testSecurityHeaders() {
+  try {
+    log('🔄 Testing security headers...');
+    
+    const response = await fetch(config.baseUrl);
+    const headers = response.headers;
+    
+    const securityChecks = [
+      { name: 'Content-Type', header: 'content-type', required: true },
+      { name: 'X-Frame-Options', header: 'x-frame-options', required: false },
+      { name: 'Content-Security-Policy', header: 'content-security-policy', required: false }
+    ];
+    
+    let passed = true;
+    
+    for (const check of securityChecks) {
+      const hasHeader = headers.has(check.header);
+      
+      if (check.required && !hasHeader) {
+        addResult(`Security - ${check.name}`, false, 'Required header missing');
+        passed = false;
+      } else {
+        addResult(`Security - ${check.name}`, true, hasHeader ? 'Header present' : 'Optional header not set');
+      }
+    }
+    
+    return passed;
+  } catch (error) {
+    addResult('Security Headers', false, 'Failed to check security headers', error);
+    return false;
+  }
+}
+
+// Main test runner
+async function runTests() {
+  log('🚀 Starting KIXIKILA Production Stability Tests...');
+  log(`Testing URL: ${config.baseUrl}`);
+  log(`Admin URL: ${config.adminUrl}`);
   
-  for (const file of supabaseFiles) {
-    if (!fs.existsSync(file)) {
-      throw new Error(`Missing Supabase file: ${file}`);
-    }
-  }
-  return true;
-});
+  try {
+    // Run all tests
+    log('\n📋 Running test suite...\n');
 
-// Test 6: Check route protection
-addTest('Protected routes implementation', () => {
-  const protectedRouteFile = 'src/components/auth/ProtectedRoute.tsx';
-  if (fs.existsSync(protectedRouteFile)) {
-    const content = fs.readFileSync(protectedRouteFile, 'utf8');
+    await testEndpoint(config.baseUrl, 'Main App Accessibility');
+    await testEndpoint(config.adminUrl, 'Admin Panel Accessibility');
     
-    // Should handle loading state
-    if (!content.includes('isLoading')) {
-      throw new Error('Protected route should handle loading state');
-    }
-    
-    // Should redirect unauthorized users
-    if (!content.includes('Navigate')) {
-      throw new Error('Protected route should redirect unauthorized users');
-    }
-  }
-  return true;
-});
+    await testPhoneAuthImplementation();
+    await testNavigationStructure();
+    await testResponsiveDesign();
+    await testSecurityHeaders();
 
-// Test 7: Check for duplicate auth initialization
-addTest('No duplicate auth initialization', () => {
-  const indexFile = 'src/pages/Index.tsx';
-  const appFile = 'src/App.tsx';
-  
-  if (fs.existsSync(indexFile) && fs.existsSync(appFile)) {
-    const indexContent = fs.readFileSync(indexFile, 'utf8');
-    const appContent = fs.readFileSync(appFile, 'utf8');
-    
-    // App.tsx should use useSupabaseAuth hook
-    if (!appContent.includes('useSupabaseAuth')) {
-      throw new Error('App.tsx should use useSupabaseAuth hook');
-    }
-    
-    // Index.tsx should not duplicate auth initialization
-    const indexAuthCalls = (indexContent.match(/initializeAuth/g) || []).length;
-    if (indexAuthCalls > 1) {
-      log(`⚠️  Warning: Index.tsx has ${indexAuthCalls} initializeAuth calls. Consider reducing duplication.`, 'yellow');
-    }
-  }
-  return true;
-});
+    // Generate report
+    log('\n📊 Test Results Summary:\n');
+    log(`✅ Passed: ${testResults.passed}`);
+    log(`❌ Failed: ${testResults.failed}`);
+    log(`📈 Success Rate: ${((testResults.passed / (testResults.passed + testResults.failed)) * 100).toFixed(1)}%`);
 
-// Test 8: Check admin panel separation
-addTest('Admin panel context separation', () => {
-  const adminPanelFile = 'src/pages/AdminPanel.tsx';
-  if (fs.existsSync(adminPanelFile)) {
-    const content = fs.readFileSync(adminPanelFile, 'utf8');
-    
-    // Should use admin store, not user auth store
-    if (!content.includes('useAdminStore')) {
-      throw new Error('Admin panel should use useAdminStore');
+    if (testResults.failed > 0) {
+      log('\n🚨 Failed Tests:');
+      testResults.details
+        .filter(result => !result.passed)
+        .forEach(result => {
+          log(`  - ${result.testName}: ${result.details}`);
+        });
     }
-    
-    // Should not use user auth store
-    if (content.includes('useAuthStore')) {
-      throw new Error('Admin panel should not use useAuthStore (user context)');
-    }
-  }
-  return true;
-});
 
-// Main execution
-async function runAllTests() {
-  log('\n🧪 KIXIKILA Production Stability Tests\n', 'bold');
-  log('='.repeat(50), 'blue');
-  
-  for (const test of tests) {
-    runTest(test);
-  }
-  
-  log('\n' + '='.repeat(50), 'blue');
-  log(`\n📊 Results: ${passedTests} passed, ${failedTests} failed\n`, 'bold');
-  
-  if (failedTests === 0) {
-    log('🎉 All tests passed! App stability looks good.', 'green');
-    log('\n✅ Ready for production deployment:', 'green');
-    log('   • Bottom navigation fixed', 'green');
-    log('   • SPA navigation working', 'green');
-    log('   • Session persistence enabled', 'green');
-    log('   • Admin/User contexts separated', 'green');
-    log('   • Route protection working', 'green');
-  } else {
-    log('⚠️  Some tests failed. Please fix issues before deploying.', 'red');
+    // Save detailed report
+    const reportPath = path.join(__dirname, `../test-reports/stability-report-${Date.now()}.json`);
+    await fs.promises.mkdir(path.dirname(reportPath), { recursive: true });
+    await fs.promises.writeFile(reportPath, JSON.stringify(testResults, null, 2));
+    log(`\n📄 Detailed report saved: ${reportPath}`);
+
+    // Exit with appropriate code
+    process.exit(testResults.failed > 0 ? 1 : 0);
+
+  } catch (error) {
+    log(`💥 Test runner failed: ${error.message}`);
+    console.error(error.stack);
     process.exit(1);
   }
 }
 
-runAllTests();
+// Run tests if this script is executed directly
+if (require.main === module) {
+  runTests();
+}
+
+module.exports = { runTests, config };

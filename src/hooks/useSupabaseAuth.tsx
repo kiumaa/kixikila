@@ -18,6 +18,38 @@ export const useSupabaseAuth = () => {
     // Initialize auth state on mount
     initializeAuth();
 
+    // Check for existing session immediately
+    const checkExistingSession = async () => {
+      try {
+        console.log('[useSupabaseAuth] Checking existing session...');
+        const session = await supabaseAuthService.getCurrentSession();
+        
+        if (session?.user) {
+          console.log('[useSupabaseAuth] Found existing session for user:', session.user.email);
+          const userData = await supabaseAuthService.getCurrentUser();
+          useAuthStore.setState({
+            isAuthenticated: true,
+            user: userData,
+            isLoading: false,
+            error: null,
+          });
+        } else {
+          console.log('[useSupabaseAuth] No existing session found');
+          useAuthStore.setState({
+            isLoading: false,
+          });
+        }
+      } catch (error) {
+        console.error('[useSupabaseAuth] Error checking session:', error);
+        useAuthStore.setState({
+          isLoading: false,
+          error: 'Erro ao verificar sessão',
+        });
+      }
+    };
+
+    checkExistingSession();
+
     // Listen to auth state changes
     const { data: { subscription } } = supabaseAuthService.onAuthStateChange(
       async (event, session) => {
@@ -28,7 +60,7 @@ export const useSupabaseAuth = () => {
           try {
             switch (event) {
               case 'SIGNED_IN':
-                // User signed in
+                console.log('[useSupabaseAuth] Processing SIGNED_IN event');
                 if (session?.user) {
                   const userData = await supabaseAuthService.getCurrentUser();
                   useAuthStore.setState({
@@ -41,7 +73,7 @@ export const useSupabaseAuth = () => {
                 break;
                 
               case 'SIGNED_OUT':
-                // User signed out
+                console.log('[useSupabaseAuth] Processing SIGNED_OUT event');
                 useAuthStore.setState({
                   isAuthenticated: false,
                   user: null,
@@ -51,7 +83,7 @@ export const useSupabaseAuth = () => {
                 break;
                 
               case 'TOKEN_REFRESHED':
-                // Token was refreshed
+                console.log('[useSupabaseAuth] Processing TOKEN_REFRESHED event');
                 if (session?.user) {
                   const userData = await supabaseAuthService.getCurrentUser();
                   useAuthStore.setState({
@@ -63,7 +95,7 @@ export const useSupabaseAuth = () => {
                 break;
                 
               case 'USER_UPDATED':
-                // User data was updated
+                console.log('[useSupabaseAuth] Processing USER_UPDATED event');
                 if (session?.user) {
                   const userData = await supabaseAuthService.getCurrentUser();
                   useAuthStore.setState({
@@ -75,10 +107,15 @@ export const useSupabaseAuth = () => {
                 break;
                 
               default:
+                console.log('[useSupabaseAuth] Unhandled auth event:', event);
                 break;
             }
           } catch (error) {
-            console.error('Error in auth state change handler:', error);
+            console.error('[useSupabaseAuth] Error in auth state change handler:', error);
+            useAuthStore.setState({
+              isLoading: false,
+              error: 'Erro na autenticação',
+            });
           }
         }, 0);
       }
@@ -86,6 +123,7 @@ export const useSupabaseAuth = () => {
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('[useSupabaseAuth] Cleaning up auth subscription');
       subscription?.unsubscribe();
     };
   }, [initializeAuth]);

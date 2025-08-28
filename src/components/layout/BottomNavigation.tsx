@@ -30,9 +30,11 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = React.memo(({
   const handleNavigation = useCallback((screen: string) => {
     onNavigate(screen);
   }, [onNavigate]);
-  // Only hide bottom menu on auth screens and loading
+  // Only hide bottom menu on auth screens, loading, and admin routes
   const hideOnScreens = ['onboarding', 'login', 'register', 'loading'];
-  if (hideOnScreens.includes(currentScreen)) {
+  const isAdminRoute = window.location.pathname.startsWith('/admin');
+  
+  if (hideOnScreens.includes(currentScreen) || isAdminRoute) {
     return null;
   }
 
