@@ -13,13 +13,15 @@ export const useSupabaseAuth = () => {
   const { initializeAuth, user, isAuthenticated, isLoading, error } = useAuthStore();
 
   useEffect(() => {
+    console.log('[useSupabaseAuth] Initializing auth hook...');
+    
     // Initialize auth state on mount
     initializeAuth();
 
     // Listen to auth state changes
     const { data: { subscription } } = supabaseAuthService.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session);
+        console.log('[useSupabaseAuth] Auth state changed:', event, !!session, session?.user?.email);
         
         // Prevent calling Supabase functions inside onAuthStateChange to avoid deadlock
         setTimeout(async () => {

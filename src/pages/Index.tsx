@@ -48,25 +48,17 @@ const Index = () => {
 
   // Initialize screen based on authentication status
   useEffect(() => {
-    const initializeScreen = async () => {
-      try {
-        // Initialize auth first
-        await initializeAuth();
-        
-        // Set screen based on auth status
-        if (isAuthenticated && user) {
-          setCurrentScreen('dashboard');
-        } else {
-          setCurrentScreen('onboarding');
-        }
-      } catch (error) {
-        console.error('Error initializing screen:', error);
-        setCurrentScreen('onboarding');
-      }
-    };
-
-    initializeScreen();
-  }, [isAuthenticated, user, initializeAuth]);
+    console.log('[Index] Auth state changed:', { isAuthenticated, user: !!user });
+    
+    // Set screen based on auth status (auth is already initialized in App.tsx via useSupabaseAuth)
+    if (isAuthenticated && user) {
+      console.log('[Index] User authenticated, showing dashboard');
+      setCurrentScreen('dashboard');
+    } else {
+      console.log('[Index] User not authenticated, showing onboarding');
+      setCurrentScreen('onboarding');
+    }
+  }, [isAuthenticated, user]);
   
   // Modal states
   const [showCreateGroup, setShowCreateGroup] = useState(false);

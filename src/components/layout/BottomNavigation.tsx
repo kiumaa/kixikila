@@ -30,7 +30,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = React.memo(({
   const handleNavigation = useCallback((screen: string) => {
     onNavigate(screen);
   }, [onNavigate]);
-  if (!['dashboard', 'wallet', 'profile', 'notifications'].includes(currentScreen)) {
+  // Only hide bottom menu on auth screens and loading
+  const hideOnScreens = ['onboarding', 'login', 'register', 'loading'];
+  if (hideOnScreens.includes(currentScreen)) {
     return null;
   }
 
