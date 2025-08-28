@@ -105,11 +105,6 @@ export interface AdminStats {
 }
 
 interface AdminState {
-  // Auth
-  isAdminLoggedIn: boolean;
-  currentAdmin: AdminUser | null;
-  sessionTimeout: number;
-  
   // Users management
   allUsers: AdminUser[];
   
@@ -129,11 +124,6 @@ interface AdminState {
   
   // Statistics
   adminStats: AdminStats;
-  
-  // Actions - Auth
-  adminLogin: (admin: AdminUser) => void;
-  adminLogout: () => void;
-  extendSession: () => void;
   
   // Actions - Users
   banUser: (userId: number, reason: string) => void;
@@ -304,11 +294,6 @@ const mockActivityLogs: ActivityLog[] = [
 export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
-      // Auth state
-      isAdminLoggedIn: false,
-      currentAdmin: null,
-      sessionTimeout: Date.now() + 10 * 60 * 1000, // 10 minutes
-      
       // Data
       allUsers: mockUsers,
       planConfigs: initialPlanConfigs,
@@ -335,43 +320,6 @@ export const useAdminStore = create<AdminState>()(
         monthlyGrowth: 12.5
       },
       
-      // Auth actions
-      adminLogin: (admin: AdminUser) => {
-        set({
-          isAdminLoggedIn: true,
-          currentAdmin: admin,
-          sessionTimeout: Date.now() + 10 * 60 * 1000
-        });
-        get().addActivityLog({
-          action: 'Login de administrador',
-          adminId: admin.id,
-          adminName: admin.name,
-          targetType: 'system',
-          details: 'Administrador fez login no sistema'
-        });
-      },
-      
-      adminLogout: () => {
-        const currentAdmin = get().currentAdmin;
-        set({
-          isAdminLoggedIn: false,
-          currentAdmin: null
-        });
-        if (currentAdmin) {
-          get().addActivityLog({
-            action: 'Logout de administrador',
-            adminId: currentAdmin.id,
-            adminName: currentAdmin.name,
-            targetType: 'system',
-            details: 'Administrador fez logout do sistema'
-          });
-        }
-      },
-      
-      extendSession: () => {
-        set({ sessionTimeout: Date.now() + 10 * 60 * 1000 });
-      },
-      
       // User actions
       banUser: (userId: number, reason: string) => {
         set((state) => ({
@@ -382,11 +330,11 @@ export const useAdminStore = create<AdminState>()(
           )
         }));
         const user = get().allUsers.find(u => u.id === userId);
-        if (user && get().currentAdmin) {
+        if (user) {
           get().addActivityLog({
             action: 'Utilizador banido',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
+            adminId: 1, // Default admin ID for now
+            adminName: 'Admin',
             targetType: 'user',
             targetId: userId,
             details: `Utilizador ${user.name} banido. Razão: ${reason}`
@@ -404,11 +352,11 @@ export const useAdminStore = create<AdminState>()(
           )
         }));
         const user = get().allUsers.find(u => u.id === userId);
-        if (user && get().currentAdmin) {
+        if (user) {
           get().addActivityLog({
             action: 'Utilizador desbaneado',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
+            adminId: 1, // Default admin ID for now
+            adminName: 'Admin',
             targetType: 'user',
             targetId: userId,
             details: `Utilizador ${user.name} foi desbaneado`
@@ -430,11 +378,11 @@ export const useAdminStore = create<AdminState>()(
           )
         }));
         const user = get().allUsers.find(u => u.id === userId);
-        if (user && get().currentAdmin) {
+        if (user) {
           get().addActivityLog({
             action: 'Plano alterado',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
+            adminId: 1, // Default admin ID for now
+            adminName: 'Admin',
             targetType: 'user',
             targetId: userId,
             details: `Plano do utilizador ${user.name} alterado para ${plan.toUpperCase()}`
@@ -450,11 +398,11 @@ export const useAdminStore = create<AdminState>()(
           )
         }));
         const user = get().allUsers.find(u => u.id === userId);
-        if (user && get().currentAdmin) {
+        if (user) {
           get().addActivityLog({
             action: 'Dados do utilizador alterados',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
+            adminId: 1, // Default admin ID for now
+            adminName: 'Admin',
             targetType: 'user',
             targetId: userId,
             details: `Dados do utilizador ${user.name} foram alterados`
@@ -465,11 +413,11 @@ export const useAdminStore = create<AdminState>()(
       // Group actions
       deleteGroup: (groupId: number) => {
         const group = mockGroups.find(g => g.id === groupId);
-        if (group && get().currentAdmin) {
+        if (group) {
           get().addActivityLog({
             action: 'Grupo eliminado',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
+            adminId: 1, // Default admin ID for now
+            adminName: 'Admin',
             targetType: 'group',
             targetId: groupId,
             details: `Grupo "${group.name}" foi eliminado`
@@ -479,11 +427,11 @@ export const useAdminStore = create<AdminState>()(
       
       freezeGroup: (groupId: number) => {
         const group = mockGroups.find(g => g.id === groupId);
-        if (group && get().currentAdmin) {
+        if (group) {
           get().addActivityLog({
             action: 'Grupo congelado',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
+            adminId: 1, // Default admin ID for now
+            adminName: 'Admin',
             targetType: 'group',
             targetId: groupId,
             details: `Grupo "${group.name}" foi congelado`
@@ -493,11 +441,11 @@ export const useAdminStore = create<AdminState>()(
       
       updateGroup: (groupId: number, data: Partial<Group>) => {
         const group = mockGroups.find(g => g.id === groupId);
-        if (group && get().currentAdmin) {
+        if (group) {
           get().addActivityLog({
             action: 'Grupo alterado',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
+            adminId: 1, // Default admin ID for now
+            adminName: 'Admin',
             targetType: 'group',
             targetId: groupId,
             details: `Grupo "${group.name}" foi alterado`
@@ -512,15 +460,13 @@ export const useAdminStore = create<AdminState>()(
             plan.name === planName ? { ...plan, ...config } : plan
           )
         }));
-        if (get().currentAdmin) {
-          get().addActivityLog({
-            action: 'Configuração de plano alterada',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
-            targetType: 'system',
-            details: `Configuração do plano ${planName.toUpperCase()} foi alterada`
-          });
-        }
+        get().addActivityLog({
+          action: 'Configuração de plano alterada',
+          adminId: 1, // Default admin ID for now
+          adminName: 'Admin',
+          targetType: 'system',
+          details: `Configuração do plano ${planName.toUpperCase()} foi alterada`
+        });
       },
       
       createPromotion: (promotion: Omit<Promotion, 'id' | 'createdAt' | 'usageCount'>) => {
@@ -533,15 +479,13 @@ export const useAdminStore = create<AdminState>()(
         set((state) => ({
           promotions: [...state.promotions, newPromotion]
         }));
-        if (get().currentAdmin) {
-          get().addActivityLog({
-            action: 'Promoção criada',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
-            targetType: 'system',
-            details: `Promoção "${newPromotion.name}" foi criada com ${newPromotion.discountPercent}% de desconto`
-          });
-        }
+        get().addActivityLog({
+          action: 'Promoção criada',
+          adminId: 1, // Default admin ID for now
+          adminName: 'Admin',
+          targetType: 'system',
+          details: `Promoção "${newPromotion.name}" foi criada com ${newPromotion.discountPercent}% de desconto`
+        });
       },
       
       togglePromotion: (promotionId: number) => {
@@ -551,11 +495,11 @@ export const useAdminStore = create<AdminState>()(
           )
         }));
         const promotion = get().promotions.find(p => p.id === promotionId);
-        if (promotion && get().currentAdmin) {
+        if (promotion) {
           get().addActivityLog({
             action: promotion.isActive ? 'Promoção ativada' : 'Promoção desativada',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
+            adminId: 1, // Default admin ID for now
+            adminName: 'Admin',
             targetType: 'system',
             details: `Promoção "${promotion.name}" foi ${promotion.isActive ? 'ativada' : 'desativada'}`
           });
@@ -567,30 +511,26 @@ export const useAdminStore = create<AdminState>()(
         set((state) => ({
           brandingConfig: { ...state.brandingConfig, ...config }
         }));
-        if (get().currentAdmin) {
-          get().addActivityLog({
-            action: 'Branding alterado',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
-            targetType: 'system',
-            details: 'Configurações de branding foram alteradas'
-          });
-        }
+        get().addActivityLog({
+          action: 'Branding alterado',
+          adminId: 1, // Default admin ID for now
+          adminName: 'Admin',
+          targetType: 'system',
+          details: 'Configurações de branding foram alteradas'
+        });
       },
       
       updatePWAConfig: (config: Partial<PWAConfig>) => {
         set((state) => ({
           pwaConfig: { ...state.pwaConfig, ...config }
         }));
-        if (get().currentAdmin) {
-          get().addActivityLog({
-            action: 'Configuração PWA alterada',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
-            targetType: 'system',
-            details: 'Configurações PWA foram alteradas'
-          });
-        }
+        get().addActivityLog({
+          action: 'Configuração PWA alterada',
+          adminId: 1, // Default admin ID for now
+          adminName: 'Admin',
+          targetType: 'system',
+          details: 'Configurações PWA foram alteradas'
+        });
       },
       
       // System actions
@@ -598,15 +538,13 @@ export const useAdminStore = create<AdminState>()(
         set((state) => ({
           systemConfig: { ...state.systemConfig, ...config }
         }));
-        if (get().currentAdmin) {
-          get().addActivityLog({
-            action: 'Configuração do sistema alterada',
-            adminId: get().currentAdmin!.id,
-            adminName: get().currentAdmin!.name,
-            targetType: 'system',
-            details: 'Configurações do sistema foram alteradas'
-          });
-        }
+        get().addActivityLog({
+          action: 'Configuração do sistema alterada',
+          adminId: 1, // Default admin ID for now
+          adminName: 'Admin',
+          targetType: 'system',
+          details: 'Configurações do sistema foram alteradas'
+        });
       },
       
       // Log actions
