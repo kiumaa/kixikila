@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/design-system/Avatar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cn } from '@/lib/utils';
 import kixikilaLogoDark from '@/assets/kixikila-logo-dark.png';
 import kixikilaLogoLight from '@/assets/kixikila-logo-light.png';
@@ -277,9 +278,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </div>
             </div>
             
-            <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-              <Clock className="w-4 h-4" />
-              <span>Sessão: {formatTimeRemaining(timeRemaining)}</span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Clock className="w-4 h-4" />
+                <span>Sessão: {formatTimeRemaining(timeRemaining)}</span>
+              </div>
+              <ThemeToggle />
             </div>
             
             <Button
