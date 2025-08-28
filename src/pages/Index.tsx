@@ -1,4 +1,4 @@
-import React, { useState, Suspense, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { LoadingScreen } from '@/components/screens/LoadingScreen';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
@@ -38,7 +38,7 @@ import {
 
 const Index = () => {
   // Auth state
-  const { isAuthenticated, user, logout, initializeAuth } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   
   // App state
   const [currentScreen, setCurrentScreen] = useState('loading');
@@ -50,7 +50,6 @@ const Index = () => {
   useEffect(() => {
     console.log('[Index] Auth state changed:', { isAuthenticated, user: !!user });
     
-    // Set screen based on auth status (auth is already initialized in App.tsx via useSupabaseAuth)
     if (isAuthenticated && user) {
       console.log('[Index] User authenticated, showing dashboard');
       setCurrentScreen('dashboard');
@@ -69,7 +68,7 @@ const Index = () => {
   const [showInviteGroup, setShowInviteGroup] = useState(false);
 
   // Global store
-  const { canCreateGroup, userGroups } = useAppStore();
+  const { canCreateGroup } = useAppStore();
 
   // Navigation handlers
   const handleLogin = () => {
@@ -82,7 +81,6 @@ const Index = () => {
       setCurrentScreen('onboarding');
     } catch (error) {
       console.error('Logout error:', error);
-      // Force logout even if API call fails
       setCurrentScreen('onboarding');
     }
   };
@@ -102,7 +100,7 @@ const Index = () => {
 
   const handleCreateGroup = () => {
     if (!canCreateGroup()) {
-      // toast will be handled by the modal
+      setCurrentScreen('vipManagement');
       return;
     }
     setShowCreateGroup(true);

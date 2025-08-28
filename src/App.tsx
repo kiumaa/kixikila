@@ -22,7 +22,10 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            {/* Main Application - handles internal routing via state management */}
+            <Route path="/*" element={<Index />} />
+            
+            {/* Admin Panel - uses React Router internally */}
             <Route 
               path="/admin/*" 
               element={
@@ -31,7 +34,8 @@ const App = () => {
                 </ProtectedRoute>
               } 
             />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            
+            {/* 404 Not Found */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
