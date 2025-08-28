@@ -328,6 +328,374 @@ class AdminController {
   });
 
   /**
+   * Get system configurations
+   */
+  getSystemConfigurations = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin getting system configurations', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for advanced configurations',
+        data: {}
+      });
+    } catch (error) {
+      logger.error('Error getting system configurations:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Update system configurations
+   */
+  updateSystemConfigurations = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin updating system configurations', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for advanced configurations',
+        data: {}
+      });
+    } catch (error) {
+      logger.error('Error updating system configurations:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Get message templates
+   */
+  getMessageTemplates = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin getting message templates', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for template management',
+        data: []
+      });
+    } catch (error) {
+      logger.error('Error getting message templates:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Create message template
+   */
+  createMessageTemplate = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin creating message template', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for template management'
+      });
+    } catch (error) {
+      logger.error('Error creating message template:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Update message template
+   */
+  updateMessageTemplate = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin updating message template', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for template management'
+      });
+    } catch (error) {
+      logger.error('Error updating message template:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Delete message template
+   */
+  deleteMessageTemplate = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin deleting message template', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for template management'
+      });
+    } catch (error) {
+      logger.error('Error deleting message template:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Get advanced SMS configuration
+   */
+  getAdvancedSMSConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin getting advanced SMS config', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for advanced SMS configuration',
+        data: {}
+      });
+    } catch (error) {
+      logger.error('Error getting advanced SMS config:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Update advanced SMS configuration
+   */
+  updateAdvancedSMSConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin updating advanced SMS config', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for advanced SMS configuration'
+      });
+    } catch (error) {
+      logger.error('Error updating advanced SMS config:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Get security configuration
+   */
+  getSecurityConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin getting security config', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for security configuration',
+        data: {}
+      });
+    } catch (error) {
+      logger.error('Error getting security config:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Update security configuration
+   */
+  updateSecurityConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin updating security config', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for security configuration'
+      });
+    } catch (error) {
+      logger.error('Error updating security config:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Get notification configuration
+   */
+  getNotificationConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin getting notification config', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for notification configuration',
+        data: {}
+      });
+    } catch (error) {
+      logger.error('Error getting notification config:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Update notification configuration
+   */
+  updateNotificationConfig = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin updating notification config', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for notification configuration'
+      });
+    } catch (error) {
+      logger.error('Error updating notification config:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Get webhooks
+   */
+  getWebhooks = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin getting webhooks', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for webhook management',
+        data: []
+      });
+    } catch (error) {
+      logger.error('Error getting webhooks:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Create webhook
+   */
+  createWebhook = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin creating webhook', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for webhook management'
+      });
+    } catch (error) {
+      logger.error('Error creating webhook:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Update webhook
+   */
+  updateWebhook = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin updating webhook', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for webhook management'
+      });
+    } catch (error) {
+      logger.error('Error updating webhook:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Delete webhook
+   */
+  deleteWebhook = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin deleting webhook', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the manage-system-config edge function for webhook management'
+      });
+    } catch (error) {
+      logger.error('Error deleting webhook:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Get service health
+   */
+  getServiceHealth = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin getting service health', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the service-health-monitor edge function for service health monitoring',
+        data: []
+      });
+    } catch (error) {
+      logger.error('Error getting service health:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
+   * Check services health
+   */
+  checkServicesHealth = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    try {
+      logger.info('Admin checking services health', { adminId: req.user?.id });
+      
+      res.json({
+        success: true,
+        message: 'Use the service-health-monitor edge function for service health monitoring'
+      });
+    } catch (error) {
+      logger.error('Error checking services health:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  });
+
+  /**
    * Helper method to update environment variables
    */
   private async updateEnvVariable(key: string, value: string): Promise<void> {

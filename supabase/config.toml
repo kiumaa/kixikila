@@ -7,6 +7,18 @@ schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
+[functions.get-audit-logs]
+verify_jwt = false
+
+[functions.security-alerts]
+verify_jwt = false
+
+[functions.manage-system-config]
+verify_jwt = true
+
+[functions.service-health-monitor]
+verify_jwt = true
+
 [graphql]
 enabled = true
 port = 54329

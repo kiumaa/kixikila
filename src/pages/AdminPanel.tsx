@@ -12,7 +12,8 @@ const GroupsManagement = lazy(() => import('@/components/admin/screens/GroupsMan
 const PlansManagement = lazy(() => import('@/components/admin/screens/PlansManagement'));
 const BrandingManagement = lazy(() => import('@/components/admin/screens/BrandingManagement'));
 const PWAManagement = lazy(() => import('@/components/admin/screens/PWAManagement'));
-const NotificationsManagement = lazy(() => import('@/components/admin/screens/NotificationsManagement'));
+const AdvancedSystemSettings = lazy(() => import('@/components/admin/screens/AdvancedSystemSettings'));
+const SecurityDashboard = lazy(() => import('@/components/admin/screens/SecurityDashboard'));
 const ActivityLogs = lazy(() => import('@/components/admin/screens/ActivityLogs'));
 const SystemSettings = lazy(() => import('@/components/admin/screens/SystemSettings'));
 
@@ -34,7 +35,8 @@ const AdminPanel: React.FC = () => {
           <Route path="/plans" element={<PlansManagement />} />
           <Route path="/branding" element={<BrandingManagement />} />
           <Route path="/pwa" element={<PWAManagement />} />
-          <Route path="/notifications" element={<NotificationsManagement />} />
+          <Route path="/advanced-settings" element={<AdvancedSystemSettings />} />
+          <Route path="/security" element={<SecurityDashboard />} />
           <Route path="/logs" element={<ActivityLogs />} />
           <Route path="/settings" element={<SystemSettings />} />
         </Routes>

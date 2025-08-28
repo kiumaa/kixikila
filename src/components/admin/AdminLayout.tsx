@@ -33,12 +33,10 @@ const sidebarItems = [
   { icon: BarChart3, label: 'Dashboard', path: '/admin/dashboard' },
   { icon: Users, label: 'Utilizadores', path: '/admin/users' },
   { icon: FileText, label: 'Grupos', path: '/admin/groups' },
-  { icon: CreditCard, label: 'Planos', path: '/admin/plans' },
-  { icon: Palette, label: 'Branding', path: '/admin/branding' },
-  { icon: Smartphone, label: 'PWA', path: '/admin/pwa' },
-  { icon: Bell, label: 'Notificações', path: '/admin/notifications' },
+  { icon: Shield, label: 'Segurança', path: '/admin/security' },
   { icon: Activity, label: 'Logs', path: '/admin/logs' },
-  { icon: Settings, label: 'Sistema', path: '/admin/settings' }
+  { icon: Settings, label: 'Configurações', path: '/admin/settings' },
+  { icon: Settings, label: 'Config. Avançadas', path: '/admin/advanced-settings' }
 ];
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {

@@ -206,4 +206,32 @@ router.get('/bulksms-config', adminController.getBulkSMSConfig);
 router.put('/bulksms-config', adminController.updateBulkSMSConfig);
 router.post('/bulksms-config/test', adminController.testSMSConfig);
 
+// Advanced System Configuration Routes
+router.get('/system-configurations', adminController.getSystemConfigurations);
+router.put('/system-configurations', adminController.updateSystemConfigurations);
+
+// Template Management Routes
+router.get('/templates', adminController.getMessageTemplates);
+router.post('/templates', adminController.createMessageTemplate);
+router.put('/templates/:id', adminController.updateMessageTemplate);
+router.delete('/templates/:id', adminController.deleteMessageTemplate);
+
+// Advanced Configuration Routes
+router.get('/advanced-sms-config', adminController.getAdvancedSMSConfig);
+router.put('/advanced-sms-config', adminController.updateAdvancedSMSConfig);
+router.get('/security-config', adminController.getSecurityConfig);
+router.put('/security-config', adminController.updateSecurityConfig);
+router.get('/notification-config', adminController.getNotificationConfig);
+router.put('/notification-config', adminController.updateNotificationConfig);
+
+// Webhook Management Routes
+router.get('/webhooks', adminController.getWebhooks);
+router.post('/webhooks', adminController.createWebhook);
+router.put('/webhooks/:id', adminController.updateWebhook);
+router.delete('/webhooks/:id', adminController.deleteWebhook);
+
+// Service Health Routes
+router.get('/service-health', adminController.getServiceHealth);
+router.post('/service-health/check', adminController.checkServicesHealth);
+
 export default router;
