@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Loader2 } from 'lucide-react';
@@ -8,11 +8,24 @@ interface AdminProtectedRouteProps {
 }
 
 const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, user, isLoading } = useAuthStore();
+  const { isAuthenticated, user, isLoading, initializeAuth } = useAuthStore();
   const location = useLocation();
+  const [authInitialized, setAuthInitialized] = useState(false);
+
+  // Initialize auth on mount
+  useEffect(() => {
+    const initAuth = async () => {
+      await initializeAuth();
+      setAuthInitialized(true);
+    };
+    
+    if (!authInitialized) {
+      initAuth();
+    }
+  }, [initializeAuth, authInitialized]);
 
   // Show loading spinner while checking authentication
-  if (isLoading) {
+  if (isLoading || !authInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -23,6 +36,11 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) =
         </div>
       </div>
     );
+  }
+
+  // For admin login page, always show the admin login (don't redirect)
+  if (location.pathname === '/admin' && !isAuthenticated) {
+    return <>{children}</>;
   }
 
   // If not authenticated, redirect to admin login
