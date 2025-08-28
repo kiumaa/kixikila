@@ -264,6 +264,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      validate_rls_security: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          has_delete: boolean
+          has_insert: boolean
+          has_select: boolean
+          has_update: boolean
+          policy_count: number
+          table_name: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
