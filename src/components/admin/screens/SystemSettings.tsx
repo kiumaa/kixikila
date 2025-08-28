@@ -81,19 +81,19 @@ const SystemSettings: React.FC = () => {
       setLoading(true);
       
       // Load email config
-      const emailResponse = await adminApi.get<EmailConfig>('/email-config');
+      const emailResponse = await adminApi.getEmailConfig();
       if (emailResponse.success) {
         setEmailConfig(prev => ({ ...prev, ...emailResponse.data }));
       }
       
       // Load Stripe config
-      const stripeResponse = await adminApi.get<StripeConfig>('/stripe-config');
+      const stripeResponse = await adminApi.getStripeConfig();
       if (stripeResponse.success) {
         setStripeConfig(prev => ({ ...prev, ...stripeResponse.data }));
       }
       
       // Load BulkSMS config
-      const bulkSMSResponse = await adminApi.get<BulkSMSConfig>('/bulksms-config');
+      const bulkSMSResponse = await adminApi.getBulkSMSConfig();
       if (bulkSMSResponse.success) {
         setBulkSMSConfig(prev => ({ ...prev, ...bulkSMSResponse.data }));
       }
@@ -112,7 +112,7 @@ const SystemSettings: React.FC = () => {
   const handleSaveEmailConfig = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.put<any>('/email-config', emailConfig);
+      const response = await adminApi.updateEmailConfig(emailConfig);
       
       if (response.success) {
         toast({
@@ -144,7 +144,7 @@ const SystemSettings: React.FC = () => {
 
     try {
       setTestingEmail(true);
-      const response = await adminApi.post<any>('/email-config/test', { testEmail });
+      const response = await adminApi.testEmailConfig(testEmail);
       
       if (response.success) {
         toast({
@@ -166,7 +166,7 @@ const SystemSettings: React.FC = () => {
   const handleSaveStripeConfig = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.put<any>('/stripe-config', stripeConfig);
+      const response = await adminApi.updateStripeConfig(stripeConfig);
       
       if (response.success) {
         toast({
@@ -189,7 +189,7 @@ const SystemSettings: React.FC = () => {
   const handleSaveBulkSMSConfig = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.put<any>('/bulksms-config', bulkSMSConfig);
+      const response = await adminApi.updateBulkSMSConfig(bulkSMSConfig);
       
       if (response.success) {
         toast({
@@ -221,7 +221,7 @@ const SystemSettings: React.FC = () => {
 
     try {
       setTestingSMS(true);
-      const response = await adminApi.post<any>('/bulksms-config/test', { testPhone });
+      const response = await adminApi.testBulkSMSConfig(testPhone);
       
       if (response.success) {
         toast({

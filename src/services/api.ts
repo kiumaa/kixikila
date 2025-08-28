@@ -116,7 +116,7 @@ export const adminApi = {
   },
 
   testEmailConfig: async (testEmail: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/test-email`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/email-config/test`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -176,13 +176,13 @@ export const adminApi = {
   },
 
   testBulkSMSConfig: async (testNumber: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/test-sms`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/bulksms-config/test`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
-      body: JSON.stringify({ testNumber })
+      body: JSON.stringify({ testPhone: testNumber })
     });
     return response.json();
   }

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authService } from '@/services/authService';
+import supabaseAuthService from '../services/supabaseAuthService';
 
 interface User {
   id: string;
@@ -53,83 +53,94 @@ export const useAuthStore = create<AuthState>()(
       error: null,
 
       login: async (email: string, password: string, rememberMe = false) => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await authService.login({ email, password, rememberMe });
-          
-          if (response.success) {
-            set({
-              isAuthenticated: true,
-              user: response.data.user,
-              isLoading: false,
-              error: null,
-            });
-          } else {
-            throw new Error(response.message || 'Login failed');
-          }
-        } catch (error: any) {
-          set({
-            isAuthenticated: false,
-            user: null,
-            isLoading: false,
-            error: error.message || 'Erro no login',
-          });
-          throw error;
-        }
-      },
+    set({ isLoading: true, error: null });
+    try {
+      const response = await supabaseAuthService.login({ email, password });
+      
+      if (response.success && response.data) {
+        const { user, session } = response.data;
+        set({
+          isAuthenticated: true,
+          user,
+          isLoading: false,
+          error: null,
+        });
+        return { success: true, message: response.message };
+      } else {
+        set({ error: response.message, isLoading: false });
+        return { success: false, message: response.message };
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || 'Erro no login';
+      set({
+        isAuthenticated: false,
+        user: null,
+        isLoading: false,
+        error: errorMessage,
+      });
+      return { success: false, message: errorMessage };
+    }
+  },
 
       sendPhoneOtp: async (phone: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authService.sendPhoneOtp({ phone });
+          const response = await supabaseAuthService.sendPhoneOtp({ phone });
           
           if (response.success) {
             set({
               isLoading: false,
               error: null,
             });
+            return { success: true, message: response.message };
           } else {
-            throw new Error(response.message || 'Erro ao enviar OTP');
+            set({ error: response.message, isLoading: false });
+            return { success: false, message: response.message };
           }
         } catch (error: any) {
+          const errorMessage = error.message || 'Erro ao enviar OTP';
           set({
             isLoading: false,
-            error: error.message || 'Erro ao enviar OTP',
+            error: errorMessage,
           });
-          throw error;
+          return { success: false, message: errorMessage };
         }
       },
 
       verifyPhoneOtp: async (phone: string, otp: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authService.verifyPhoneOtp({ phone, otp });
+          const response = await supabaseAuthService.verifyPhoneOtp({ phone, token: otp });
           
-          if (response.success) {
+          if (response.success && response.data) {
+            const { user, session } = response.data;
             set({
               isAuthenticated: true,
-              user: response.data.user,
+              user,
               isLoading: false,
               error: null,
             });
+            return { success: true, message: response.message };
           } else {
-            throw new Error(response.message || 'OTP inválido');
+            set({ error: response.message, isLoading: false });
+            return { success: false, message: response.message };
           }
         } catch (error: any) {
+          const errorMessage = error.message || 'Erro na verificação do OTP';
           set({
             isAuthenticated: false,
             user: null,
             isLoading: false,
-            error: error.message || 'Erro na verificação do OTP',
+            error: errorMessage,
           });
-          throw error;
+          return { success: false, message: errorMessage };
         }
       },
 
       register: async (userData) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authService.register(userData);
+          const response = await supabaseAuthService.register(userData);
           
           if (response.success) {
             // Don't set as authenticated yet, user needs to verify email/phone
@@ -137,22 +148,25 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
               error: null,
             });
+            return { success: true, message: response.message };
           } else {
-            throw new Error(response.message || 'Registration failed');
+            set({ error: response.message, isLoading: false });
+            return { success: false, message: response.message };
           }
         } catch (error: any) {
+          const errorMessage = error.message || 'Erro no registro';
           set({
             isLoading: false,
-            error: error.message || 'Erro no registro',
+            error: errorMessage,
           });
-          throw error;
+          return { success: false, message: errorMessage };
         }
       },
 
       logout: async () => {
         set({ isLoading: true });
         try {
-          await authService.logout();
+          await supabaseAuthService.logout();
           set({
             isAuthenticated: false,
             user: null,
@@ -173,55 +187,55 @@ export const useAuthStore = create<AuthState>()(
       verifyOtp: async (email: string, otp: string, type: 'email_verification' | 'phone_verification') => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authService.verifyOtp({ email, otp, type });
+          const response = await supabaseAuthService.verifyEmailOtp({ email, token: otp, type: 'email' });
           
-          if (response.success) {
-            // If verification includes user data and tokens, update state
-            if (response.data && response.data.user) {
-              set({
-                isAuthenticated: true,
-                user: response.data.user,
-                isLoading: false,
-                error: null,
-              });
-            } else {
-              set({
-                isLoading: false,
-                error: null,
-              });
-            }
+          if (response.success && response.data) {
+            const { user, session } = response.data;
+            set({
+              isAuthenticated: true,
+              user,
+              isLoading: false,
+              error: null,
+            });
+            return { success: true, message: response.message };
           } else {
-            throw new Error(response.message || 'OTP verification failed');
+            set({ error: response.message, isLoading: false });
+            return { success: false, message: response.message };
           }
         } catch (error: any) {
+          const errorMessage = error.message || 'Erro na verificação do OTP';
           set({
+            isAuthenticated: false,
+            user: null,
             isLoading: false,
-            error: error.message || 'Erro na verificação OTP',
+            error: errorMessage,
           });
-          throw error;
+          return { success: false, message: errorMessage };
         }
       },
 
       resendOtp: async (email: string, type: 'email_verification' | 'phone_verification') => {
         set({ isLoading: true, error: null });
         try {
-          await authService.resendOtp(email, type);
-          set({
-            isLoading: false,
-            error: null,
-          });
+          const response = await supabaseAuthService.resendOtp({ email, type: 'signup' });
+          
+          if (response.success) {
+            set({ isLoading: false, error: null });
+            return { success: true, message: response.message };
+          } else {
+            set({ error: response.message, isLoading: false });
+            return { success: false, message: response.message };
+          }
         } catch (error: any) {
-          set({
-            isLoading: false,
-            error: error.message || 'Erro ao reenviar OTP',
-          });
-          throw error;
+          const errorMessage = error.message || 'Erro ao reenviar OTP';
+          set({ error: errorMessage, isLoading: false });
+          return { success: false, message: errorMessage };
         }
       },
 
       refreshToken: async () => {
         try {
-          const response = await authService.refreshToken();
+          const response = await supabaseAuthService.refreshToken();
           
           if (response.success && response.data.user) {
             set({
@@ -243,7 +257,7 @@ export const useAuthStore = create<AuthState>()(
       getProfile: async () => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authService.getProfile();
+          const response = await supabaseAuthService.getProfile();
           
           if (response.success && response.data) {
             set({
@@ -268,22 +282,33 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: loading });
       },
 
-      initializeAuth: () => {
-        const isAuth = authService.isAuthenticated();
-        const userData = authService.getCurrentUser();
-        
-        if (isAuth && userData) {
-          set({
-            isAuthenticated: true,
-            user: userData,
-          });
+      initializeAuth: async () => {
+        set({ isLoading: true });
+        try {
+          const isAuth = await supabaseAuthService.isAuthenticated();
+          const userData = await supabaseAuthService.getCurrentUser();
           
-          // Try to refresh token to ensure it's still valid
-          get().refreshToken();
-        } else {
+          if (isAuth && userData) {
+            set({
+              isAuthenticated: true,
+              user: userData,
+              isLoading: false,
+              error: null,
+            });
+          } else {
+            set({
+              isAuthenticated: false,
+              user: null,
+              isLoading: false,
+              error: null,
+            });
+          }
+        } catch (error) {
           set({
             isAuthenticated: false,
             user: null,
+            isLoading: false,
+            error: null,
           });
         }
       },
