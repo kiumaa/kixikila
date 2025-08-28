@@ -313,13 +313,6 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "otp_codes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users_safe"
-            referencedColumns: ["id"]
-          },
         ]
       }
       security_configurations: {
@@ -645,93 +638,7 @@ export type Database = {
       }
     }
     Views: {
-      users_safe: {
-        Row: {
-          active_groups: number | null
-          address: string | null
-          avatar_url: string | null
-          city: string | null
-          completed_cycles: number | null
-          country: string | null
-          created_at: string | null
-          date_of_birth: string | null
-          email: string | null
-          email_verified: boolean | null
-          full_name: string | null
-          id: string | null
-          is_active: boolean | null
-          is_vip: boolean | null
-          kyc_status: string | null
-          last_login: string | null
-          phone: string | null
-          phone_verified: boolean | null
-          role: string | null
-          total_earned: number | null
-          total_saved: number | null
-          total_withdrawn: number | null
-          trust_score: number | null
-          updated_at: string | null
-          vip_expiry_date: string | null
-          wallet_balance: number | null
-        }
-        Insert: {
-          active_groups?: number | null
-          address?: never
-          avatar_url?: string | null
-          city?: string | null
-          completed_cycles?: number | null
-          country?: string | null
-          created_at?: string | null
-          date_of_birth?: never
-          email?: string | null
-          email_verified?: boolean | null
-          full_name?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          is_vip?: boolean | null
-          kyc_status?: string | null
-          last_login?: string | null
-          phone?: never
-          phone_verified?: boolean | null
-          role?: string | null
-          total_earned?: never
-          total_saved?: never
-          total_withdrawn?: never
-          trust_score?: number | null
-          updated_at?: string | null
-          vip_expiry_date?: string | null
-          wallet_balance?: never
-        }
-        Update: {
-          active_groups?: number | null
-          address?: never
-          avatar_url?: string | null
-          city?: string | null
-          completed_cycles?: number | null
-          country?: string | null
-          created_at?: string | null
-          date_of_birth?: never
-          email?: string | null
-          email_verified?: boolean | null
-          full_name?: string | null
-          id?: string | null
-          is_active?: boolean | null
-          is_vip?: boolean | null
-          kyc_status?: string | null
-          last_login?: string | null
-          phone?: never
-          phone_verified?: boolean | null
-          role?: string | null
-          total_earned?: never
-          total_saved?: never
-          total_withdrawn?: never
-          trust_score?: number | null
-          updated_at?: string | null
-          vip_expiry_date?: string | null
-          wallet_balance?: never
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       cleanup_expired_data: {
@@ -764,6 +671,68 @@ export type Database = {
           total_users: number
           unread_notifications: number
           vip_users: number
+        }[]
+      }
+      get_user_safe_data: {
+        Args: { target_user_id?: string }
+        Returns: {
+          active_groups: number
+          address: string
+          avatar_url: string
+          city: string
+          completed_cycles: number
+          country: string
+          created_at: string
+          date_of_birth: string
+          email: string
+          email_verified: boolean
+          full_name: string
+          id: string
+          is_active: boolean
+          is_vip: boolean
+          kyc_status: string
+          last_login: string
+          phone: string
+          phone_verified: boolean
+          role: string
+          total_earned: number
+          total_saved: number
+          total_withdrawn: number
+          trust_score: number
+          updated_at: string
+          vip_expiry_date: string
+          wallet_balance: number
+        }[]
+      }
+      get_users_safe_list: {
+        Args: { limit_count?: number; offset_count?: number }
+        Returns: {
+          active_groups: number
+          address: string
+          avatar_url: string
+          city: string
+          completed_cycles: number
+          country: string
+          created_at: string
+          date_of_birth: string
+          email: string
+          email_verified: boolean
+          full_name: string
+          id: string
+          is_active: boolean
+          is_vip: boolean
+          kyc_status: string
+          last_login: string
+          phone: string
+          phone_verified: boolean
+          role: string
+          total_earned: number
+          total_saved: number
+          total_withdrawn: number
+          trust_score: number
+          updated_at: string
+          vip_expiry_date: string
+          wallet_balance: number
         }[]
       }
       is_current_user_admin: {
