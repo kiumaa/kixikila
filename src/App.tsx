@@ -40,14 +40,10 @@ const App = () => {
               } 
             />
             
-            {/* Admin Panel - Protected */}
+            {/* Admin Panel - Has its own authentication */}
             <Route 
               path="/admin/*" 
-              element={
-                <ProtectedRoute requireAuth={true} redirectTo="/entrar">
-                  <AdminPanel />
-                </ProtectedRoute>
-              } 
+              element={<AdminPanel />} 
             />
             
             {/* 404 Not Found */}

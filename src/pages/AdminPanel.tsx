@@ -39,17 +39,17 @@ const AdminPanel: React.FC = () => {
     <AdminLayout>
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
-          <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="/dashboard" element={<AdminDashboard />} />
-          <Route path="/users" element={<UsersManagement />} />
-          <Route path="/groups" element={<GroupsManagement />} />
-          <Route path="/plans" element={<PlansManagement />} />
-          <Route path="/branding" element={<BrandingManagement />} />
-          <Route path="/pwa" element={<PWAManagement />} />
-          <Route path="/advanced-settings" element={<AdvancedSystemSettings />} />
-          <Route path="/security" element={<SecurityDashboard />} />
-          <Route path="/logs" element={<ActivityLogs />} />
-          <Route path="/settings" element={<SystemSettings />} />
+          <Route path="/" element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<UsersManagement />} />
+          <Route path="groups" element={<GroupsManagement />} />
+          <Route path="plans" element={<PlansManagement />} />
+          <Route path="branding" element={<BrandingManagement />} />
+          <Route path="pwa" element={<PWAManagement />} />
+          <Route path="advanced-settings" element={<AdvancedSystemSettings />} />
+          <Route path="security" element={<SecurityDashboard />} />
+          <Route path="logs" element={<ActivityLogs />} />
+          <Route path="settings" element={<SystemSettings />} />
         </Routes>
       </Suspense>
     </AdminLayout>
