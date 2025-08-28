@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useAdminStore } from '@/store/useAdminStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useForm } from 'react-hook-form';
 import kixikilaLogo from '@/assets/kixikila-logo.png';
@@ -18,33 +18,31 @@ const AdminLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   
-  const { adminLogin, allUsers } = useAdminStore();
+  const { login, error: authError, clearError, user: currentUser } = useAuthStore();
   
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     setError('');
+    clearError();
     
-    // Mock authentication with delay
-    setTimeout(() => {
-      const adminUser = allUsers.find(user => 
-        user.role === 'admin' && 
-        user.email === data.email && 
-        user.password === data.password
-      );
+    try {
+      const result = await login(data.email, data.password);
       
-      if (adminUser) {
-        adminLogin({
-          ...adminUser,
-          lastLogin: new Date().toISOString()
-        });
+      if (result.success) {
+        // O login foi bem-sucedido, aguardar atualização do estado
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 100);
       } else {
-        setError('Email ou senha incorretos');
+        setError(result.message || 'Credenciais inválidas');
+        setIsLoading(false);
       }
-      
+    } catch (err) {
+      setError('Erro ao fazer login. Tente novamente.');
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -80,7 +78,7 @@ const AdminLogin: React.FC = () => {
                       }
                     })}
                     className="pl-12 py-3 text-base"
-                    placeholder="admin@kixikila.com"
+                    placeholder="admin@kixikila.pro"
                   />
                 </div>
                 {errors.email && (
@@ -119,9 +117,12 @@ const AdminLogin: React.FC = () => {
                 )}
               </div>
 
-              {error && (
+              {(error || authError) && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-700 text-sm font-medium">{error}</p>
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                    <p className="text-red-700 text-sm font-medium">{error || authError}</p>
+                  </div>
                 </div>
               )}
 
@@ -141,29 +142,21 @@ const AdminLogin: React.FC = () => {
               </Button>
               </form>
 
-              {/* Demo credentials */}
+              {/* Credenciais do admin */}
               <div className="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-200 max-w-md mx-auto">
                 <p className="text-sm font-semibold text-blue-700 mb-3">
-                  🔐 Credenciais para demonstração:
+                  🔐 Credenciais de Administrador:
                 </p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-blue-600">admin@kixikila.com</span>
-                    <code className="bg-blue-100 px-2 py-1 rounded text-blue-700">admin123</code>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-blue-600">pedro.silva@admin.com</span>
-                    <code className="bg-blue-100 px-2 py-1 rounded text-blue-700">pedro123</code>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-blue-600">maria.costa@admin.com</span>
-                    <code className="bg-blue-100 px-2 py-1 rounded text-blue-700">maria123</code>
+                    <span className="font-medium text-blue-600">admin@kixikila.pro</span>
+                    <code className="bg-blue-100 px-2 py-1 rounded text-blue-700">@Kixikila2025!</code>
                   </div>
                 </div>
                 
                 <div className="mt-4 p-3 bg-blue-100 rounded-lg">
                   <p className="text-xs text-blue-600">
-                    💡 <strong>Dica:</strong> Se você já está logado na aplicação principal e tem permissões de admin, o login será automático.
+                    💡 <strong>Nota:</strong> Este é o painel administrativo oficial do Kixikila. Acesso restrito apenas para administradores autorizados.
                   </p>
                 </div>
               </div>

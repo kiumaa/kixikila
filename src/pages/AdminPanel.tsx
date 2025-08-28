@@ -19,24 +19,19 @@ const ActivityLogs = lazy(() => import('@/components/admin/screens/ActivityLogs'
 const SystemSettings = lazy(() => import('@/components/admin/screens/SystemSettings'));
 
 const AdminPanel: React.FC = () => {
-  const { isAdminLoggedIn, adminLogin, allUsers } = useAdminStore();
-  const { user, isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  
+  // Verificar se o usuário atual é admin
+  const isAdminUser = isAuthenticated && user && user.role === 'admin';
 
-  // Auto-login for admin users from main app
   useEffect(() => {
-    if (isAuthenticated && user && !isAdminLoggedIn) {
-      // Check if current user is admin in the admin users list
-      const adminUser = allUsers.find(adminUser => 
-        adminUser.email === user.email && adminUser.role === 'admin'
-      );
-      
-      if (adminUser) {
-        adminLogin(adminUser);
-      }
+    // Se o usuário estiver autenticado mas não for admin, redirecionar
+    if (isAuthenticated && user && user.role !== 'admin') {
+      window.location.href = '/';
     }
-  }, [isAuthenticated, user, isAdminLoggedIn, adminLogin, allUsers]);
+  }, [isAuthenticated, user]);
 
-  if (!isAdminLoggedIn) {
+  if (!isAdminUser) {
     return <AdminLogin />;
   }
 
