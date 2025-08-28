@@ -133,10 +133,10 @@ const sidebarItems = [
 ];
 
 const groupLabels = {
-  gestao: '👥 Gestão',
-  sistema: '⚙️ Sistema', 
-  seguranca: '🔒 Segurança',
-  comunicacao: '📨 Comunicação'
+  gestao: 'Gestão',
+  sistema: 'Sistema', 
+  seguranca: 'Segurança',
+  comunicacao: 'Comunicação'
 };
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
