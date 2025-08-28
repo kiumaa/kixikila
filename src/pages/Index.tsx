@@ -1,8 +1,9 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { LoadingScreen } from '@/components/screens/LoadingScreen';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { 
   mockUser, 
   mockNotifications, 
@@ -36,12 +37,23 @@ import {
 } from '@/routes/LazyRoutes';
 
 const Index = () => {
+  // Auth state
+  const { isAuthenticated, user, logout } = useAuthStore();
+  
   // App state
   const [currentScreen, setCurrentScreen] = useState('onboarding');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+
+  // Initialize screen based on authentication status
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setCurrentScreen('dashboard');
+    } else {
+      setCurrentScreen('onboarding');
+    }
+  }, [isAuthenticated, user]);
   
   // Modal states
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -56,17 +68,22 @@ const Index = () => {
 
   // Navigation handlers
   const handleLogin = () => {
-    setIsLoggedIn(true);
     setCurrentScreen('dashboard');
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentScreen('onboarding');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setCurrentScreen('onboarding');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force logout even if API call fails
+      setCurrentScreen('onboarding');
+    }
   };
 
   const handleNavigation = (screen: string) => {
-    if (!isLoggedIn && !['onboarding', 'login', 'register'].includes(screen)) {
+    if (!isAuthenticated && !['onboarding', 'login', 'register'].includes(screen)) {
       setCurrentScreen('login');
       return;
     }
@@ -303,7 +320,7 @@ const Index = () => {
         </Suspense>
 
         {/* Bottom Navigation */}
-        {isLoggedIn && (
+        {isAuthenticated && (
           <BottomNavigation
             currentScreen={currentScreen}
             onNavigate={handleNavigation}

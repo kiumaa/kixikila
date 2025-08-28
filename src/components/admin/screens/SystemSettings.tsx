@@ -573,35 +573,6 @@ const SystemSettings: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              BulkSMS
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Username</label>
-              <Input placeholder="username" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
-              <Input placeholder="password" type="password" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex justify-end">
-        <Button>
-          <Save className="w-4 h-4 mr-2" />
-          Guardar Configurações
-        </Button>
-      </div>
     </div>
   );
 };

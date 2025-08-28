@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Lock, Phone } from 'lucide-react';
+import { ArrowLeft, Phone, Lock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -18,56 +19,99 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onRegister
 }) => {
   const [phone, setPhone] = useState('');
-  const [otpCode, setOtpCode] = useState('');
+  const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [isLoading, setIsLoading] = useState(false);
-  const [resendTimer, setResendTimer] = useState(0);
+  const [otpTimer, setOtpTimer] = useState(0);
   const { toast } = useToast();
+  const { sendPhoneOtp, verifyPhoneOtp, isLoading, error, clearError } = useAuthStore();
 
   useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
+    if (error) {
+      toast({
+        title: "Erro no login",
+        description: error,
+        variant: "destructive",
+      });
+      clearError();
     }
-  }, [resendTimer]);
+  }, [error, toast, clearError]);
 
-  const handleSendOTP = async () => {
-    if (phone.length >= 9) {
-      setIsLoading(true);
-      // Simulate OTP sending
-      setTimeout(() => {
-        setStep('otp');
-        setIsLoading(false);
-        setResendTimer(60);
-        toast({
-          title: "Código enviado",
-          description: `SMS enviado para +351 ${phone}`,
-        });
-      }, 1500);
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpTimer]);
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!phone) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, insira seu número de telefone",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await sendPhoneOtp(phone);
+      setStep('otp');
+      setOtpTimer(60);
+      toast({
+        title: "Código enviado!",
+        description: `Código OTP enviado para ${phone}`,
+      });
+    } catch (error) {
+      // Error is handled by the store and useEffect
     }
   };
 
-  const handleVerifyOTP = async () => {
-    if (otpCode.length === 6) {
-      setIsLoading(true);
-      // Simulate OTP verification
-      setTimeout(() => {
-        setIsLoading(false);
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo de volta ao KIXIKILA",
-        });
-        onSuccess();
-      }, 2000);
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!otp || otp.length !== 6) {
+      toast({
+        title: "Código inválido",
+        description: "Por favor, insira o código de 6 dígitos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await verifyPhoneOtp(phone, otp);
+      toast({
+        title: "Login realizado com sucesso!",
+        description: "Bem-vindo de volta ao KIXIKILA",
+      });
+      onSuccess();
+    } catch (error) {
+      // Error is handled by the store and useEffect
     }
   };
 
-  const handleResendOTP = () => {
-    setResendTimer(60);
-    toast({
-      title: "Código reenviado",
-      description: "Novo código SMS enviado",
-    });
+  const handleResendOtp = async () => {
+    try {
+      await sendPhoneOtp(phone);
+      setOtpTimer(60);
+      toast({
+        title: "Código reenviado!",
+        description: `Novo código OTP enviado para ${phone}`,
+      });
+    } catch (error) {
+      // Error is handled by the store and useEffect
+    }
+  };
+
+  const handleBackToPhone = () => {
+    setStep('phone');
+    setOtp('');
+    setOtpTimer(0);
   };
 
   return (
@@ -75,28 +119,37 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       <Card className="w-full max-w-md ios-card animate-fade-in">
         <CardContent className="p-8">
           <button
-            onClick={onBack}
+            onClick={step === 'otp' ? handleBackToPhone : onBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors ios-button"
           >
             <ArrowLeft className="w-4 h-4" />
-            Voltar
+            {step === 'otp' ? 'Alterar telefone' : 'Voltar'}
           </button>
 
           <div className="text-center mb-8">
             <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary to-primary-hover rounded-3xl flex items-center justify-center shadow-lg">
-              <Lock className="w-10 h-10 text-primary-foreground" />
+              {step === 'phone' ? (
+                <Phone className="w-10 h-10 text-primary-foreground" />
+              ) : (
+                <Lock className="w-10 h-10 text-primary-foreground" />
+              )}
             </div>
             <h1 className="text-3xl font-bold font-system text-foreground mb-2">
-              Bem-vindo de volta
+              {step === 'phone' ? 'Bem-vindo de volta' : 'Verificar código'}
             </h1>
-            <p className="text-muted-foreground">Entre na sua conta KIXIKILA</p>
+            <p className="text-muted-foreground">
+              {step === 'phone' 
+                ? 'Entre com seu número de telefone' 
+                : `Código enviado para ${phone}`
+              }
+            </p>
           </div>
 
           {step === 'phone' ? (
-            <div className="space-y-6">
+            <form onSubmit={handleSendOtp} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Número de Telemóvel
+                  Número de telefone
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -106,27 +159,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="912 345 678"
                     className="pl-10"
+                    required
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Vamos enviar um código SMS para este número
-                </p>
               </div>
 
               <Button
+                type="submit"
                 variant="default"
                 size="lg"
                 className="w-full ios-button"
-                onClick={handleSendOTP}
-                disabled={isLoading || phone.length < 9}
+                disabled={isLoading || !phone}
               >
-                {isLoading ? <LoadingSpinner size="sm" /> : 'Enviar Código SMS'}
+                {isLoading ? <LoadingSpinner size="sm" /> : 'Enviar código'}
               </Button>
 
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
                   Não tem conta?{' '}
                   <button
+                    type="button"
                     onClick={onRegister}
                     className="text-primary font-semibold hover:text-primary-hover transition-colors"
                   >
@@ -134,73 +186,51 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   </button>
                 </p>
               </div>
-            </div>
+            </form>
           ) : (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <p className="text-muted-foreground mb-2">Código enviado para</p>
-                <p className="font-semibold text-foreground">+351 {phone}</p>
-              </div>
-
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-3">
-                  Código de Verificação
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Código de verificação
                 </label>
-                <div className="flex gap-2 justify-center">
-                  {[...Array(6)].map((_, i) => (
-                    <input
-                      key={i}
-                      type="text"
-                      maxLength={1}
-                      value={otpCode[i] || ''}
-                      onChange={(e) => {
-                        const newOtp = otpCode.split('');
-                        newOtp[i] = e.target.value;
-                        setOtpCode(newOtp.join(''));
-                        if (e.target.value && i < 5) {
-                          const nextInput = e.target.parentElement?.children[i + 1] as HTMLInputElement;
-                          if (nextInput) nextInput.focus();
-                        }
-                      }}
-                      className="w-12 h-12 text-center text-xl font-bold border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
-                      aria-label={`Dígito ${i + 1} do código`}
-                    />
-                  ))}
-                </div>
+                <Input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  className="text-center text-2xl tracking-widest"
+                  maxLength={6}
+                  required
+                />
               </div>
 
               <Button
+                type="submit"
                 variant="default"
                 size="lg"
                 className="w-full ios-button"
-                onClick={handleVerifyOTP}
-                disabled={isLoading || otpCode.length !== 6}
+                disabled={isLoading || otp.length !== 6}
               >
-                {isLoading ? <LoadingSpinner size="sm" /> : 'Verificar e Entrar'}
+                {isLoading ? <LoadingSpinner size="sm" /> : 'Verificar código'}
               </Button>
 
               <div className="text-center">
-                {resendTimer > 0 ? (
+                {otpTimer > 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Reenviar código em {resendTimer}s
+                    Reenviar código em {otpTimer}s
                   </p>
                 ) : (
                   <button
-                    onClick={handleResendOTP}
+                    type="button"
+                    onClick={handleResendOtp}
                     className="text-sm text-primary font-semibold hover:text-primary-hover transition-colors"
+                    disabled={isLoading}
                   >
                     Reenviar código
                   </button>
                 )}
               </div>
-
-              <button
-                onClick={() => setStep('phone')}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors text-center w-full"
-              >
-                Alterar número
-              </button>
-            </div>
+            </form>
           )}
         </CardContent>
       </Card>

@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "name": "kixikila-backend",
   "builds": [
     {
       "src": "src/server.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["src/**"]
+        "includeFiles": ["src/**"],
+        "maxLambdaSize": "50mb"
       }
     }
   ],
@@ -22,10 +22,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "src/server.js": {
-      "maxDuration": 30
-    }
   }
 }

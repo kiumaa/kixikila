@@ -12,8 +12,8 @@ const isProduction = import.meta.env.MODE === 'production';
 // API Base URLs
 const API_URLS = {
   development: 'http://localhost:3001/api/v1',
-  production: import.meta.env.VITE_API_URL || 'https://kixikila-backend.railway.app/api/v1',
-  staging: import.meta.env.VITE_API_URL || 'https://kixikila-backend-staging.railway.app/api/v1'
+  production: import.meta.env.VITE_API_URL || 'https://kixikila.vercel.app/api/v1',
+  staging: import.meta.env.VITE_API_URL || 'https://kixikila-staging.vercel.app/api/v1'
 };
 
 // Get current API base URL
