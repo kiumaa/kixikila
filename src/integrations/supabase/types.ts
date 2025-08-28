@@ -670,9 +670,26 @@ export type Database = {
         Args: { config_value: Json; is_sensitive?: boolean }
         Returns: Json
       }
+      encrypt_sensitive_config_value: {
+        Args: { config_value: Json; is_sensitive?: boolean }
+        Returns: Json
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_masked_config_value: {
+        Args: { config_key: string; config_value: Json; is_sensitive: boolean }
+        Returns: Json
+      }
+      get_secure_configuration: {
+        Args: { config_keys?: string[]; table_name: string }
+        Returns: {
+          access_level: string
+          config_data: Json
+          id: string
+          last_modified: string
+        }[]
       }
       get_secure_user_data: {
         Args: {
@@ -763,6 +780,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      log_configuration_access: {
+        Args: {
+          config_keys?: string[]
+          is_sensitive_access?: boolean
+          operation: string
+          table_name: string
+        }
+        Returns: undefined
+      }
       log_suspicious_access: {
         Args: { access_pattern: string; entity_type: string; metadata?: Json }
         Returns: undefined
@@ -815,6 +845,16 @@ export type Database = {
         Args: { profile_data: Json }
         Returns: undefined
       }
+      validate_configuration_security: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          audit_logging: boolean
+          has_super_admin_only: boolean
+          policies_count: number
+          security_level: string
+          table_name: string
+        }[]
+      }
       validate_rls_security: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -833,6 +873,10 @@ export type Database = {
           message: string
           status: string
         }[]
+      }
+      validate_super_admin_domain: {
+        Args: { email: string }
+        Returns: boolean
       }
       validate_user_data_access: {
         Args: { target_user_id: string }
