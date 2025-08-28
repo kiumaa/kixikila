@@ -22,6 +22,7 @@ export type Database = {
           entity_type: string
           id: string
           ip_address: unknown | null
+          metadata: Json | null
           new_values: Json | null
           old_values: Json | null
           user_agent: string | null
@@ -34,6 +35,7 @@ export type Database = {
           entity_type: string
           id?: string
           ip_address?: unknown | null
+          metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
           user_agent?: string | null
@@ -46,6 +48,7 @@ export type Database = {
           entity_type?: string
           id?: string
           ip_address?: unknown | null
+          metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
           user_agent?: string | null
@@ -688,6 +691,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      comprehensive_security_check: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          check_category: string
+          check_name: string
+          details: string
+          severity: string
+          status: string
+        }[]
+      }
+      encrypt_sensitive_config: {
+        Args: { config_value: Json; is_sensitive?: boolean }
+        Returns: Json
+      }
       get_all_users_safe_data: {
         Args: { limit_count?: number; offset_count?: number }
         Returns: {
@@ -808,6 +825,10 @@ export type Database = {
       is_current_user_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_suspicious_access: {
+        Args: { access_pattern: string; entity_type: string; metadata?: Json }
+        Returns: undefined
       }
       security_audit_report: {
         Args: Record<PropertyKey, never>
