@@ -252,6 +252,14 @@ export type Database = {
           vip_users: number
         }[]
       }
+      security_health_check: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          check_name: string
+          details: string
+          status: string
+        }[]
+      }
       update_otp_expiry_to_production: {
         Args: Record<PropertyKey, never>
         Returns: undefined

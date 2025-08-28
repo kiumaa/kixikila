@@ -2,16 +2,27 @@
 
 ## ✅ FASE 1: Configurações de Segurança (CRÍTICO)
 
-### 1.1 Supabase Security
+### 🚨 1.1 Configurações MANUAIS do Supabase (OBRIGATÓRIO)
 - [ ] **Auth OTP Expiry**: Configurar para 10 minutos no dashboard Supabase
+  - URL: https://supabase.com/dashboard/project/hkesrohuaurcyonpktyt/auth/settings
   - Ir para: Authentication > Settings > Auth Configuration
-  - Definir "Auth session timeout" para 600 segundos
+  - Definir "OTP expiry" para 600 segundos (10 minutos)
 - [ ] **Leaked Password Protection**: Ativar no dashboard Supabase
+  - URL: https://supabase.com/dashboard/project/hkesrohuaurcyonpktyt/auth/settings
   - Ir para: Authentication > Settings > Password Protection
   - Ativar "Enable password breach protection"
+- [ ] **Password Strength** (Recomendado):
+  - Minimum length: 8 caracteres
+  - Require uppercase, lowercase, numbers, special characters
 - [ ] **URL Configuration**: Configurar URLs de redirecionamento
   - Site URL: `https://kixikila.pro`
   - Redirect URLs: `https://kixikila.pro/auth/callback`, `https://www.kixikila.pro/auth/callback`
+- [ ] **Rate Limiting**: Configurar limites
+  - SMS: 10 por hora por IP
+  - Email: 30 por hora por IP
+
+⚠️ **IMPORTANTE**: Estas configurações devem ser feitas MANUALMENTE no dashboard do Supabase.
+📖 **Guia detalhado**: Consulte `SUPABASE_AUTH_PRODUCTION_CONFIG.md`
 
 ### 1.2 Secrets Configuration (Configurado ✅)
 - [x] STRIPE_SECRET_KEY
