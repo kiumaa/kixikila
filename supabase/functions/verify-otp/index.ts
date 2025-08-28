@@ -7,10 +7,9 @@ const corsHeaders = {
 }
 
 interface VerifyOtpRequest {
-  phone?: string;
-  email?: string;
-  code: string;
-  type: 'phone_verification' | 'email_verification' | 'login';
+  phone: string;
+  token: string;
+  type: 'phone_verification' | 'login';
 }
 
 serve(async (req) => {
@@ -20,18 +19,11 @@ serve(async (req) => {
   }
 
   try {
-    const { phone, email, code, type }: VerifyOtpRequest = await req.json();
+    const { phone, token, type }: VerifyOtpRequest = await req.json();
 
-    if (!code || !type) {
+    if (!phone || !token || !type) {
       return new Response(
-        JSON.stringify({ error: 'Code and type are required' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!phone && !email) {
-      return new Response(
-        JSON.stringify({ error: 'Phone or email is required' }), 
+        JSON.stringify({ error: 'Phone number, token and type are required' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -43,104 +35,117 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Find user by phone or email
-    let userData = null;
-    if (phone) {
-      const { data } = await supabase
-        .from('users')
-        .select('id, phone, phone_verified')
-        .eq('phone', phone)
-        .single();
-      userData = data;
-    } else if (email) {
-      const { data } = await supabase
-        .from('users')
-        .select('id, email, email_verified')
-        .eq('email', email)
-        .single();
-      userData = data;
-    }
-
-    if (!userData) {
-      return new Response(
-        JSON.stringify({ error: 'User not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Find the OTP record
+    // Find valid OTP
     const { data: otpData, error: otpError } = await supabase
       .from('otp_codes')
       .select('*')
-      .eq('user_id', userData.id)
-      .eq('code', code)
+      .eq('code', token)
       .eq('type', type)
       .eq('status', 'pending')
-      .gte('expires_at', new Date().toISOString())
+      .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
 
-    if (otpError || !otpData) {
+    if (otpError || !otpData || otpData.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Invalid or expired OTP code' }),
+        JSON.stringify({ 
+          success: false,
+          error: 'Código OTP inválido ou expirado' 
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if max attempts exceeded
-    if (otpData.attempts >= otpData.max_attempts) {
+    const otpRecord = otpData[0];
+
+    // Check attempts
+    if (otpRecord.attempts >= otpRecord.max_attempts) {
       return new Response(
-        JSON.stringify({ error: 'Maximum verification attempts exceeded' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false,
+          error: 'Muitas tentativas. Solicite um novo código.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Mark OTP as verified
-    const { error: updateOtpError } = await supabase
+    const { error: updateError } = await supabase
       .from('otp_codes')
       .update({
         status: 'verified',
-        verified_at: new Date().toISOString(),
-        attempts: otpData.attempts + 1
+        verified_at: new Date().toISOString()
       })
-      .eq('id', otpData.id);
+      .eq('id', otpRecord.id);
 
-    if (updateOtpError) {
-      console.error('Error updating OTP:', updateOtpError);
+    if (updateError) {
+      console.error('Error updating OTP:', updateError);
       return new Response(
         JSON.stringify({ error: 'Failed to verify OTP' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Update user verification status
-    let updateUserData: any = {};
-    if (type === 'phone_verification' && phone) {
-      updateUserData.phone_verified = true;
-    } else if (type === 'email_verification' && email) {
-      updateUserData.email_verified = true;
-    }
+    // Get or create user
+    let { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('phone', phone)
+      .single();
 
-    if (Object.keys(updateUserData).length > 0) {
-      const { error: updateUserError } = await supabase
+    if (userError && userError.code === 'PGRST116') {
+      // User doesn't exist, create one
+      const newUser = {
+        phone: phone,
+        email: `user_${Date.now()}@kixikila.pro`,
+        full_name: 'Usuário',
+        phone_verified: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: createdUser, error: createError } = await supabase
         .from('users')
-        .update(updateUserData)
-        .eq('id', userData.id);
+        .insert(newUser)
+        .select()
+        .single();
 
-      if (updateUserError) {
-        console.error('Error updating user verification status:', updateUserError);
+      if (createError) {
+        console.error('Error creating user:', createError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create user' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+
+      userData = createdUser;
+    } else if (userError) {
+      console.error('Error fetching user:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch user' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log(`OTP verified successfully for user ${userData.id}, type: ${type}`);
+    // Update last login
+    await supabase
+      .from('users')
+      .update({ 
+        last_login: new Date().toISOString(),
+        phone_verified: true 
+      })
+      .eq('id', userData.id);
+
+    console.log(`OTP verified successfully for ${phone}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'OTP verified successfully',
-        verified: true,
-        user_id: userData.id
+        data: {
+          user: userData,
+          session: null // We'll handle session separately
+        }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

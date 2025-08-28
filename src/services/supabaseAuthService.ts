@@ -152,18 +152,28 @@ class SupabaseAuthService {
   }
 
   /**
-   * Send OTP to phone number
+   * Send OTP to phone number using our Edge Function
    */
   async sendPhoneOtp(phoneData: PhoneLoginRequest): Promise<AuthServiceResponse> {
     try {
-      const { data, error } = await supabase.auth.signInWithOtp({
-        phone: phoneData.phone,
+      const { data, error } = await supabase.functions.invoke('send-otp-sms', {
+        body: {
+          phone: phoneData.phone,
+          type: 'login'
+        }
       });
 
       if (error) {
         return {
           success: false,
           message: error.message,
+        };
+      }
+
+      if (!data?.success) {
+        return {
+          success: false,
+          message: data?.error || 'Erro ao enviar OTP',
         };
       }
 
@@ -182,14 +192,16 @@ class SupabaseAuthService {
   }
 
   /**
-   * Verify phone OTP
+   * Verify phone OTP using our Edge Function
    */
   async verifyPhoneOtp(otpData: VerifyPhoneOtpRequest): Promise<AuthServiceResponse<{ user: UserData; session: any }>> {
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: otpData.phone,
-        token: otpData.token,
-        type: 'sms',
+      const { data, error } = await supabase.functions.invoke('verify-otp', {
+        body: {
+          phone: otpData.phone,
+          token: otpData.token,
+          type: 'phone_verification'
+        }
       });
 
       if (error) {
@@ -199,39 +211,58 @@ class SupabaseAuthService {
         };
       }
 
-      // Get or create user profile
-      let userProfile = await this.getUserProfile(data.user?.id);
-      
-      if (!userProfile && data.user) {
-        // Create user profile if it doesn't exist
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            email: data.user.email || '',
-            full_name: data.user.user_metadata?.full_name || 'Usuário',
-            phone: otpData.phone,
-            phone_verified: true,
-          });
+      if (!data?.success) {
+        return {
+          success: false,
+          message: data?.error || 'Código OTP inválido ou expirado',
+        };
+      }
 
-        if (!profileError) {
-          userProfile = await this.getUserProfile(data.user.id);
+      // If verification is successful, sign in the user or create account
+      const { user: userData, session } = data.data || {};
+
+      if (userData) {
+        // Get or create user profile
+        let userProfile = await this.getUserProfile(userData.id);
+        
+        if (!userProfile) {
+          // Create user profile if it doesn't exist
+          const { error: profileError } = await supabase
+            .from('users')
+            .insert({
+              id: userData.id,
+              email: userData.email || `user_${userData.id}@kixikila.pro`,
+              full_name: userData.full_name || 'Usuário',
+              phone: otpData.phone,
+              phone_verified: true,
+            });
+
+          if (!profileError) {
+            userProfile = await this.getUserProfile(userData.id);
+          }
+        } else {
+          // Update phone verification status
+          await supabase
+            .from('users')
+            .update({ phone_verified: true, last_login: new Date().toISOString() })
+            .eq('id', userData.id);
+          
+          userProfile = await this.getUserProfile(userData.id);
         }
-      } else if (userProfile) {
-        // Update phone verification status
-        await supabase
-          .from('users')
-          .update({ phone_verified: true })
-          .eq('id', data.user?.id);
+
+        return {
+          success: true,
+          message: 'Login realizado com sucesso',
+          data: {
+            user: userProfile || userData,
+            session,
+          },
+        };
       }
 
       return {
-        success: true,
-        message: 'OTP verificado com sucesso',
-        data: {
-          user: userProfile || this.formatUserData(data.user),
-          session: data.session,
-        },
+        success: false,
+        message: 'Erro na autenticação',
       };
     } catch (error: any) {
       console.error('Verify phone OTP error:', error);
@@ -475,6 +506,13 @@ class SupabaseAuthService {
   }
 
   /**
+   * Listen to auth state changes
+   */
+  onAuthStateChange(callback: (event: string, session: any) => void) {
+    return supabase.auth.onAuthStateChange(callback);
+  }
+
+  /**
    * Refresh token
    */
   async refreshToken(): Promise<AuthServiceResponse<{ user: UserData; session: any }>> {
@@ -533,13 +571,6 @@ class SupabaseAuthService {
         message: error.message || 'Erro ao buscar perfil',
       };
     }
-  }
-
-  /**
-   * Listen to auth state changes
-   */
-  onAuthStateChange(callback: (event: string, session: any) => void) {
-    return supabase.auth.onAuthStateChange(callback);
   }
 }
 

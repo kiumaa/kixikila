@@ -21,57 +21,64 @@ export const useSupabaseAuth = () => {
       async (event, session) => {
         console.log('Auth state changed:', event, session);
         
-        switch (event) {
-          case 'SIGNED_IN':
-            // User signed in
-            if (session?.user) {
-              const userData = await supabaseAuthService.getCurrentUser();
-              useAuthStore.setState({
-                isAuthenticated: true,
-                user: userData,
-                isLoading: false,
-                error: null,
-              });
+        // Prevent calling Supabase functions inside onAuthStateChange to avoid deadlock
+        setTimeout(async () => {
+          try {
+            switch (event) {
+              case 'SIGNED_IN':
+                // User signed in
+                if (session?.user) {
+                  const userData = await supabaseAuthService.getCurrentUser();
+                  useAuthStore.setState({
+                    isAuthenticated: true,
+                    user: userData,
+                    isLoading: false,
+                    error: null,
+                  });
+                }
+                break;
+                
+              case 'SIGNED_OUT':
+                // User signed out
+                useAuthStore.setState({
+                  isAuthenticated: false,
+                  user: null,
+                  isLoading: false,
+                  error: null,
+                });
+                break;
+                
+              case 'TOKEN_REFRESHED':
+                // Token was refreshed
+                if (session?.user) {
+                  const userData = await supabaseAuthService.getCurrentUser();
+                  useAuthStore.setState({
+                    user: userData,
+                    isLoading: false,
+                    error: null,
+                  });
+                }
+                break;
+                
+              case 'USER_UPDATED':
+                // User data was updated
+                if (session?.user) {
+                  const userData = await supabaseAuthService.getCurrentUser();
+                  useAuthStore.setState({
+                    user: userData,
+                    isLoading: false,
+                    error: null,
+                  });
+                }
+                break;
+                
+              default:
+                break;
             }
-            break;
-            
-          case 'SIGNED_OUT':
-            // User signed out
-            useAuthStore.setState({
-              isAuthenticated: false,
-              user: null,
-              isLoading: false,
-              error: null,
-            });
-            break;
-            
-          case 'TOKEN_REFRESHED':
-            // Token was refreshed
-            if (session?.user) {
-              const userData = await supabaseAuthService.getCurrentUser();
-              useAuthStore.setState({
-                user: userData,
-                isLoading: false,
-                error: null,
-              });
-            }
-            break;
-            
-          case 'USER_UPDATED':
-            // User data was updated
-            if (session?.user) {
-              const userData = await supabaseAuthService.getCurrentUser();
-              useAuthStore.setState({
-                user: userData,
-                isLoading: false,
-                error: null,
-              });
-            }
-            break;
-            
-          default:
-            break;
-        }
+          } catch (error) {
+            console.error('Error in auth state change handler:', error);
+          }
+        }, 0);
       }
     );
 

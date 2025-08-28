@@ -38,22 +38,35 @@ import {
 
 const Index = () => {
   // Auth state
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, initializeAuth } = useAuthStore();
   
   // App state
-  const [currentScreen, setCurrentScreen] = useState('onboarding');
+  const [currentScreen, setCurrentScreen] = useState('loading');
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
 
   // Initialize screen based on authentication status
   useEffect(() => {
-    if (isAuthenticated && user) {
-      setCurrentScreen('dashboard');
-    } else {
-      setCurrentScreen('onboarding');
-    }
-  }, [isAuthenticated, user]);
+    const initializeScreen = async () => {
+      try {
+        // Initialize auth first
+        await initializeAuth();
+        
+        // Set screen based on auth status
+        if (isAuthenticated && user) {
+          setCurrentScreen('dashboard');
+        } else {
+          setCurrentScreen('onboarding');
+        }
+      } catch (error) {
+        console.error('Error initializing screen:', error);
+        setCurrentScreen('onboarding');
+      }
+    };
+
+    initializeScreen();
+  }, [isAuthenticated, user, initializeAuth]);
   
   // Modal states
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -253,6 +266,9 @@ const Index = () => {
             onInvite={() => setShowInviteGroup(true)}
           />
         ) : null;
+
+      case 'loading':
+        return <LoadingScreen message="Inicializando aplicação..." />;
 
       default:
         return <LoadingScreen message="Carregando aplicação..." />;
