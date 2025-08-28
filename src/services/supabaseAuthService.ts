@@ -160,7 +160,7 @@ class SupabaseAuthService {
       const { data, error } = await supabase.functions.invoke('send-otp-sms', {
         body: {
           phone: phoneData.phone,
-          type: 'login'
+          type: 'phone_verification'
         }
       });
 
