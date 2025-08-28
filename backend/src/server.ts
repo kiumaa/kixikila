@@ -13,6 +13,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { authMiddleware } from './middleware/auth.js';
 import { generalRateLimit } from './middleware/rateLimiting.js';
+import { auditMiddleware } from './middleware/auditLogger.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -58,6 +59,9 @@ app.use(cors({
 app.use(compression());
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 app.use(generalRateLimit);
+
+// Audit logging middleware - track all requests
+app.use(auditMiddleware('REQUEST'));
 
 // Body parsing middleware
 app.use('/api/webhooks', express.raw({ type: 'application/json' })); // Raw body for webhooks
