@@ -156,6 +156,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_otps: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       update_otp_expiry_to_production: {
         Args: Record<PropertyKey, never>
         Returns: undefined
