@@ -849,6 +849,18 @@ export type Database = {
           table_name: string
         }[]
       }
+      validate_user_data_access: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
+      verify_user_data_integrity: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          check_name: string
+          details: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
