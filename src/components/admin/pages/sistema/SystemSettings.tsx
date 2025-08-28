@@ -8,34 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Settings, Key, Database, Save, Mail, MessageSquare, CreditCard, TestTube, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { adminApi, type ApiResponse } from '@/services/api';
+import { systemConfigService, type EmailConfig, type StripeConfig, type BulkSMSConfig } from '@/services/systemConfigService';
 
-interface EmailConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  user: string;
-  password: string;
-  fromName: string;
-  fromAddress: string;
-  hasPassword?: boolean;
-}
-
-interface StripeConfig {
-  secretKey: string;
-  publicKey: string;
-  webhookSecret: string;
-  hasSecretKey?: boolean;
-  hasPublicKey?: boolean;
-  hasWebhookSecret?: boolean;
-}
-
-interface BulkSMSConfig {
-  tokenId: string;
-  tokenSecret: string;
-  hasTokenId?: boolean;
-  hasTokenSecret?: boolean;
-}
+// Interfaces are now imported from systemConfigService
 
 const SystemSettings: React.FC = () => {
   const { toast } = useToast();
@@ -81,21 +56,36 @@ const SystemSettings: React.FC = () => {
       setLoading(true);
       
       // Load email config
-      const emailResponse = await adminApi.getEmailConfig();
-      if (emailResponse.success) {
-        setEmailConfig(prev => ({ ...prev, ...emailResponse.data }));
+      const emailResponse = await systemConfigService.getEmailConfig();
+      if (emailResponse.success && emailResponse.data) {
+        setEmailConfig(prev => ({ 
+          ...prev, 
+          ...emailResponse.data,
+          hasPassword: !!emailResponse.data.password 
+        }));
       }
       
       // Load Stripe config
-      const stripeResponse = await adminApi.getStripeConfig();
-      if (stripeResponse.success) {
-        setStripeConfig(prev => ({ ...prev, ...stripeResponse.data }));
+      const stripeResponse = await systemConfigService.getStripeConfig();
+      if (stripeResponse.success && stripeResponse.data) {
+        setStripeConfig(prev => ({ 
+          ...prev, 
+          ...stripeResponse.data,
+          hasSecretKey: !!stripeResponse.data.secretKey,
+          hasPublicKey: !!stripeResponse.data.publicKey,
+          hasWebhookSecret: !!stripeResponse.data.webhookSecret
+        }));
       }
       
       // Load BulkSMS config
-      const bulkSMSResponse = await adminApi.getBulkSMSConfig();
-      if (bulkSMSResponse.success) {
-        setBulkSMSConfig(prev => ({ ...prev, ...bulkSMSResponse.data }));
+      const bulkSMSResponse = await systemConfigService.getBulkSMSConfig();
+      if (bulkSMSResponse.success && bulkSMSResponse.data) {
+        setBulkSMSConfig(prev => ({ 
+          ...prev, 
+          ...bulkSMSResponse.data,
+          hasTokenId: !!bulkSMSResponse.data.tokenId,
+          hasTokenSecret: !!bulkSMSResponse.data.tokenSecret
+        }));
       }
     } catch (error) {
       console.error('Error loading configurations:', error);
@@ -112,7 +102,7 @@ const SystemSettings: React.FC = () => {
   const handleSaveEmailConfig = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.updateEmailConfig(emailConfig);
+      const response = await systemConfigService.updateEmailConfig(emailConfig);
       
       if (response.success) {
         toast({
@@ -120,11 +110,17 @@ const SystemSettings: React.FC = () => {
           description: 'Configuração de email salva com sucesso'
         });
         await loadConfigurations();
+      } else {
+        toast({
+          title: 'Erro',
+          description: response.error || 'Erro ao salvar configuração de email',
+          variant: 'destructive'
+        });
       }
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.response?.data?.message || 'Erro ao salvar configuração de email',
+        description: error.message || 'Erro ao salvar configuração de email',
         variant: 'destructive'
       });
     } finally {
@@ -144,18 +140,24 @@ const SystemSettings: React.FC = () => {
 
     try {
       setTestingEmail(true);
-      const response = await adminApi.testEmailConfig(testEmail);
+      const response = await systemConfigService.testEmailConfig(testEmail);
       
       if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'Email de teste enviado com sucesso'
         });
+      } else {
+        toast({
+          title: 'Erro',
+          description: response.error || 'Erro ao enviar email de teste',
+          variant: 'destructive'
+        });
       }
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.response?.data?.message || 'Erro ao enviar email de teste',
+        description: error.message || 'Erro ao enviar email de teste',
         variant: 'destructive'
       });
     } finally {
@@ -166,7 +168,7 @@ const SystemSettings: React.FC = () => {
   const handleSaveStripeConfig = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.updateStripeConfig(stripeConfig);
+      const response = await systemConfigService.updateStripeConfig(stripeConfig);
       
       if (response.success) {
         toast({
@@ -174,11 +176,17 @@ const SystemSettings: React.FC = () => {
           description: 'Configuração do Stripe salva com sucesso'
         });
         await loadConfigurations();
+      } else {
+        toast({
+          title: 'Erro',
+          description: response.error || 'Erro ao salvar configuração do Stripe',
+          variant: 'destructive'
+        });
       }
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.response?.data?.message || 'Erro ao salvar configuração do Stripe',
+        description: error.message || 'Erro ao salvar configuração do Stripe',
         variant: 'destructive'
       });
     } finally {
@@ -189,7 +197,7 @@ const SystemSettings: React.FC = () => {
   const handleSaveBulkSMSConfig = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.updateBulkSMSConfig(bulkSMSConfig);
+      const response = await systemConfigService.updateBulkSMSConfig(bulkSMSConfig);
       
       if (response.success) {
         toast({
@@ -197,11 +205,17 @@ const SystemSettings: React.FC = () => {
           description: 'Configuração do BulkSMS salva com sucesso'
         });
         await loadConfigurations();
+      } else {
+        toast({
+          title: 'Erro',
+          description: response.error || 'Erro ao salvar configuração do BulkSMS',
+          variant: 'destructive'
+        });
       }
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.response?.data?.message || 'Erro ao salvar configuração do BulkSMS',
+        description: error.message || 'Erro ao salvar configuração do BulkSMS',
         variant: 'destructive'
       });
     } finally {
@@ -221,18 +235,24 @@ const SystemSettings: React.FC = () => {
 
     try {
       setTestingSMS(true);
-      const response = await adminApi.testBulkSMSConfig(testPhone);
+      const response = await systemConfigService.testBulkSMSConfig(testPhone);
       
       if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'SMS de teste enviado com sucesso'
         });
+      } else {
+        toast({
+          title: 'Erro',
+          description: response.error || 'Erro ao enviar SMS de teste',
+          variant: 'destructive'
+        });
       }
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.response?.data?.message || 'Erro ao enviar SMS de teste',
+        description: error.message || 'Erro ao enviar SMS de teste',
         variant: 'destructive'
       });
     } finally {

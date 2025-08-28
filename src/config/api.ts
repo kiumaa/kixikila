@@ -116,10 +116,21 @@ export const buildApiUrl = (endpoint: string): string => {
   return `${API_BASE_URL}${endpoint}`;
 };
 
-// Helper function to get auth headers
+// Helper function to get auth headers for Supabase
 export const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('auth_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  // Get Supabase session from localStorage
+  const supabaseSession = localStorage.getItem('sb-hkesrohuaurcyonpktyt-auth-token');
+  if (supabaseSession) {
+    try {
+      const sessionData = JSON.parse(supabaseSession);
+      const token = sessionData?.access_token;
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    } catch (e) {
+      console.error('Error parsing Supabase session:', e);
+      return {};
+    }
+  }
+  return {};
 };
 
 // Export environment info

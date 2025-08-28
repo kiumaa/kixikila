@@ -48,6 +48,9 @@ serve(async (req) => {
       case 'get_all_configs':
         return await getAllConfigurations(supabaseClient);
       
+      case 'get_system_config':
+        return await getSystemConfig(supabaseClient, requestData);
+      
       case 'update_system_config':
         return await updateSystemConfiguration(supabaseClient, requestData);
       
@@ -110,6 +113,25 @@ async function getAllConfigurations(supabaseClient: any) {
     .from('system_configurations')
     .select('*')
     .order('config_type', { ascending: true });
+
+  if (error) throw error;
+
+  return new Response(
+    JSON.stringify({ success: true, data }), 
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function getSystemConfig(supabaseClient: any, requestData: any) {
+  const { config_type } = requestData;
+  
+  let query = supabaseClient.from('system_configurations').select('*');
+  
+  if (config_type) {
+    query = query.eq('config_type', config_type);
+  }
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) throw error;
 
