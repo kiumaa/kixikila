@@ -69,7 +69,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
 
     try {
       await register({
-        fullName: formData.fullName,
+        full_name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,

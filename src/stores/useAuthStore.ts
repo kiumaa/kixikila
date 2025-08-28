@@ -5,13 +5,15 @@ import supabaseAuthService from '../services/supabaseAuthService';
 interface User {
   id: string;
   email: string;
-  fullName: string;
-  phone: string;
-  role: string;
-  isVip: boolean;
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  avatarUrl?: string;
+  full_name: string;
+  phone?: string;
+  role?: string;
+  is_vip?: boolean;
+  email_verified?: boolean;
+  phone_verified?: boolean;
+  avatar_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface AuthState {
@@ -21,22 +23,22 @@ interface AuthState {
   error: string | null;
   
   // Actions
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  sendPhoneOtp: (phone: string) => Promise<void>;
-  verifyPhoneOtp: (phone: string, otp: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; message: string }>;
+  sendPhoneOtp: (phone: string) => Promise<{ success: boolean; message: string }>;
+  verifyPhoneOtp: (phone: string, otp: string) => Promise<{ success: boolean; message: string }>;
   register: (userData: {
     email: string;
     password: string;
-    fullName: string;
-    phone: string;
-    dateOfBirth?: string;
+    full_name: string;
+    phone?: string;
+    date_of_birth?: string;
     address?: string;
     city?: string;
     country?: string;
-  }) => Promise<void>;
+  }) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
-  verifyOtp: (email: string, otp: string, type: 'email_verification' | 'phone_verification') => Promise<void>;
-  resendOtp: (email: string, type: 'email_verification' | 'phone_verification') => Promise<void>;
+  verifyOtp: (email: string, otp: string, type: 'email_verification' | 'phone_verification') => Promise<{ success: boolean; message: string }>;
+  resendOtp: (email: string, type: 'email_verification' | 'phone_verification') => Promise<{ success: boolean; message: string }>;
   refreshToken: () => Promise<void>;
   getProfile: () => Promise<void>;
   clearError: () => void;
