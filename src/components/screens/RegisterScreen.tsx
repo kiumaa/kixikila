@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Mail, Phone, Check, Lock } from 'lucide-react';
+import { ArrowLeft, User, Phone, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,16 +17,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
   const [step, setStep] = useState<'form' | 'otp' | 'success'>('form');
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
     phone: '',
-    password: '',
-    confirmPassword: '',
     acceptTerms: false
   });
   const [otpCode, setOtpCode] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const { toast } = useToast();
-  const { register, verifyOtp, resendOtp, isLoading, error, clearError } = useAuthStore();
+  const { sendPhoneOtp, verifyPhoneOtp, isLoading, error, clearError } = useAuthStore();
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -58,28 +55,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Senhas não coincidem",
-        description: "As senhas devem ser iguais",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      await register({
-        full_name: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-      });
+      await sendPhoneOtp(formData.phone);
       
       setStep('otp');
       setResendTimer(60);
       toast({
         title: "Código enviado!",
-        description: `Verifique o email enviado para ${formData.email}`
+        description: `SMS enviado para +351 ${formData.phone}`
       });
     } catch (error) {
       // Error is handled by the store and useEffect
@@ -97,7 +80,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
     }
 
     try {
-      await verifyOtp(formData.email, otpCode, 'email_verification');
+      await verifyPhoneOtp(formData.phone, otpCode);
       setStep('success');
       
       setTimeout(() => {
@@ -110,11 +93,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
 
   const handleResendOTP = async () => {
     try {
-      await resendOtp(formData.email, 'email_verification');
+      await sendPhoneOtp(formData.phone);
       setResendTimer(60);
       toast({
         title: "Código reenviado!",
-        description: "Verifique a nova mensagem no email"
+        description: "Verifique a nova mensagem SMS"
       });
     } catch (error) {
       // Error is handled by the store and useEffect
@@ -122,10 +105,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
   };
 
   const isFormValid = formData.fullName.trim() !== '' && 
-    formData.email.trim() !== '' && 
     formData.phone.trim() !== '' && 
-    formData.password.trim() !== '' &&
-    formData.confirmPassword.trim() !== '' &&
     formData.acceptTerms;
 
   return (
@@ -178,24 +158,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
                 </div>
 
                 <div>
-                  <Label htmlFor="email" className="text-sm font-medium text-foreground">
-                    Email
-                  </Label>
-                  <div className="relative mt-2">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="ana.santos@email.pt"
-                      className="ios-input pl-12"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
                   <Label htmlFor="phone" className="text-sm font-medium text-foreground">
                     Número de Telemóvel
                   </Label>
@@ -207,42 +169,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="912 345 678"
-                      className="ios-input pl-12"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="password" className="text-sm font-medium text-foreground">
-                    Senha
-                  </Label>
-                  <div className="relative mt-2">
-                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Sua senha"
-                      className="ios-input pl-12"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
-                    Confirmar Senha
-                  </Label>
-                  <div className="relative mt-2">
-                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      placeholder="Confirme sua senha"
                       className="ios-input pl-12"
                       required
                     />
@@ -311,10 +237,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
                     Verificar Código
                   </h2>
                   <p className="text-muted-foreground mb-2">
-                    Código enviado para
+                    Código SMS enviado para
                   </p>
                   <p className="font-semibold text-foreground">
-                    {formData.email}
+                    +351 {formData.phone}
                   </p>
                 </div>
               </div>
