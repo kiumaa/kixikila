@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import DOMPurify from 'dompurify';
 import { 
   Settings, 
   MessageSquare, 
@@ -677,7 +678,7 @@ const AdvancedSystemSettings: React.FC = () => {
                             <div className="font-semibold mb-2">
                               Assunto: {renderPreview(editingTemplate.subject || '')}
                             </div>
-                            <div dangerouslySetInnerHTML={{ __html: renderPreview(editingTemplate.content) }} />
+                            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderPreview(editingTemplate.content)) }} />
                           </div>
                         ) : (
                           <div>{renderPreview(editingTemplate.content)}</div>

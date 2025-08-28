@@ -228,9 +228,19 @@ async function setupInitialConfig() {
 async function createAdminUser() {
   logger.info('👤 Setting up admin user...');
 
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@kixikila.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'Admin123!@#';
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
   const adminName = process.env.ADMIN_NAME || 'KIXIKILA Admin';
+
+  if (!adminEmail || !adminPassword) {
+    logger.error('❌ ADMIN_EMAIL and ADMIN_PASSWORD must be set in environment variables');
+    throw new Error('Admin credentials not configured. Please set ADMIN_EMAIL and ADMIN_PASSWORD environment variables.');
+  }
+
+  if (adminPassword.length < 12) {
+    logger.error('❌ ADMIN_PASSWORD must be at least 12 characters long');
+    throw new Error('Admin password must be at least 12 characters long for security.');
+  }
 
   try {
     // Check if admin user already exists

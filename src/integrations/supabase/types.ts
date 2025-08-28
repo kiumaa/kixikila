@@ -809,6 +809,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      security_audit_report: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          description: string
+          issue_type: string
+          recommendation: string
+          severity: string
+        }[]
+      }
       security_health_check: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -844,6 +853,14 @@ export type Database = {
           has_update: boolean
           policy_count: number
           table_name: string
+        }[]
+      }
+      validate_security_configuration: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          check_name: string
+          message: string
+          status: string
         }[]
       }
       validate_user_data_access: {
