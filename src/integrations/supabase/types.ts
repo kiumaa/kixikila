@@ -654,7 +654,6 @@ export type Database = {
           display_name: string | null
           id: string | null
           is_vip: boolean | null
-          masked_email: string | null
           trust_score: number | null
         }
         Insert: {
@@ -665,7 +664,6 @@ export type Database = {
           display_name?: never
           id?: string | null
           is_vip?: boolean | null
-          masked_email?: never
           trust_score?: number | null
         }
         Update: {
@@ -676,7 +674,6 @@ export type Database = {
           display_name?: never
           id?: string | null
           is_vip?: boolean | null
-          masked_email?: never
           trust_score?: number | null
         }
         Relationships: []
