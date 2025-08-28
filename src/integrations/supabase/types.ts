@@ -891,6 +891,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      automated_cleanup_production: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       classify_user_data_sensitivity: {
         Args: { column_name: string }
         Returns: string
@@ -1081,6 +1085,15 @@ export type Database = {
           value: string
         }
         Returns: string
+      }
+      production_health_check: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          component: string
+          details: string
+          last_check: string
+          status: string
+        }[]
       }
       security_audit_report: {
         Args: Record<PropertyKey, never>
