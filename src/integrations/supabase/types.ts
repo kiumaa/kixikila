@@ -313,6 +313,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "otp_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       security_configurations: {
@@ -638,7 +645,93 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      users_safe: {
+        Row: {
+          active_groups: number | null
+          address: string | null
+          avatar_url: string | null
+          city: string | null
+          completed_cycles: number | null
+          country: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          email: string | null
+          email_verified: boolean | null
+          full_name: string | null
+          id: string | null
+          is_active: boolean | null
+          is_vip: boolean | null
+          kyc_status: string | null
+          last_login: string | null
+          phone: string | null
+          phone_verified: boolean | null
+          role: string | null
+          total_earned: number | null
+          total_saved: number | null
+          total_withdrawn: number | null
+          trust_score: number | null
+          updated_at: string | null
+          vip_expiry_date: string | null
+          wallet_balance: number | null
+        }
+        Insert: {
+          active_groups?: number | null
+          address?: never
+          avatar_url?: string | null
+          city?: string | null
+          completed_cycles?: number | null
+          country?: string | null
+          created_at?: string | null
+          date_of_birth?: never
+          email?: string | null
+          email_verified?: boolean | null
+          full_name?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_vip?: boolean | null
+          kyc_status?: string | null
+          last_login?: string | null
+          phone?: never
+          phone_verified?: boolean | null
+          role?: string | null
+          total_earned?: never
+          total_saved?: never
+          total_withdrawn?: never
+          trust_score?: number | null
+          updated_at?: string | null
+          vip_expiry_date?: string | null
+          wallet_balance?: never
+        }
+        Update: {
+          active_groups?: number | null
+          address?: never
+          avatar_url?: string | null
+          city?: string | null
+          completed_cycles?: number | null
+          country?: string | null
+          created_at?: string | null
+          date_of_birth?: never
+          email?: string | null
+          email_verified?: boolean | null
+          full_name?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_vip?: boolean | null
+          kyc_status?: string | null
+          last_login?: string | null
+          phone?: never
+          phone_verified?: boolean | null
+          role?: string | null
+          total_earned?: never
+          total_saved?: never
+          total_withdrawn?: never
+          trust_score?: number | null
+          updated_at?: string | null
+          vip_expiry_date?: string | null
+          wallet_balance?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_data: {
@@ -648,6 +741,20 @@ export type Database = {
       cleanup_expired_otps: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_security_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          alert_type: string
+          count: number
+          latest_occurrence: string
+          message: string
+          severity: string
+        }[]
       }
       get_system_stats: {
         Args: Record<PropertyKey, never>
@@ -659,6 +766,10 @@ export type Database = {
           vip_users: number
         }[]
       }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       security_health_check: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -669,6 +780,20 @@ export type Database = {
       }
       update_otp_expiry_to_production: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_user_financial_data: {
+        Args: {
+          new_total_earned?: number
+          new_total_saved?: number
+          new_total_withdrawn?: number
+          new_wallet_balance?: number
+          target_user_id: string
+        }
+        Returns: undefined
+      }
+      update_user_profile_secure: {
+        Args: { profile_data: Json }
         Returns: undefined
       }
       validate_rls_security: {
