@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,8 @@ const AdminLogin: React.FC = () => {
   const [error, setError] = useState('');
   const [showSetup, setShowSetup] = useState(false);
   
-  const { login, error: authError, clearError, user: currentUser } = useAuthStore();
+  const navigate = useNavigate();
+  const { login, error: authError, clearError, user: currentUser, isAuthenticated } = useAuthStore();
   
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
 
@@ -31,6 +33,16 @@ const AdminLogin: React.FC = () => {
       // Pode ser que o admin não exista ainda
     }
   }, [error, authError]);
+
+  // Redirecionar para dashboard após login bem-sucedido
+  useEffect(() => {
+    if (isAuthenticated && currentUser && currentUser.role === 'admin') {
+      // Aguardar um ciclo para garantir que o estado está atualizado
+      setTimeout(() => {
+        navigate('/admin/dashboard', { replace: true });
+      }, 100);
+    }
+  }, [isAuthenticated, currentUser, navigate]);
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
