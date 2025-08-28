@@ -466,11 +466,11 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={isLoading || !canCreateGroup()}
+              disabled={isLoading || !canCreateGroup}
               className="flex-1 ios-button text-xs py-2"
             >
-              {isLoading ? 'Criando...' : !canCreateGroup() ? 'Limite Atingido' : 'Criar Grupo'}
-              {!isLoading && canCreateGroup() && <Check className="w-4 h-4 ml-2" />}
+              {isLoading ? 'Criando...' : !canCreateGroup ? 'Limite Atingido' : 'Criar Grupo'}
+              {!isLoading && canCreateGroup && <Check className="w-4 h-4 ml-2" />}
             </Button>
           )}
         </div>
