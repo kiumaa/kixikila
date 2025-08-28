@@ -73,6 +73,9 @@ verify_jwt = false
 [functions.admin-monitoring]
 verify_jwt = true
 
+[functions.create-admin-user]
+verify_jwt = false
+
 [functions.get-audit-logs]
 verify_jwt = true
 

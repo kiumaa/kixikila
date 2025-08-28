@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useForm } from 'react-hook-form';
 import kixikilaLogo from '@/assets/kixikila-logo.png';
+import AdminSetup from './AdminSetup';
 
 interface LoginForm {
   email: string;
@@ -17,10 +18,19 @@ const AdminLogin: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [showSetup, setShowSetup] = useState(false);
   
   const { login, error: authError, clearError, user: currentUser } = useAuthStore();
   
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+
+  // Verificar se precisa mostrar setup
+  useEffect(() => {
+    // Se houver erro de "user not found" ou similar, mostrar setup
+    if (error.includes('Invalid login credentials') || authError?.includes('Invalid login credentials')) {
+      // Pode ser que o admin não exista ainda
+    }
+  }, [error, authError]);
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
@@ -44,6 +54,11 @@ const AdminLogin: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Mostrar setup se solicitado
+  if (showSetup) {
+    return <AdminSetup />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center p-8">
@@ -158,6 +173,19 @@ const AdminLogin: React.FC = () => {
                   <p className="text-xs text-blue-600">
                     💡 <strong>Nota:</strong> Este é o painel administrativo oficial do Kixikila. Acesso restrito apenas para administradores autorizados.
                   </p>
+                </div>
+
+                {/* Botão para setup caso admin não exista */}
+                <div className="mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setShowSetup(true)}
+                  >
+                    Criar Usuário Admin
+                  </Button>
                 </div>
               </div>
             </CardContent>
