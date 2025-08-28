@@ -34,15 +34,8 @@ const AdminLogin: React.FC = () => {
     }
   }, [authError]);
 
-  // Redirecionar para dashboard após login bem-sucedido
-  useEffect(() => {
-    if (isAuthenticated && currentUser && currentUser.role === 'admin') {
-      // Usar startTransition para evitar problemas com lazy loading
-      startTransition(() => {
-        navigate('/admin/dashboard', { replace: true });
-      });
-    }
-  }, [isAuthenticated, currentUser, navigate]);
+  // Redirecionar para dashboard após login bem-sucedido - REMOVED
+  // The auth store now handles redirection based on role
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
@@ -50,7 +43,6 @@ const AdminLogin: React.FC = () => {
     clearError();
     
     try {
-      // Fix: Remove the third parameter as it's not needed
       await login(data.email, data.password);
     } catch (err: any) {
       console.error('Login error:', err);

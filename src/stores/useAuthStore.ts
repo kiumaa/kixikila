@@ -44,6 +44,7 @@ interface AuthState {
   clearError: () => void;
   setLoading: (loading: boolean) => void;
   initializeAuth: () => void;
+  isAdmin: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -54,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
-      login: async (email: string, password: string, rememberMe = false) => {
+  login: async (email: string, password: string, rememberMe = false) => {
     set({ isLoading: true, error: null });
     try {
       const response = await supabaseAuthService.login({ email, password });
@@ -67,6 +68,16 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
           error: null,
         });
+
+        // Redirect based on user role
+        setTimeout(() => {
+          if (user.role === 'admin') {
+            window.location.href = '/admin/dashboard';
+          } else {
+            window.location.href = '/app/dashboard';
+          }
+        }, 100);
+
         return { success: true, message: response.message };
       } else {
         set({ error: response.message, isLoading: false });
@@ -116,13 +127,23 @@ export const useAuthStore = create<AuthState>()(
           
           if (response.success && response.data) {
             const { user, session } = response.data;
-            set({
-              isAuthenticated: true,
-              user,
-              isLoading: false,
-              error: null,
-            });
-            return { success: true, message: response.message };
+        set({
+          isAuthenticated: true,
+          user,
+          isLoading: false,
+          error: null,
+        });
+
+        // Redirect based on user role  
+        setTimeout(() => {
+          if (user.role === 'admin') {
+            window.location.href = '/admin/dashboard';
+          } else {
+            window.location.href = '/app/dashboard';
+          }
+        }, 100);
+
+        return { success: true, message: response.message };
           } else {
             set({ error: response.message, isLoading: false });
             return { success: false, message: response.message };
@@ -193,13 +214,23 @@ export const useAuthStore = create<AuthState>()(
           
           if (response.success && response.data) {
             const { user, session } = response.data;
-            set({
-              isAuthenticated: true,
-              user,
-              isLoading: false,
-              error: null,
-            });
-            return { success: true, message: response.message };
+          set({
+            isAuthenticated: true,
+            user,
+            isLoading: false,
+            error: null,
+          });
+
+          // Redirect based on user role
+          setTimeout(() => {
+            if (user.role === 'admin') {
+              window.location.href = '/admin/dashboard';
+            } else {
+              window.location.href = '/app/dashboard';
+            }
+          }, 100);
+
+          return { success: true, message: response.message };
           } else {
             set({ error: response.message, isLoading: false });
             return { success: false, message: response.message };
@@ -313,6 +344,11 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         }
+      },
+
+      isAdmin: () => {
+        const { user } = get();
+        return user?.role === 'admin';
       },
     }),
     {

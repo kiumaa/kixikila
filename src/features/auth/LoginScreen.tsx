@@ -144,7 +144,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         title: "Login realizado com sucesso! 🎉",
         description: "Bem-vindo de volta ao KIXIKILA",
       });
-      onSuccess();
+      // Redirection is now handled by the auth store based on user role
     } catch (error) {
       // Record verification attempt
       verifyRateLimit.recordAttempt();

@@ -18,13 +18,13 @@ const AuthPage = () => {
     }
   }, [searchParams]);
 
-  // Redirect authenticated users to app
+  // Redirect authenticated users based on role
   if (isAuthenticated) {
     return <Navigate to="/app" replace />;
   }
 
   const handleSuccess = () => {
-    window.location.href = '/app';
+    // Redirection is now handled by the auth store based on user role
   };
 
   const handleBack = () => {

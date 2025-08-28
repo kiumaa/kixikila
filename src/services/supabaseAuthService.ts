@@ -48,6 +48,7 @@ export interface UserData {
   email: string;
   full_name: string;
   phone?: string;
+  role?: string;
   email_verified?: boolean;
   phone_verified?: boolean;
   avatar_url?: string;
@@ -443,6 +444,7 @@ class SupabaseAuthService {
         email: data.email,
         full_name: data.full_name,
         phone: data.phone,
+        role: data.role,
         email_verified: data.email_verified,
         phone_verified: data.phone_verified,
         avatar_url: data.avatar_url,
@@ -466,6 +468,7 @@ class SupabaseAuthService {
       email: user.email || '',
       full_name: user.user_metadata?.full_name || 'Usuário',
       phone: user.phone,
+      role: user.user_metadata?.role || 'user',
       email_verified: user.email_confirmed_at ? true : false,
       phone_verified: user.phone_confirmed_at ? true : false,
       avatar_url: user.user_metadata?.avatar_url,

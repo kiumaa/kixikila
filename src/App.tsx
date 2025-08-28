@@ -9,7 +9,8 @@ import AuthPage from "./pages/AuthPage";
 import AppPage from "./pages/AppPage";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+import UserProtectedRoute from "./components/auth/UserProtectedRoute";
+import AdminProtectedRoute from "./components/auth/AdminProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -30,20 +31,24 @@ const App = () => {
             {/* Authentication Page - Login/Register */}
             <Route path="/entrar" element={<AuthPage />} />
             
-            {/* Main App - Protected */}
+            {/* Main App - User Protected */}
             <Route 
               path="/app/*" 
               element={
-                <ProtectedRoute requireAuth={true} redirectTo="/entrar">
+                <UserProtectedRoute>
                   <AppPage />
-                </ProtectedRoute>
+                </UserProtectedRoute>
               } 
             />
             
-            {/* Admin Panel - Has its own authentication */}
+            {/* Admin Panel - Admin Protected */}
             <Route 
               path="/admin/*" 
-              element={<AdminPanel />} 
+              element={
+                <AdminProtectedRoute>
+                  <AdminPanel />
+                </AdminProtectedRoute>
+              } 
             />
             
             {/* 404 Not Found */}

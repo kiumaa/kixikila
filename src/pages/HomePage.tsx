@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { OnboardingScreen } from '@/routes/LazyRoutes';
+import RoleBasedRedirect from '@/components/auth/RoleBasedRedirect';
 
 const HomePage = () => {
   const { isAuthenticated } = useAuthStore();
   const [step, setStep] = useState(0);
   
-  // Redirect authenticated users to app
+  // Redirect authenticated users based on their role
   if (isAuthenticated) {
-    return <Navigate to="/app" replace />;
+    return <RoleBasedRedirect />;
   }
 
   return (
