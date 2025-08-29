@@ -933,7 +933,6 @@ export type Database = {
           id: string | null
           is_vip: boolean | null
           trust_level: string | null
-          trust_score: number | null
         }
         Insert: {
           avatar_url?: string | null
@@ -944,7 +943,6 @@ export type Database = {
           id?: string | null
           is_vip?: boolean | null
           trust_level?: never
-          trust_score?: number | null
         }
         Update: {
           avatar_url?: string | null
@@ -955,7 +953,6 @@ export type Database = {
           id?: string | null
           is_vip?: boolean | null
           trust_level?: never
-          trust_score?: number | null
         }
         Relationships: []
       }
