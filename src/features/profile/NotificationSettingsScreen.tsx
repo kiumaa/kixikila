@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Bell, Mail, Smartphone, Users, Euro, Trophy, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, Bell, Mail, Smartphone, Users, Euro, Trophy, AlertTriangle, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { useNotificationPreferences } from '@/hooks/useNotifications';
 
 interface NotificationSettingsScreenProps {
   onBack: () => void;
@@ -12,46 +13,52 @@ interface NotificationSettingsScreenProps {
 export const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProps> = ({
   onBack
 }) => {
-  const [settings, setSettings] = useState({
-    // Push Notifications
-    pushEnabled: true,
-    paymentReminders: true,
-    groupActivity: true,
-    drawResults: true,
-    systemAlerts: true,
-    
-    // Email Notifications
-    emailEnabled: true,
-    weeklyReports: true,
-    monthlyStatements: false,
-    promotions: false,
-    
-    // SMS Notifications
-    smsEnabled: false,
-    urgentAlerts: true,
-    paymentConfirmations: false
-  });
-  
-  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const {
+    preferences,
+    isLoading,
+    updatePreferences,
+    sendTestNotification,
+    requestPermission
+  } = useNotificationPreferences();
+
+  const [localSettings, setLocalSettings] = useState({
+    push_notifications: true,
+    email_notifications: true,
+    sms_notifications: false,
+    group_notifications: true,
+    payment_notifications: true,
+    security_notifications: true,
+    marketing_notifications: false
+  });
+
+  // Sync with loaded preferences
+  useEffect(() => {
+    if (preferences) {
+      setLocalSettings(preferences);
+    }
+  }, [preferences]);
 
   const handleToggle = (key: string) => {
-    setSettings(prev => ({
+    setLocalSettings(prev => ({
       ...prev,
       [key]: !prev[key as keyof typeof prev]
     }));
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false);
-      toast({
-        title: "Definições guardadas",
-        description: "As suas preferências de notificações foram atualizadas."
-      });
-    }, 1500);
+    await updatePreferences(localSettings);
+  };
+
+  const handleTestNotification = async () => {
+    await sendTestNotification();
+  };
+
+  const handleRequestPermission = async () => {
+    const granted = await requestPermission();
+    if (granted) {
+      setLocalSettings(prev => ({ ...prev, push_notifications: true }));
+    }
   };
 
   const notificationCategories = [
@@ -60,11 +67,7 @@ export const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProp
       description: 'Notificações no dispositivo',
       icon: Smartphone,
       settings: [
-        { key: 'pushEnabled', label: 'Ativar notificações push', sublabel: 'Receber notificações no dispositivo' },
-        { key: 'paymentReminders', label: 'Lembretes de pagamento', sublabel: 'Avisos antes das datas de pagamento' },
-        { key: 'groupActivity', label: 'Atividade dos grupos', sublabel: 'Novos membros, pagamentos, etc.' },
-        { key: 'drawResults', label: 'Resultados de sorteios', sublabel: 'Quando há um novo contemplado' },
-        { key: 'systemAlerts', label: 'Alertas do sistema', sublabel: 'Manutenções e atualizações importantes' }
+        { key: 'push_notifications', label: 'Ativar notificações push', sublabel: 'Receber notificações no dispositivo' }
       ]
     },
     {
@@ -72,10 +75,7 @@ export const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProp
       description: 'Emails para o seu endereço registado',
       icon: Mail,
       settings: [
-        { key: 'emailEnabled', label: 'Ativar emails', sublabel: 'Receber notificações por email' },
-        { key: 'weeklyReports', label: 'Relatórios semanais', sublabel: 'Resumo da atividade da semana' },
-        { key: 'monthlyStatements', label: 'Extratos mensais', sublabel: 'Resumo financeiro do mês' },
-        { key: 'promotions', label: 'Promoções e novidades', sublabel: 'Ofertas especiais e funcionalidades' }
+        { key: 'email_notifications', label: 'Ativar emails', sublabel: 'Receber notificações por email' }
       ]
     },
     {
@@ -83,9 +83,18 @@ export const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProp
       description: 'Mensagens para o seu telemóvel',
       icon: Smartphone,
       settings: [
-        { key: 'smsEnabled', label: 'Ativar SMS', sublabel: 'Receber mensagens de texto' },
-        { key: 'urgentAlerts', label: 'Alertas urgentes', sublabel: 'Apenas notificações críticas' },
-        { key: 'paymentConfirmations', label: 'Confirmações de pagamento', sublabel: 'SMS após cada transação' }
+        { key: 'sms_notifications', label: 'Ativar SMS', sublabel: 'Receber mensagens de texto' }
+      ]
+    },
+    {
+      title: 'Categorias de Notificações',
+      description: 'Tipos de notificações que quer receber',
+      icon: Bell,
+      settings: [
+        { key: 'group_notifications', label: 'Notificações de grupos', sublabel: 'Atividade dos grupos, novos membros, etc.' },
+        { key: 'payment_notifications', label: 'Notificações de pagamentos', sublabel: 'Lembretes e confirmações de pagamentos' },
+        { key: 'security_notifications', label: 'Alertas de segurança', sublabel: 'Notificações importantes de segurança' },
+        { key: 'marketing_notifications', label: 'Promoções e novidades', sublabel: 'Ofertas especiais e funcionalidades' }
       ]
     }
   ];
@@ -146,7 +155,7 @@ export const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProp
                 </div>
               </div>
               
-              <div className="divide-y divide-border">
+                  <div className="divide-y divide-border">
                 {category.settings.map((setting, settingIndex) => (
                   <div key={settingIndex} className="p-6 flex items-center justify-between">
                     <div className="flex-1">
@@ -158,8 +167,9 @@ export const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProp
                       </div>
                     </div>
                     <Switch
-                      checked={settings[setting.key as keyof typeof settings]}
+                      checked={localSettings[setting.key as keyof typeof localSettings]}
                       onCheckedChange={() => handleToggle(setting.key)}
+                      disabled={isLoading}
                     />
                   </div>
                 ))}
@@ -168,18 +178,79 @@ export const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProp
           </Card>
         ))}
 
+        {/* Test & Permission Cards */}
+        <div className="grid grid-cols-1 gap-4">
+          <Card className="ios-card bg-gradient-to-r from-info-subtle to-info-subtle/50 border-info/20">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-8 h-8 bg-info/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <TestTube className="w-4 h-4 text-info" />
+                </div>
+                <div>
+                  <h3 className="font-semibold font-system text-info mb-1">
+                    Testar Notificações
+                  </h3>
+                  <p className="text-sm text-info/80 font-system">
+                    Envie uma notificação de teste para verificar se tudo está a funcionar
+                  </p>
+                </div>
+              </div>
+              
+              <Button
+                onClick={handleTestNotification}
+                variant="outline"
+                size="sm"
+                className="w-full ios-button"
+                disabled={isLoading}
+              >
+                Enviar Notificação de Teste
+              </Button>
+            </CardContent>
+          </Card>
+
+          {!localSettings.push_notifications && (
+            <Card className="ios-card bg-gradient-to-r from-warning-subtle to-warning-subtle/50 border-warning/20">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-8 h-8 bg-warning/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-warning" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold font-system text-warning mb-1">
+                      Permissões de Notificação
+                    </h3>
+                    <p className="text-sm text-warning/80 font-system">
+                      Ative as permissões do navegador para receber notificações push
+                    </p>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleRequestPermission}
+                  variant="outline"
+                  size="sm"
+                  className="w-full ios-button"
+                  disabled={isLoading}
+                >
+                  Ativar Permissões
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
         {/* Quick Settings */}
-        <Card className="ios-card bg-gradient-to-r from-warning-subtle to-warning-subtle/50 border-warning/20">
+        <Card className="ios-card bg-gradient-to-r from-muted-subtle to-muted-subtle/50 border-muted/20">
           <CardContent className="p-6">
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-8 h-8 bg-warning/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-4 h-4 text-warning" />
+              <div className="w-8 h-8 bg-muted/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-4 h-4 text-muted-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold font-system text-warning mb-1">
+                <h3 className="font-semibold font-system text-foreground mb-1">
                   Configurações Rápidas
                 </h3>
-                <p className="text-sm text-warning/80 font-system">
+                <p className="text-sm text-muted-foreground font-system">
                   Ative ou desative todas as notificações rapidamente
                 </p>
               </div>
@@ -188,39 +259,38 @@ export const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProp
             <div className="flex gap-3">
               <Button
                 onClick={() => {
-                  setSettings(prev => ({
+                  setLocalSettings(prev => ({
                     ...prev,
-                    pushEnabled: true,
-                    emailEnabled: true,
-                    paymentReminders: true,
-                    groupActivity: true,
-                    drawResults: true
+                    push_notifications: true,
+                    email_notifications: true,
+                    group_notifications: true,
+                    payment_notifications: true,
+                    security_notifications: true
                   }));
                 }}
                 variant="outline"
                 size="sm"
                 className="flex-1 ios-button"
+                disabled={isLoading}
               >
                 Ativar Essenciais
               </Button>
               <Button
                 onClick={() => {
-                  setSettings(prev => ({
+                  setLocalSettings(prev => ({
                     ...prev,
-                    pushEnabled: false,
-                    emailEnabled: false,
-                    smsEnabled: false,
-                    paymentReminders: false,
-                    groupActivity: false,
-                    drawResults: false,
-                    weeklyReports: false,
-                    monthlyStatements: false,
-                    promotions: false
+                    push_notifications: false,
+                    email_notifications: false,
+                    sms_notifications: false,
+                    group_notifications: false,
+                    payment_notifications: false,
+                    marketing_notifications: false
                   }));
                 }}
                 variant="outline"
                 size="sm"
                 className="flex-1 ios-button"
+                disabled={isLoading}
               >
                 Desativar Todas
               </Button>
@@ -232,11 +302,11 @@ export const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProp
         <div className="sticky bottom-24 pt-4">
           <Button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isLoading}
             className="w-full ios-button"
             size="lg"
           >
-            {isSaving ? 'A guardar...' : 'Guardar Alterações'}
+            {isLoading ? 'A guardar...' : 'Guardar Alterações'}
           </Button>
         </div>
       </div>
