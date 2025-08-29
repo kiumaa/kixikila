@@ -1214,6 +1214,15 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      verify_function_security_compliance: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          compliance_status: string
+          function_name: string
+          search_path_secure: boolean
+          security_definer: boolean
+        }[]
+      }
       verify_user_data_integrity: {
         Args: Record<PropertyKey, never>
         Returns: {
