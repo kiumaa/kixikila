@@ -130,6 +130,132 @@ export type Database = {
           },
         ]
       }
+      group_cycles: {
+        Row: {
+          created_at: string
+          cycle_number: number
+          draw_date: string
+          draw_method: string
+          group_id: string
+          id: string
+          metadata: Json | null
+          participants: Json | null
+          prize_amount: number
+          status: string
+          updated_at: string
+          winner_member_id: string
+          winner_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cycle_number: number
+          draw_date?: string
+          draw_method?: string
+          group_id: string
+          id?: string
+          metadata?: Json | null
+          participants?: Json | null
+          prize_amount?: number
+          status?: string
+          updated_at?: string
+          winner_member_id: string
+          winner_user_id: string
+        }
+        Update: {
+          created_at?: string
+          cycle_number?: number
+          draw_date?: string
+          draw_method?: string
+          group_id?: string
+          id?: string
+          metadata?: Json | null
+          participants?: Json | null
+          prize_amount?: number
+          status?: string
+          updated_at?: string
+          winner_member_id?: string
+          winner_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_cycles_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_cycles_winner_member_id_fkey"
+            columns: ["winner_member_id"]
+            isOneToOne: false
+            referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string | null
+          expires_at: string
+          group_id: string
+          id: string
+          invite_token: string
+          invited_by: string
+          message: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["member_role"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          group_id: string
+          id?: string
+          invite_token: string
+          invited_by: string
+          message?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          group_id?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          message?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           approved_at: string | null
@@ -219,12 +345,14 @@ export type Database = {
           contribution_frequency: string
           created_at: string
           creator_id: string
+          current_cycle: number | null
           current_members: number
           description: string | null
           end_date: string | null
           group_type: Database["public"]["Enums"]["group_type"]
           id: string
           is_private: boolean
+          last_draw_date: string | null
           max_members: number
           name: string
           next_payout_date: string | null
@@ -242,12 +370,14 @@ export type Database = {
           contribution_frequency?: string
           created_at?: string
           creator_id: string
+          current_cycle?: number | null
           current_members?: number
           description?: string | null
           end_date?: string | null
           group_type?: Database["public"]["Enums"]["group_type"]
           id?: string
           is_private?: boolean
+          last_draw_date?: string | null
           max_members?: number
           name: string
           next_payout_date?: string | null
@@ -265,12 +395,14 @@ export type Database = {
           contribution_frequency?: string
           created_at?: string
           creator_id?: string
+          current_cycle?: number | null
           current_members?: number
           description?: string | null
           end_date?: string | null
           group_type?: Database["public"]["Enums"]["group_type"]
           id?: string
           is_private?: boolean
+          last_draw_date?: string | null
           max_members?: number
           name?: string
           next_payout_date?: string | null
@@ -891,6 +1023,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_group_invitation: {
+        Args: { invitation_token: string }
+        Returns: undefined
+      }
       audit_critical_operation: {
         Args: {
           entity_id?: string
@@ -974,9 +1110,23 @@ export type Database = {
         Args: { config_value: Json; is_sensitive?: boolean }
         Returns: Json
       }
+      generate_invite_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_group_cycle_history: {
+        Args: { target_group_id: string }
+        Returns: {
+          cycle_number: number
+          draw_date: string
+          draw_method: string
+          prize_amount: number
+          winner_name: string
+        }[]
       }
       get_group_statistics: {
         Args: { target_group_id: string }
@@ -1103,6 +1253,10 @@ export type Database = {
       }
       is_current_user_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_group_ready_for_draw: {
+        Args: { target_group_id: string }
         Returns: boolean
       }
       is_super_admin: {
