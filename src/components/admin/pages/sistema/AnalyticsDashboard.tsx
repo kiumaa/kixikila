@@ -37,6 +37,14 @@ import {
   Filter
 } from 'lucide-react';
 
+interface SystemStatsData {
+  total_users: number;
+  active_users: number;
+  vip_users: number;
+  pending_otps: number;
+  unread_notifications: number;
+}
+
 interface AnalyticsData {
   userGrowth: Array<{ date: string; users: number; vipUsers: number }>;
   transactionStats: Array<{ date: string; count: number; amount: number }>;
@@ -70,7 +78,7 @@ const AnalyticsDashboard: React.FC = () => {
     try {
       // Get system statistics
       const { data: stats } = await supabase.rpc('get_system_stats');
-      const systemStats = stats?.[0] || {};
+      const systemStats = (stats?.[0] || {}) as SystemStatsData;
 
       // Mock data for visualization - in production, this would come from actual analytics
       const mockAnalytics: AnalyticsData = {

@@ -19,6 +19,10 @@ const SystemSettings = lazy(() => import('@/components/admin/pages/sistema/Syste
 const AdvancedSystemSettings = lazy(() => import('@/components/admin/pages/sistema/AdvancedSystemSettings'));
 const BrandingManagement = lazy(() => import('@/components/admin/pages/sistema/BrandingManagement'));
 const PWAManagement = lazy(() => import('@/components/admin/pages/sistema/PWAManagement'));
+const AnalyticsDashboard = lazy(() => import('@/components/admin/pages/sistema/AnalyticsDashboard'));
+const RealTimeMonitoring = lazy(() => import('@/components/admin/pages/sistema/RealTimeMonitoring'));
+const EdgeFunctionsMonitoring = lazy(() => import('@/components/admin/pages/sistema/EdgeFunctionsMonitoring'));
+const SystemHealthDashboard = lazy(() => import('@/components/admin/pages/sistema/SystemHealthDashboard'));
 
 // Segurança
 const SecurityDashboard = lazy(() => import('@/components/admin/pages/seguranca/SecurityDashboard'));
@@ -65,6 +69,10 @@ const AdminPanel: React.FC = () => {
           <Route path="advanced-settings" element={<AdvancedSystemSettings />} />
           <Route path="branding" element={<BrandingManagement />} />
           <Route path="pwa" element={<PWAManagement />} />
+          <Route path="analytics" element={<AnalyticsDashboard />} />
+          <Route path="real-time-monitoring" element={<RealTimeMonitoring />} />
+          <Route path="edge-functions" element={<EdgeFunctionsMonitoring />} />
+          <Route path="system-health" element={<SystemHealthDashboard />} />
           <Route path="security" element={<SecurityDashboard />} />
           <Route path="logs" element={<ActivityLogs />} />
           <Route path="monitoring" element={<MonitoringDashboard />} />

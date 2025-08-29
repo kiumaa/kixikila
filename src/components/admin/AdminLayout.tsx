@@ -84,6 +84,30 @@ const sidebarItems = [
     path: '/admin/pwa',
     group: 'sistema'
   },
+  { 
+    icon: BarChart3, 
+    label: 'Analytics', 
+    path: '/admin/analytics',
+    group: 'sistema'
+  },
+  { 
+    icon: Activity, 
+    label: 'Monitoramento', 
+    path: '/admin/real-time-monitoring',
+    group: 'sistema'
+  },
+  { 
+    icon: TestTube, 
+    label: 'Edge Functions', 
+    path: '/admin/edge-functions',
+    group: 'sistema'
+  },
+  { 
+    icon: Shield, 
+    label: 'System Health', 
+    path: '/admin/system-health',
+    group: 'sistema'
+  },
   
   // Segurança Group
   { 
