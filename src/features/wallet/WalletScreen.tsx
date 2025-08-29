@@ -3,7 +3,10 @@ import { ArrowLeft, Upload, Download, Eye, EyeOff, ArrowDownLeft, ArrowUpRight, 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
-import { mockUser, mockTransactions, formatCurrency, formatDate } from '@/data/mockData';
+import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
+import { useTransactions, useTransactionStats } from '@/hooks/useTransactions';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { formatCurrency, formatDate } from '@/data/mockData';
 
 interface WalletScreenProps {
   onBack: () => void;
@@ -18,10 +21,28 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
 }) => {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [filterType, setFilterType] = useState('all');
+  
+  const { user } = useAuthStore();
+  
+  // Get transactions with filters
+  const { 
+    transactions, 
+    loading: transactionsLoading, 
+    error: transactionsError,
+    loadMore,
+    pagination
+  } = useTransactions(
+    filterType === 'all' ? {} : { type: filterType }
+  );
+  
+  // Get transaction stats for user balance
+  const { 
+    stats, 
+    loading: statsLoading 
+  } = useTransactionStats();
 
-  const filteredTransactions = filterType === 'all' 
-    ? mockTransactions 
-    : mockTransactions.filter(t => t.type === filterType);
+  const currentBalance = stats.totalDeposits - stats.totalWithdrawals;
+  const hasMoreTransactions = pagination.offset + pagination.limit < pagination.total;
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -70,7 +91,7 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
                   Saldo Disponível
                 </div>
                 <div className="text-4xl font-bold font-system">
-                  {balanceVisible ? formatCurrency(mockUser.walletBalance) : '••••••'}
+                  {balanceVisible ? formatCurrency(currentBalance) : '••••••'}
                 </div>
               </div>
               <button
@@ -88,7 +109,7 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
                   Total Poupado
                 </div>
                 <div className="font-semibold font-system">
-                  {formatCurrency(mockUser.totalSaved)}
+                  {statsLoading ? '•••' : formatCurrency(stats.totalDeposits)}
                 </div>
               </div>
               <div className="text-center">
@@ -96,7 +117,7 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
                   Total Ganho
                 </div>
                 <div className="font-semibold font-system text-success">
-                  +{formatCurrency(mockUser.totalEarned)}
+                  {statsLoading ? '•••' : `+${formatCurrency(stats.totalEarned)}`}
                 </div>
               </div>
               <div className="text-center">
@@ -104,7 +125,7 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
                   Levantamentos
                 </div>
                 <div className="font-semibold font-system">
-                  {formatCurrency(mockUser.totalWithdrawn)}
+                  {statsLoading ? '•••' : formatCurrency(stats.totalWithdrawals)}
                 </div>
               </div>
             </div>
@@ -169,46 +190,71 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
             
             {/* Transactions List */}
             <div className="space-y-3">
-              {filteredTransactions.map(transaction => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-3 hover:bg-surface rounded-lg cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-surface">
-                      {getTransactionIcon(transaction.type)}
-                    </div>
-                    <div>
-                      <p className="font-medium font-system text-foreground text-sm">
-                        {transaction.description}
-                      </p>
-                      <p className="text-xs text-muted-foreground font-system">
-                        {formatDate(transaction.date)} • {transaction.reference}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`font-bold font-system ${getTransactionColor(transaction.type, transaction.amount)}`}>
-                      {transaction.amount > 0 ? '+' : ''}{formatCurrency(Math.abs(transaction.amount))}
-                    </div>
-                    <StatusBadge 
-                      status={transaction.status === 'completed' ? 'paid' : 'pending'} 
-                      size="xs"
-                    >
-                      {transaction.status === 'completed' ? 'Concluída' : 'Processando'}
-                    </StatusBadge>
-                  </div>
+              {transactionsLoading && transactions.length === 0 ? (
+                <div className="flex justify-center py-8">
+                  <LoadingSpinner />
                 </div>
-              ))}
+              ) : (
+                <>
+                  {transactions.map(transaction => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-3 hover:bg-surface rounded-lg cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-surface">
+                          {getTransactionIcon(transaction.type)}
+                        </div>
+                        <div>
+                          <p className="font-medium font-system text-foreground text-sm">
+                            {transaction.description}
+                          </p>
+                          <p className="text-xs text-muted-foreground font-system">
+                            {formatDate(transaction.created_at)} • {transaction.reference}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-bold font-system ${getTransactionColor(transaction.type, transaction.amount)}`}>
+                          {transaction.amount > 0 ? '+' : ''}{formatCurrency(Math.abs(transaction.amount))}
+                        </div>
+                        <StatusBadge 
+                          status={transaction.status === 'completed' ? 'paid' : 'pending'} 
+                          size="xs"
+                        >
+                          {transaction.status === 'completed' ? 'Concluída' : 
+                           transaction.status === 'processing' ? 'Processando' :
+                           transaction.status === 'failed' ? 'Falhou' :
+                           'Pendente'}
+                        </StatusBadge>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Load More Button */}
+                  {hasMoreTransactions && (
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={loadMore}
+                        disabled={transactionsLoading}
+                        className="w-full"
+                      >
+                        {transactionsLoading ? 'A carregar...' : 'Carregar mais'}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
-            {filteredTransactions.length === 0 && (
+            {transactions.length === 0 && !transactionsLoading && (
               <div className="text-center py-8">
                 <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
                   <CreditCard className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <p className="text-muted-foreground font-medium font-system">
-                  Nenhuma transação encontrada
+                  {transactionsError || 'Nenhuma transação encontrada'}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   As suas transações aparecerão aqui
