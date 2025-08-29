@@ -219,51 +219,49 @@ class SupabaseAuthService {
         };
       }
 
-      // If verification is successful, sign in the user or create account
-      const { user: userData, session } = data.data || {};
+      // Extract data from Edge Function response
+      const { user: userData, session: sessionData, tempCredentials } = data.data || {};
 
-      if (userData) {
-        // Get or create user profile
-        let userProfile = await this.getUserProfile(userData.id);
-        
-        if (!userProfile) {
-          // Create user profile if it doesn't exist
-          const { error: profileError } = await supabase
-            .from('users')
-            .insert({
-              id: userData.id,
-              email: userData.email || `user_${userData.id}@kixikila.pro`,
-              full_name: userData.full_name || 'Usuário',
-              phone: otpData.phone,
-              phone_verified: true,
-            });
+      if (userData && tempCredentials) {
+        // Use temporary credentials to create a proper Supabase Auth session
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: tempCredentials.email,
+          password: tempCredentials.password,
+        });
 
-          if (!profileError) {
-            userProfile = await this.getUserProfile(userData.id);
-          }
-        } else {
-          // Update phone verification status
-          await supabase
-            .from('users')
-            .update({ phone_verified: true, last_login: new Date().toISOString() })
-            .eq('id', userData.id);
-          
-          userProfile = await this.getUserProfile(userData.id);
+        if (authError || !authData.session) {
+          console.error('Failed to create session with temp credentials:', authError);
+          return {
+            success: false,
+            message: 'Erro ao criar sessão de login',
+          };
         }
 
         return {
           success: true,
           message: 'Login realizado com sucesso',
           data: {
-            user: userProfile || userData,
-            session,
+            user: userData,
+            session: authData.session,
+          },
+        };
+      }
+
+      // Fallback for existing users without temp credentials
+      if (userData && sessionData) {
+        return {
+          success: true,
+          message: 'Login realizado com sucesso',
+          data: {
+            user: userData,
+            session: sessionData,
           },
         };
       }
 
       return {
         success: false,
-        message: 'Erro na autenticação',
+        message: 'Erro na autenticação - dados incompletos',
       };
     } catch (error: any) {
       console.error('Verify phone OTP error:', error);

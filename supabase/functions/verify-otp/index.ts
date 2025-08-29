@@ -86,58 +86,157 @@ serve(async (req) => {
       );
     }
 
-    // Get or create user
-    let { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('phone', phone)
-      .single();
+    // Check if user already exists in auth.users
+    let userData;
+    let sessionData = null;
+    
+    // Generate temporary password for auth
+    const tempPassword = crypto.randomUUID().substring(0, 12) + 'Aa1!';
+    const tempEmail = `user_${phone.replace(/\D/g, '')}_${Date.now()}@kixikila.pro`;
 
-    if (userError && userError.code === 'PGRST116') {
-      // User doesn't exist, create one
-      const newUser = {
-        id: crypto.randomUUID(),
-        phone: phone,
-        email: `user_${Date.now()}@kixikila.pro`,
-        full_name: 'Usuário',
-        phone_verified: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      const { data: createdUser, error: createError } = await supabase
+    try {
+      // First check if user exists in our custom users table
+      const { data: existingUser, error: userError } = await supabase
         .from('users')
-        .insert(newUser)
-        .select()
+        .select('*')
+        .eq('phone', phone)
         .single();
 
-      if (createError) {
-        console.error('Error creating user:', createError);
+      if (userError && userError.code === 'PGRST116') {
+        // User doesn't exist, create both Auth user and custom user
+        console.log(`Creating new user for phone: ${phone}`);
+        
+        // Create Supabase Auth user
+        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+          email: tempEmail,
+          password: tempPassword,
+          phone: phone,
+          phone_confirmed: true,
+          user_metadata: {
+            full_name: 'Usuário',
+            phone: phone,
+            phone_verified: true
+          }
+        });
+
+        if (authError || !authUser.user) {
+          console.error('Error creating auth user:', authError);
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              error: 'Erro ao criar conta de usuário' 
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Create user in our custom table
+        const newUser = {
+          id: authUser.user.id,
+          phone: phone,
+          email: tempEmail,
+          full_name: 'Usuário',
+          phone_verified: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        const { data: createdUser, error: createError } = await supabase
+          .from('users')
+          .insert(newUser)
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating custom user:', createError);
+          // Cleanup auth user if custom user creation fails
+          await supabase.auth.admin.deleteUser(authUser.user.id);
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              error: 'Erro ao criar perfil de usuário' 
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        userData = createdUser;
+        
+        // Create session for new user
+        const { data: sessionResponse, error: sessionError } = await supabase.auth.admin.generateLink({
+          type: 'magiclink',
+          email: tempEmail,
+          options: {
+            data: {
+              phone: phone,
+              phone_verified: true
+            }
+          }
+        });
+
+        if (!sessionError && sessionResponse) {
+          sessionData = {
+            access_token: sessionResponse.properties?.access_token,
+            refresh_token: sessionResponse.properties?.refresh_token,
+            user: authUser.user,
+            expires_at: Date.now() + (60 * 60 * 1000) // 1 hour
+          };
+        }
+
+      } else if (userError) {
+        console.error('Error fetching user:', userError);
         return new Response(
-          JSON.stringify({ error: 'Failed to create user' }),
+          JSON.stringify({ 
+            success: false,
+            error: 'Erro ao buscar usuário' 
+          }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      } else {
+        // User exists, update login info
+        userData = existingUser;
+        
+        await supabase
+          .from('users')
+          .update({ 
+            last_login: new Date().toISOString(),
+            phone_verified: true 
+          })
+          .eq('id', userData.id);
+
+        // For existing users, create session using their auth user
+        const { data: sessionResponse, error: sessionError } = await supabase.auth.admin.generateLink({
+          type: 'magiclink',
+          email: userData.email,
+          options: {
+            data: {
+              phone: phone,
+              phone_verified: true
+            }
+          }
+        });
+
+        if (!sessionError && sessionResponse) {
+          sessionData = {
+            access_token: sessionResponse.properties?.access_token,
+            refresh_token: sessionResponse.properties?.refresh_token,
+            expires_at: Date.now() + (60 * 60 * 1000) // 1 hour
+          };
+        }
       }
 
-      userData = createdUser;
-    } else if (userError) {
-      console.error('Error fetching user:', userError);
+    } catch (error) {
+      console.error('Error in user creation/retrieval:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch user' }),
+        JSON.stringify({ 
+          success: false,
+          error: 'Erro interno do servidor' 
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Update last login
-    await supabase
-      .from('users')
-      .update({ 
-        last_login: new Date().toISOString(),
-        phone_verified: true 
-      })
-      .eq('id', userData.id);
-
-    console.log(`OTP verified successfully for ${phone}`);
+    console.log(`OTP verified successfully for ${phone}, user ID: ${userData?.id}`);
 
     return new Response(
       JSON.stringify({ 
@@ -145,7 +244,11 @@ serve(async (req) => {
         message: 'OTP verified successfully',
         data: {
           user: userData,
-          session: null // We'll handle session separately
+          session: sessionData,
+          tempCredentials: sessionData ? {
+            email: userData.email,
+            password: tempPassword
+          } : null
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
