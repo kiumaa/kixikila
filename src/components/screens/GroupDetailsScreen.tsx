@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/design-system/Avatar';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
+import { AdvancedInviteModal } from '@/components/modals/AdvancedInviteModal';
+import { MemberManagementPanel } from '@/components/group/MemberManagementPanel';
+import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import { useToast } from '@/hooks/use-toast';
 import { type Group, formatCurrency, formatDate } from '@/data/mockData';
 import { useMemoizedGroupProgress } from '@/lib/performance';
@@ -25,7 +28,13 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = React.memo(
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showAdvancedInvite, setShowAdvancedInvite] = useState(false);
   const { toast } = useToast();
+  
+  // Hook for managing invitations
+  const { invitations, fetchInvitations } = useGroupInvitations({
+    groupId: group.id.toString()
+  });
 
   // Memoized calculations
   const { paidMembers, progress } = useMemoizedGroupProgress(group.members);
@@ -285,17 +294,18 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = React.memo(
 
             {/* Actions */}
             <div className="grid grid-cols-2 gap-3">
-              <Button
+              <Button 
+                variant="default" 
+                className="w-full"
                 onClick={onPay}
-                className="ios-button bg-primary hover:bg-primary-hover text-primary-foreground"
               >
                 <CreditCard className="w-5 h-5 mr-2" />
                 Pagar Agora
               </Button>
-              <Button
-                onClick={onInvite}
-                variant="outline"
-                className="ios-button"
+              <Button 
+                variant="secondary" 
+                className="w-full"
+                onClick={() => setShowAdvancedInvite(true)}
               >
                 <Share2 className="w-5 h-5 mr-2" />
                 Convidar
@@ -305,53 +315,26 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = React.memo(
         )}
 
         {activeTab === 'members' && (
-          <div className="space-y-3">
-            {group.members.map((member) => (
-              <Card key={member.id} className="ios-card">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar
-                        name={member.name}
-                        size="md"
-                        verified={member.isAdmin}
-                        online={member.paid}
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold font-system text-foreground">
-                            {member.name}
-                          </span>
-                          {member.isAdmin && (
-                            <StatusBadge status="info" size="sm" showIcon={false}>
-                              Admin
-                            </StatusBadge>
-                          )}
-                        </div>
-                        {member.position && (
-                          <div className="text-sm text-muted-foreground">
-                            Posição #{member.position}
-                          </div>
-                        )}
-                        {member.isWinner && (
-                          <div className="text-sm font-medium text-warning mt-1">
-                            👑 Último contemplado
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <StatusBadge
-                      status={member.paid ? 'success' : 'pending'}
-                      showIcon={true}
-                    >
-                      {member.paid ? 'Pago' : 'Pendente'}
-                    </StatusBadge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <MemberManagementPanel
+            groupId={group.id.toString()}
+            members={group.members.map(member => ({
+              id: member.id.toString(),
+              user_id: member.id.toString(),
+              name: member.name,
+              email: '',
+              phone: '',
+              avatar: member.avatar,
+              role: (member.isAdmin ? 'admin' : 'member') as 'creator' | 'admin' | 'member',
+              status: (member.paid ? 'active' : 'pending') as 'active' | 'pending' | 'suspended',
+              joined_at: new Date().toISOString(),
+              total_contributed: 0,
+              current_balance: 0
+            }))}
+            invitations={invitations}
+            currentUserId={currentUserId.toString()}
+            userRole={isAdmin ? 'admin' : 'member'}
+            onMemberUpdate={fetchInvitations}
+          />
         )}
 
         {activeTab === 'history' && (
@@ -475,6 +458,25 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = React.memo(
           </Card>
         )}
       </div>
+
+      {/* Advanced Invite Modal */}
+      <AdvancedInviteModal
+        isOpen={showAdvancedInvite}
+        onClose={() => setShowAdvancedInvite(false)}
+        group={{
+          id: group.id.toString(),
+          name: group.name,
+          description: group.description,
+          contribution_amount: group.contributionAmount,
+          current_members: group.currentMembers,
+          max_members: group.maxMembers,
+          group_type: group.groupType
+        }}
+        onInvitesSent={() => {
+          setShowAdvancedInvite(false);
+          fetchInvitations();
+        }}
+      />
     </div>
   );
 });
