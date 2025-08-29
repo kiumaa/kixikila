@@ -1,10 +1,13 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { LoadingScreen } from '@/components/screens/LoadingScreen';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { mockNotifications, mockGroups, mockUser } from '@/data/mockData';
+import { DepositModal } from '@/components/modals/DepositModal';
+import { WithdrawModal } from '@/components/modals/WithdrawModal';
+import { CreateGroupModal } from '@/components/modals/CreateGroupModal';
 
 // Lazy imports
 import {
@@ -30,10 +33,10 @@ const DashboardWrapper = () => {
     <DashboardScreen
       onOpenNotifications={() => navigate('/app/notifications')}
       onOpenWallet={() => navigate('/app/wallet')}
-      onOpenDeposit={() => {/* TODO: Open deposit modal */}}
-      onOpenWithdraw={() => {/* TODO: Open withdraw modal */}}
-      onOpenCreateGroup={() => {/* TODO: Handle create group */}}
-      onOpenJoinGroup={() => {/* TODO: Handle join group */}}
+      onOpenDeposit={() => setShowDeposit(true)}
+      onOpenWithdraw={() => setShowWithdraw(true)}
+      onOpenCreateGroup={() => setShowCreateGroup(true)}
+      onOpenJoinGroup={() => setShowJoinGroup(true)}
       onSelectGroup={(group) => navigate(`/app/group/${group.id}`)}
       onNavigateToVIP={() => navigate('/app/vip-management')}
       notifications={mockNotifications}
@@ -47,8 +50,8 @@ const WalletWrapper = () => {
   return (
     <WalletScreen
       onBack={() => navigate('/app/dashboard')}
-      onOpenDeposit={() => {/* TODO: Open deposit modal */}}
-      onOpenWithdraw={() => {/* TODO: Open withdraw modal */}}
+      onOpenDeposit={() => setShowDeposit(true)}
+      onOpenWithdraw={() => setShowWithdraw(true)}
     />
   );
 };
@@ -155,6 +158,12 @@ const GroupDetailsWrapper = () => {
 const AppRoutes: React.FC = () => {
   const { canCreateGroup } = useAppStore();
   const unreadNotifications = mockNotifications.filter(n => !n.read).length;
+  
+  // Modal states
+  const [showDeposit, setShowDeposit] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showJoinGroup, setShowJoinGroup] = useState(false);
 
   const handleCreateGroup = () => {
     // This will be handled by the create group route
@@ -198,6 +207,25 @@ const AppRoutes: React.FC = () => {
       <BottomNavigation
         notificationCount={unreadNotifications}
         onCreateGroup={handleCreateGroup}
+      />
+      
+      {/* Modals */}
+      <DepositModal 
+        isOpen={showDeposit} 
+        onClose={() => setShowDeposit(false)}
+        currentBalance={mockUser.walletBalance}
+      />
+      <WithdrawModal 
+        isOpen={showWithdraw} 
+        onClose={() => setShowWithdraw(false)}
+        currentBalance={mockUser.walletBalance}
+      />
+      <CreateGroupModal 
+        isOpen={showCreateGroup} 
+        onClose={() => setShowCreateGroup(false)}
+        onSuccess={() => {
+          // Refresh dashboard or navigate to new group
+        }}
       />
     </>
   );
