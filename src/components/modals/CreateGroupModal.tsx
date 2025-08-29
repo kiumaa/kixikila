@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Target, Sparkles, ArrowLeft, ArrowRight, Euro, Calendar, Shield, Check } from 'lucide-react';
+import { Users, Target, Sparkles, ArrowLeft, ArrowRight, Euro, Calendar, Shield, Check, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,20 +7,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/design-system/Modal';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlanLimitNotice } from '@/components/common/PlanLimitNotice';
+import { VIPUpgradeModal } from './VIPUpgradeModal';
 import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/store/useAppStore';
+import { useVIPStatus } from '@/hooks/useVIPStatus';
 import { formatCurrency } from '@/data/mockData';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigateToVIP?: () => void;
 }
 
 export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   isOpen,
-  onClose,
-  onNavigateToVIP
+  onClose
 }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -33,8 +33,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     privacy: 'public'
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showVIPUpgrade, setShowVIPUpgrade] = useState(false);
   const { toast } = useToast();
-  const { canCreateGroup, userPlan, addGroup } = useAppStore();
+  const { addGroup } = useAppStore();
+  const vipStatus = useVIPStatus();
 
   const handleNext = () => {
     if (step < 4) {
@@ -50,10 +52,12 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
   const handleSubmit = () => {
     // Check group limit before proceeding
-    if (!canCreateGroup()) {
+    const validation = vipStatus.validateGroupCreation();
+    if (!validation.canCreate) {
+      setShowVIPUpgrade(true);
       toast({
         title: "Limite Atingido",
-        description: "Plano gratuito permite até 2 grupos. Torna-te VIP para criar mais.",
+        description: validation.message,
       });
       return;
     }
@@ -141,8 +145,34 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     >
       <div className="space-y-6">
         {/* Plan Limit Notice for Free Users */}
-        {userPlan === 'free' && (
-          <PlanLimitNotice showCloseButton={false} onNavigateToVIP={onNavigateToVIP} />
+        {!vipStatus.isVIP && (
+          <Card className="ios-card bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                    <Crown className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-amber-900">
+                      {vipStatus.validateGroupCreation().message}
+                    </h3>
+                    <p className="text-xs text-amber-700">
+                      Grupos criados: {vipStatus.groupCount}/{vipStatus.isVIP ? '∞' : vipStatus.groupLimit}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={() => setShowVIPUpgrade(true)}
+                  className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300"
+                >
+                  Upgrade VIP
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Progress Bar */}
@@ -466,15 +496,20 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={isLoading || !canCreateGroup}
+              disabled={isLoading || vipStatus.loading || !vipStatus.validateGroupCreation().canCreate}
               className="flex-1 ios-button text-xs py-2"
             >
-              {isLoading ? 'Criando...' : !canCreateGroup ? 'Limite Atingido' : 'Criar Grupo'}
-              {!isLoading && canCreateGroup && <Check className="w-4 h-4 ml-2" />}
+              {isLoading ? 'Criando...' : !vipStatus.validateGroupCreation().canCreate ? 'Limite Atingido' : 'Criar Grupo'}
+              {!isLoading && vipStatus.validateGroupCreation().canCreate && <Check className="w-4 h-4 ml-2" />}
             </Button>
           )}
         </div>
       </div>
+      
+      <VIPUpgradeModal
+        isOpen={showVIPUpgrade}
+        onClose={() => setShowVIPUpgrade(false)}
+      />
     </Modal>
   );
 };

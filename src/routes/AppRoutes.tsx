@@ -251,7 +251,6 @@ const AppRoutes: React.FC = () => {
       <CreateGroupModal 
         isOpen={showCreateGroup} 
         onClose={() => setShowCreateGroup(false)}
-        onNavigateToVIP={() => window.location.href = '/app/vip-management'}
       />
     </>
   );

@@ -7,6 +7,7 @@ import { Modal } from '@/components/design-system/Modal';
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import { useStripeIntegration } from '@/hooks/useStripeIntegration';
 import { formatCurrency } from '@/data/mockData';
 
 interface DepositModalProps {
@@ -23,16 +24,22 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   const [amount, setAmount] = useState('');
   const [step, setStep] = useState<'amount' | 'processing' | 'success'>('amount');
   const { toast } = useToast();
+  const { createPayment, loading } = useStripeIntegration();
 
   const quickAmounts = [50, 100, 250, 500];
 
-  const handleDeposit = () => {
+  const handleDeposit = async () => {
     if (!amount || parseFloat(amount) < 10) return;
     
     setStep('processing');
     
-    // Simulate Stripe processing
-    setTimeout(() => {
+    try {
+      await createPayment({
+        amount: parseFloat(amount),
+        description: 'Depósito na carteira KIXIKILA'
+      });
+      
+      // Payment successful, show success step
       setStep('success');
       
       setTimeout(() => {
@@ -45,7 +52,16 @@ export const DepositModal: React.FC<DepositModalProps> = ({
           description: `${formatCurrency(parseFloat(amount))} foi adicionado à sua carteira`
         });
       }, 2000);
-    }, 3000);
+    } catch (error) {
+      console.error('Payment error:', error);
+      setStep('amount');
+      
+      toast({
+        title: "❌ Erro no depósito",
+        description: "Ocorreu um erro ao processar o pagamento. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleClose = () => {

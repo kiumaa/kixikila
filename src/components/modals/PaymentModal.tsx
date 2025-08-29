@@ -5,6 +5,7 @@ import { Modal } from '@/components/design-system/Modal';
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import { useStripeIntegration } from '@/hooks/useStripeIntegration';
 import { type Group, formatCurrency } from '@/data/mockData';
 
 interface PaymentModalProps {
@@ -23,26 +24,59 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'card'>('wallet');
   const [step, setStep] = useState<'method' | 'processing' | 'success'>('method');
   const { toast } = useToast();
+  const { createPayment, loading } = useStripeIntegration();
 
   const hasEnoughBalance = currentBalance >= group.contributionAmount;
   
-  const handlePayment = () => {
+  const handlePayment = async () => {
     setStep('processing');
     
-    // Simulate payment processing
-    setTimeout(() => {
-      setStep('success');
-      
-      setTimeout(() => {
-        setStep('method');
-        onClose();
-        
-        toast({
-          title: "✅ Pagamento realizado!",
-          description: `Contribuição de ${formatCurrency(group.contributionAmount)} para ${group.name}`
+    try {
+      if (paymentMethod === 'wallet') {
+        // Simulate wallet payment (would be handled by backend)
+        setTimeout(() => {
+          setStep('success');
+          
+          setTimeout(() => {
+            setStep('method');
+            onClose();
+            
+            toast({
+              title: "✅ Pagamento realizado!",
+              description: `Contribuição de ${formatCurrency(group.contributionAmount)} para ${group.name}`
+            });
+          }, 2000);
+        }, 2500);
+      } else {
+        // Use Stripe for card payments
+        await createPayment({
+          amount: group.contributionAmount,
+          group_id: group.id.toString(),
+          description: `Contribuição para ${group.name} - Ciclo ${group.cycle}`
         });
-      }, 2000);
-    }, 2500);
+        
+        setStep('success');
+        
+        setTimeout(() => {
+          setStep('method');
+          onClose();
+          
+          toast({
+            title: "✅ Pagamento realizado!",
+            description: `Contribuição de ${formatCurrency(group.contributionAmount)} para ${group.name}`
+          });
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      setStep('method');
+      
+      toast({
+        title: "❌ Erro no pagamento",
+        description: "Ocorreu um erro ao processar o pagamento. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleClose = () => {
