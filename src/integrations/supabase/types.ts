@@ -200,21 +200,7 @@ export type Database = {
             foreignKeyName: "group_members_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
-            referencedRelation: "public_user_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_members_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "public_user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -297,13 +283,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "groups_creator_id_fkey"
-            columns: ["creator_id"]
-            isOneToOne: false
-            referencedRelation: "public_user_profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "groups_creator_id_fkey"
             columns: ["creator_id"]
@@ -492,13 +471,6 @@ export type Database = {
           verified_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "otp_codes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "public_user_profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "otp_codes_user_id_fkey"
             columns: ["user_id"]
@@ -774,13 +746,6 @@ export type Database = {
             foreignKeyName: "transactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "public_user_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -923,39 +888,7 @@ export type Database = {
       }
     }
     Views: {
-      public_user_profiles: {
-        Row: {
-          avatar_url: string | null
-          city: string | null
-          country: string | null
-          created_at: string | null
-          full_name: string | null
-          id: string | null
-          is_vip: boolean | null
-          trust_level: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          city?: string | null
-          country?: string | null
-          created_at?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_vip?: boolean | null
-          trust_level?: never
-        }
-        Update: {
-          avatar_url?: string | null
-          city?: string | null
-          country?: string | null
-          created_at?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_vip?: boolean | null
-          trust_level?: never
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       audit_critical_operation: {
