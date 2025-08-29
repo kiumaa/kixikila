@@ -11,22 +11,50 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Get required environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'admin@kixikila.pt'
+    const adminPassword = Deno.env.get('ADMIN_PASSWORD')
+    
+    // Validate required environment variables
+    if (!supabaseUrl) {
+      throw new Error('SUPABASE_URL environment variable is required')
+    }
+    
+    if (!supabaseServiceKey) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required')
+    }
+    
+    if (!adminPassword) {
+      throw new Error('ADMIN_PASSWORD environment variable is required')
+    }
+    
+    // Validate admin credentials using database function
+    const tempClient = createClient(supabaseUrl, supabaseServiceKey)
+    const { data: validation, error: validationError } = await tempClient
+      .rpc('validate_admin_credentials', {
+        email: adminEmail,
+        password: adminPassword
+      })
+      
+    if (validationError || !validation?.valid) {
+      const errors = validation?.errors || ['Invalid credentials']
+      throw new Error(`Credential validation failed: ${errors.join(', ')}`)
+    }
+    
     // Criar cliente Supabase com service role para criar usuários
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
       }
-    )
+    })
 
     // Criar usuário admin no sistema de autenticação
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: 'admin@kixikila.pro',
-      password: '@Kixikila2025!',
+      email: adminEmail,
+      password: adminPassword,
       email_confirm: true,
       user_metadata: {
         full_name: 'Administrador Kixikila'
