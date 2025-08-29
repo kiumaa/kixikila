@@ -1,234 +1,351 @@
 import React, { useState } from 'react';
-import { Search, Users, Lock, Globe, Calendar, Euro, User } from 'lucide-react';
+import { Search, Users, Euro, Lock, Globe, UserPlus, Check, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/design-system/Modal';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { StatusBadge } from '@/components/design-system/StatusBadge';
-import { Avatar } from '@/components/design-system/Avatar';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { formatCurrency } from '@/data/mockData';
+import { type Group, formatCurrency, mockGroups } from '@/data/mockData';
 
 interface JoinGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onJoinSuccess?: (group: Group) => void;
 }
-
-// Mock data for available groups
-const mockAvailableGroups = [
-  {
-    id: 4,
-    name: "Férias de Verão 2025",
-    description: "Grupo para poupar para as férias de família",
-    contributionAmount: 150,
-    maxMembers: 6,
-    currentMembers: 4,
-    privacy: "public",
-    category: "travel",
-    admin: "Sandra Costa",
-    nextStart: "2025-10-01"
-  },
-  {
-    id: 5,
-    name: "Investimento Imobiliário",
-    description: "Entrada para apartamento no centro",
-    contributionAmount: 800,
-    maxMembers: 5,
-    currentMembers: 3,
-    privacy: "invite_only",
-    category: "investment",
-    admin: "Miguel Santos",
-    nextStart: "2025-09-15"
-  },
-  {
-    id: 6,
-    name: "Emergência Familiar",
-    description: "Fundo de emergência para a família",
-    contributionAmount: 100,
-    maxMembers: 8,
-    currentMembers: 5,
-    privacy: "private",
-    category: "emergency",
-    admin: "Ana Ferreira",
-    nextStart: "2025-09-10"
-  }
-];
 
 export const JoinGroupModal: React.FC<JoinGroupModalProps> = ({
   isOpen,
-  onClose
+  onClose,
+  onJoinSuccess
 }) => {
+  const [searchMethod, setSearchMethod] = useState<'code' | 'browse'>('code');
+  const [inviteCode, setInviteCode] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState<any>(null);
-  const [isJoining, setIsJoining] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [step, setStep] = useState<'search' | 'details' | 'confirm'>('search');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const filteredGroups = mockAvailableGroups.filter(group =>
+  // Filter public groups based on search
+  const publicGroups = mockGroups.filter(group => 
+    !group.privacy || group.privacy === 'public'
+  ).filter(group =>
+    searchQuery === '' || 
     group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    group.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    group.category.toLowerCase().includes(searchQuery.toLowerCase())
+    group.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleJoinGroup = async (group: any) => {
-    setIsJoining(true);
-    setSelectedGroup(group);
-    
-    // Simulate join request
-    setTimeout(() => {
-      setIsJoining(false);
+  const handleCodeSearch = () => {
+    if (!inviteCode.trim()) {
       toast({
-        title: "Pedido enviado!",
-        description: `O seu pedido para entrar em "${group.name}" foi enviado ao administrador.`,
+        title: "Código necessário",
+        description: "Por favor, insira um código de convite.",
+        variant: "destructive"
       });
-      onClose();
-    }, 2000);
+      return;
+    }
+
+    setIsLoading(true);
+    
+    // Simulate API call to find group by code
+    setTimeout(() => {
+      const foundGroup = mockGroups.find(() => 
+        Math.random() > 0.3 // 70% chance of finding a group
+      );
+      
+      if (foundGroup) {
+        setSelectedGroup(foundGroup);
+        setStep('details');
+      } else {
+        toast({
+          title: "Código inválido",
+          description: "O código de convite não foi encontrado ou expirou.",
+          variant: "destructive"
+        });
+      }
+      setIsLoading(false);
+    }, 1500);
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'travel':
-        return '✈️';
-      case 'investment':
-        return '📈';
-      case 'emergency':
-        return '🚨';
-      case 'family':
-        return '👨‍👩‍👧‍👦';
-      case 'hobby':
-        return '🎯';
-      default:
-        return '💰';
-    }
+  const handleGroupSelect = (group: Group) => {
+    setSelectedGroup(group);
+    setStep('details');
   };
 
-  const getPrivacyIcon = (privacy: string) => {
-    switch (privacy) {
-      case 'public':
-        return <Globe className="w-4 h-4 text-success" />;
-      case 'private':
-        return <Lock className="w-4 h-4 text-destructive" />;
-      case 'invite_only':
-        return <User className="w-4 h-4 text-warning" />;
-      default:
-        return <Globe className="w-4 h-4 text-muted-foreground" />;
-    }
+  const handleJoinRequest = () => {
+    if (!selectedGroup) return;
+    
+    setIsLoading(true);
+    setTimeout(() => {
+      setStep('confirm');
+      setIsLoading(false);
+      
+      setTimeout(() => {
+        onJoinSuccess?.(selectedGroup);
+        toast({
+          title: "✅ Pedido enviado!",
+          description: `O seu pedido para entrar em "${selectedGroup.name}" foi enviado.`
+        });
+        handleClose();
+      }, 2000);
+    }, 1500);
+  };
+
+  const handleClose = () => {
+    setStep('search');
+    setSelectedGroup(null);
+    setInviteCode('');
+    setSearchQuery('');
+    onClose();
+  };
+
+  const getPrivacyIcon = (privacy: string | undefined) => {
+    if (!privacy || privacy === 'public') return <Globe className="w-4 h-4 text-emerald-500" />;
+    if (privacy === 'private') return <Lock className="w-4 h-4 text-amber-500" />;
+    return <UserPlus className="w-4 h-4 text-blue-500" />;
+  };
+
+  const getPrivacyLabel = (privacy: string | undefined) => {
+    if (!privacy || privacy === 'public') return 'Público';
+    if (privacy === 'private') return 'Privado';
+    return 'Por Convite';
   };
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
-      title="Entrar em Grupo"
+      onClose={handleClose}
+      title={step === 'search' ? 'Procurar Grupos' : step === 'details' ? 'Detalhes do Grupo' : ''}
       size="lg"
     >
-      <div className="space-y-6">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
-            placeholder="Procurar grupos por nome, categoria..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-
-        {/* Filters */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {['Todos', 'Viagem', 'Investimento', 'Emergência', 'Família'].map((filter) => (
+      {step === 'search' && (
+        <div className="space-y-6">
+          {/* Search Method Tabs */}
+          <div className="flex gap-1 p-1 bg-muted rounded-xl">
             <button
-              key={filter}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium font-system whitespace-nowrap bg-muted text-muted-foreground hover:bg-muted-hover transition-all"
+              onClick={() => setSearchMethod('code')}
+              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+                searchMethod === 'code'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
-              {filter}
+              Código de Convite
             </button>
-          ))}
-        </div>
+            <button
+              onClick={() => setSearchMethod('browse')}
+              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+                searchMethod === 'browse'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Explorar Grupos
+            </button>
+          </div>
 
-        {/* Groups List */}
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {filteredGroups.length > 0 ? (
-            filteredGroups.map((group) => (
-              <Card key={group.id} className="ios-card">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg">{getCategoryIcon(group.category)}</span>
-                        <h3 className="font-bold font-system text-foreground">
-                          {group.name}
-                        </h3>
-                        {getPrivacyIcon(group.privacy)}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
-                        {group.description}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="font-semibold font-system text-primary">
-                          {formatCurrency(group.contributionAmount)}/mês
-                        </span>
-                        <span className="text-muted-foreground">
-                          {group.currentMembers}/{group.maxMembers} membros
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+          {searchMethod === 'code' ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-3">
+                  Código de Convite
+                </label>
+                <Input
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  placeholder="KIXIKILA123ABC"
+                  className="text-center text-lg font-mono tracking-wider"
+                  maxLength={12}
+                />
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Cole o código que recebeu do administrador do grupo
+                </p>
+              </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <User className="w-3 h-3" />
-                      <span className="font-system">Admin: {group.admin}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        <span className="font-system">Início: {new Date(group.nextStart).toLocaleDateString('pt-PT')}</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleJoinGroup(group)}
-                        disabled={isJoining && selectedGroup?.id === group.id}
-                        className="ios-button"
-                      >
-                        {isJoining && selectedGroup?.id === group.id ? 'A enviar...' : 'Entrar'}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+              <Button
+                onClick={handleCodeSearch}
+                disabled={!inviteCode.trim() || isLoading}
+                className="w-full"
+                size="lg"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <Search className="w-5 h-5 mr-2" />
+                )}
+                Procurar Grupo
+              </Button>
+            </div>
           ) : (
-            <div className="text-center py-8">
-              <Search className="w-12 h-12 text-muted mx-auto mb-3" />
-              <p className="text-muted-foreground font-medium font-system">
-                {searchQuery ? 'Nenhum grupo encontrado' : 'Procure por grupos disponíveis'}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {searchQuery ? 'Tente usar outros termos de pesquisa' : 'Use a barra de pesquisa acima'}
-              </p>
+            <div className="space-y-4">
+              <div>
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Procurar por nome ou descrição..."
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {publicGroups.length === 0 ? (
+                  <Card className="p-8 text-center">
+                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Users className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground">
+                      {searchQuery ? 'Nenhum grupo encontrado' : 'Nenhum grupo público disponível'}
+                    </p>
+                  </Card>
+                ) : (
+                  publicGroups.map((group) => (
+                    <Card
+                      key={group.id}
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => handleGroupSelect(group)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-foreground mb-1">
+                              {group.name}
+                            </h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {group.description}
+                            </p>
+                          </div>
+                          <div className="ml-3 flex items-center gap-2">
+                            {getPrivacyIcon(group.privacy)}
+                            <Badge variant="secondary" className="text-xs">
+                              {getPrivacyLabel(group.privacy)}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-4">
+                            <span className="font-medium text-primary">
+                              {formatCurrency(group.contributionAmount)}/mês
+                            </span>
+                            <span className="text-muted-foreground">
+                              {group.currentMembers}/{group.maxMembers} membros
+                            </span>
+                          </div>
+                          <Badge 
+                            variant={group.status === 'active' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {group.status === 'active' ? 'Ativo' : 'Pendente'}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
+      )}
 
-        {/* Info */}
-        <div className="bg-surface rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Users className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold font-system text-foreground text-sm mb-1">
-                Como funciona?
-              </h4>
-              <ul className="text-xs text-muted-foreground space-y-1 font-system">
-                <li>• Envie um pedido para entrar no grupo</li>
-                <li>• O administrador irá aprovar o seu pedido</li>
-                <li>• Após aprovação, pode começar a contribuir</li>
-              </ul>
-            </div>
+      {step === 'details' && selectedGroup && (
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-r from-primary-subtle to-primary-subtle/50 border-primary/20">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-primary mb-2">
+                    {selectedGroup.name}
+                  </h2>
+                  <p className="text-primary/80 mb-3">
+                    {selectedGroup.description}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {getPrivacyIcon(selectedGroup.privacy)}
+                  <Badge variant="outline" className="border-primary/30">
+                    {getPrivacyLabel(selectedGroup.privacy)}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-primary/10 rounded-xl">
+                  <div className="text-2xl font-bold text-primary">
+                    {formatCurrency(selectedGroup.contributionAmount)}
+                  </div>
+                  <div className="text-xs text-primary/70">Por mês</div>
+                </div>
+                <div className="text-center p-3 bg-primary/10 rounded-xl">
+                  <div className="text-2xl font-bold text-primary">
+                    {selectedGroup.currentMembers}/{selectedGroup.maxMembers}
+                  </div>
+                  <div className="text-xs text-primary/70">Membros</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {selectedGroup.privacy === 'private' && (
+            <Card className="bg-amber-50 border-amber-200">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-800 mb-1">
+                      Aprovação necessária
+                    </p>
+                    <p className="text-amber-700">
+                      O administrador do grupo precisa aprovar o seu pedido de entrada.
+                      Será notificado quando for aceito.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setStep('search')}
+              variant="outline"
+              className="flex-1"
+            >
+              Voltar
+            </Button>
+            <Button
+              onClick={handleJoinRequest}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <UserPlus className="w-4 h-4 mr-2" />
+              )}
+              Pedir Entrada
+            </Button>
           </div>
         </div>
-      </div>
+      )}
+
+      {step === 'confirm' && (
+        <div className="text-center py-8 space-y-6">
+          <div className="w-16 h-16 bg-success-subtle rounded-full flex items-center justify-center mx-auto animate-bounce-in">
+            <Check className="w-8 h-8 text-success" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Pedido Enviado!
+            </h3>
+            <p className="text-muted-foreground">
+              O administrador do grupo foi notificado.<br />
+              Receberá uma notificação quando for aceito.
+            </p>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 };

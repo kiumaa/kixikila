@@ -25,7 +25,7 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
     logStep("Stripe key verified");
 
-    // Create Supabase client using anon key for user authentication
+    // Create a Supabase client using the anon key for user authentication
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
@@ -36,49 +36,32 @@ serve(async (req) => {
     logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
+    logStep("Authenticating user with token");
+    
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get request body for plan type
-    const { plan_type = 'vip_monthly' } = await req.json();
-    logStep("Plan type received", { plan_type });
+    // Get request body for plan information
+    const { plan = 'vip_monthly', amount = 999 } = await req.json();
+    logStep("Request data", { plan, amount });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-
-    // Check if customer already exists
+    
+    // Check if customer exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Existing customer found", { customerId });
     } else {
-      logStep("No existing customer, will create during checkout");
+      logStep("Creating new customer");
     }
 
-    // Define VIP plans
-    const plans = {
-      vip_monthly: {
-        name: "KIXIKILA VIP Mensal",
-        amount: 999, // €9.99
-        interval: "month"
-      },
-      vip_yearly: {
-        name: "KIXIKILA VIP Anual", 
-        amount: 9999, // €99.99 (2 months free)
-        interval: "year"
-      }
-    };
-
-    const selectedPlan = plans[plan_type as keyof typeof plans];
-    if (!selectedPlan) throw new Error("Invalid plan type");
-    logStep("Plan selected", selectedPlan);
-
-    const origin = req.headers.get("origin") || "https://kixikila.pro";
-    
     // Create checkout session
+    const origin = req.headers.get("origin") || "https://kixikila.pt";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -86,39 +69,37 @@ serve(async (req) => {
         {
           price_data: {
             currency: "eur",
-            product_data: {
-              name: selectedPlan.name,
-              description: "Acesso VIP com grupos ilimitados e funcionalidades premium"
+            product_data: { 
+              name: plan === 'vip_monthly' ? "KIXIKILA VIP Mensal" : "KIXIKILA VIP Anual",
+              description: plan === 'vip_monthly' 
+                ? "Grupos ilimitados, relatórios avançados e suporte prioritário"
+                : "Grupos ilimitados, relatórios avançados e suporte prioritário (12 meses)"
             },
-            unit_amount: selectedPlan.amount,
-            recurring: { interval: selectedPlan.interval },
+            unit_amount: amount, // amount in cents
+            ...(plan === 'vip_annual' ? { 
+              recurring: { interval: "year" } 
+            } : { 
+              recurring: { interval: "month" } 
+            }),
           },
           quantity: 1,
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/pricing`,
+      success_url: `${origin}/app?upgrade=success`,
+      cancel_url: `${origin}/app/vip-management?upgrade=cancelled`,
       metadata: {
         user_id: user.id,
-        plan_type: plan_type
-      }
+        plan: plan,
+      },
     });
 
-    logStep("Checkout session created", { 
-      sessionId: session.id, 
-      url: session.url,
-      plan_type: plan_type
-    });
+    logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
-    return new Response(JSON.stringify({ 
-      url: session.url,
-      session_id: session.id 
-    }), {
+    return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in create-checkout", { message: errorMessage });
