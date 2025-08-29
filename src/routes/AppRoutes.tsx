@@ -166,7 +166,7 @@ const GroupDetailsWrapper = () => {
       currentUserId={mockUser.id}
       onBack={() => navigate('/app/dashboard')}
       onPay={() => {/* TODO: Open payment modal */}}
-      onInvite={() => {/* TODO: Open invite modal */}}
+      onInvite={() => {}} // Using integrated AdvancedInviteModal
     />
   );
 };
