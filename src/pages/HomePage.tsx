@@ -24,11 +24,11 @@ const HomePage = () => {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           <div className="text-center">
             <div className="mb-8">
-              <div className="inline-flex items-center justify-center bg-gradient-to-r from-primary to-secondary px-8 py-4 rounded-3xl shadow-2xl animate-fade-in">
+              <div className="inline-flex items-center justify-center bg-transparent from-primary to-secondary px-8 py-4 rounded-3xl shadow-2xl animate-fade-in">
                 <img 
                   src="/src/assets/kixikila-logomain.png" 
                   alt="KIXIKILA"
-                  className="h-16 w-auto"
+                  className="h-12 w-auto"
                 />
               </div>
             </div>
