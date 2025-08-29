@@ -891,6 +891,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      audit_critical_operation: {
+        Args: {
+          entity_id?: string
+          entity_type?: string
+          operation_data?: Json
+          operation_type: string
+        }
+        Returns: undefined
+      }
       automated_cleanup_production: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -942,6 +951,17 @@ export type Database = {
           anomaly_type: string
           description: string
           detected_at: string
+          recommendations: string[]
+          severity: string
+        }[]
+      }
+      detect_suspicious_activities: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          alert_type: string
+          count: number
+          description: string
+          latest_occurrence: string
           recommendations: string[]
           severity: string
         }[]
@@ -1167,6 +1187,10 @@ export type Database = {
       update_user_profile_secure: {
         Args: { profile_data: Json }
         Returns: undefined
+      }
+      validate_admin_credentials: {
+        Args: { email: string; password: string }
+        Returns: Json
       }
       validate_configuration_security: {
         Args: Record<PropertyKey, never>
