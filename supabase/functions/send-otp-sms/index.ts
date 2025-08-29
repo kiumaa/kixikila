@@ -51,8 +51,8 @@ async function getSMSConfiguration(supabase: any) {
       senderId: 'KB Agency',
       brandName: 'KIXIKILA',
       templates: {
-        otp: '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.',
-        reminder: '{{brandName}}: Lembrete de pagamento. Código: {{code}}. Se não foi você, ignore esta mensagem.'
+        otp: '{{brandName}}: O seu código de verificação é: {{otp_code}}. Válido por {{minutes}} minutos.',
+        reminder: '{{brandName}}: Lembrete de pagamento. Código: {{otp_code}}. Se não foi você, ignore esta mensagem.'
       },
       otpExpiry: 10
     };
@@ -66,8 +66,8 @@ async function getSMSConfiguration(supabase: any) {
       senderId: 'KB Agency',
       brandName: 'KIXIKILA',
       templates: {
-        otp: '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.',
-        reminder: '{{brandName}}: Lembrete de pagamento. Código: {{code}}. Se não foi você, ignore esta mensagem.'
+        otp: '{{brandName}}: O seu código de verificação é: {{otp_code}}. Válido por {{minutes}} minutos.',
+        reminder: '{{brandName}}: Lembrete de pagamento. Código: {{otp_code}}. Se não foi você, ignore esta mensagem.'
       },
       otpExpiry: 10
     };
@@ -173,11 +173,11 @@ serve(async (req) => {
 
     // Prepare SMS message using template
     const templateKey = type === 'phone_verification' ? 'otp' : 'reminder';
-    const template = smsConfig.templates?.[templateKey] || smsConfig.templates?.otp || '{{brandName}}: O seu código de verificação é: {{code}}. Válido por {{minutes}} minutos.';
+    const template = smsConfig.templates?.[templateKey] || smsConfig.templates?.otp || '{{brandName}}: O seu código de verificação é: {{otp_code}}. Válido por {{minutes}} minutos.';
     
     const variables = {
       brandName: smsConfig.brandName || 'KIXIKILA',
-      code: otpCode,
+      otp_code: otpCode,
       minutes: expiryMinutes,
       userName: userData?.full_name || '',
       phone: phone
