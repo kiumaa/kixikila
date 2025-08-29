@@ -12,6 +12,14 @@ interface VerifyOtpRequest {
   type: 'phone_verification' | 'login';
 }
 
+// Generate secure random password
+function generateSecurePassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => chars[byte % chars.length]).join('');
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -90,8 +98,8 @@ serve(async (req) => {
     let userData;
     let sessionData = null;
     
-    // Generate temporary password for auth
-    const tempPassword = crypto.randomUUID().substring(0, 12) + 'Aa1!';
+    // Generate cryptographically secure temporary password
+    const tempPassword = generateSecurePassword();
     const tempEmail = `user_${phone.replace(/\D/g, '')}_${Date.now()}@kixikila.pro`;
 
     try {
@@ -245,10 +253,8 @@ serve(async (req) => {
         data: {
           user: userData,
           session: sessionData,
-          tempCredentials: sessionData ? {
-            email: userData.email,
-            password: tempPassword
-          } : null
+          // SECURITY: Never return passwords in API responses
+          authEmail: userData.email // For frontend auth only
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

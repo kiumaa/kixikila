@@ -115,11 +115,11 @@ export const securityConfig: SecurityConfig = {
     keyLength: 32
   },
   password: {
-    minLength: 8,
+    minLength: 12, // Increased from 8 to 12
     requireUppercase: true,
     requireLowercase: true, 
     requireNumbers: true,
-    requireSymbols: false
+    requireSymbols: true // Changed from false to true
   },
   session: {
     maxAge: parseInt(process.env.SESSION_MAX_AGE || '86400000'), // 24 hours
