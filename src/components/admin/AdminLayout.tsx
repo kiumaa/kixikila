@@ -17,7 +17,8 @@ import {
   X,
   Clock,
   Shield,
-  TestTube
+  TestTube,
+  Rocket
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -106,6 +107,18 @@ const sidebarItems = [
     icon: Shield, 
     label: 'System Health', 
     path: '/admin/system-health',
+    group: 'sistema'
+  },
+  { 
+    icon: Rocket, 
+    label: 'Production Deploy', 
+    path: '/admin/production-deployment',
+    group: 'sistema'
+  },
+  { 
+    icon: Activity, 
+    label: 'Production Monitor', 
+    path: '/admin/production-monitoring',
     group: 'sistema'
   },
   

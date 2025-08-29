@@ -23,6 +23,8 @@ const AnalyticsDashboard = lazy(() => import('@/components/admin/pages/sistema/A
 const RealTimeMonitoring = lazy(() => import('@/components/admin/pages/sistema/RealTimeMonitoring'));
 const EdgeFunctionsMonitoring = lazy(() => import('@/components/admin/pages/sistema/EdgeFunctionsMonitoring'));
 const SystemHealthDashboard = lazy(() => import('@/components/admin/pages/sistema/SystemHealthDashboard'));
+const ProductionDeployment = lazy(() => import('@/components/admin/pages/sistema/ProductionDeployment'));
+const ProductionMonitoring = lazy(() => import('@/components/admin/pages/sistema/ProductionMonitoring'));
 
 // Segurança
 const SecurityDashboard = lazy(() => import('@/components/admin/pages/seguranca/SecurityDashboard'));
@@ -73,6 +75,8 @@ const AdminPanel: React.FC = () => {
           <Route path="real-time-monitoring" element={<RealTimeMonitoring />} />
           <Route path="edge-functions" element={<EdgeFunctionsMonitoring />} />
           <Route path="system-health" element={<SystemHealthDashboard />} />
+          <Route path="production-deployment" element={<ProductionDeployment />} />
+          <Route path="production-monitoring" element={<ProductionMonitoring />} />
           <Route path="security" element={<SecurityDashboard />} />
           <Route path="logs" element={<ActivityLogs />} />
           <Route path="monitoring" element={<MonitoringDashboard />} />
