@@ -27,7 +27,17 @@ import {
 } from '@/routes/LazyRoutes';
 
 // Route wrapper components to handle navigation
-const DashboardWrapper = () => {
+const DashboardWrapper = ({ 
+  setShowDeposit, 
+  setShowWithdraw, 
+  setShowCreateGroup, 
+  setShowJoinGroup 
+}: {
+  setShowDeposit: (show: boolean) => void;
+  setShowWithdraw: (show: boolean) => void;
+  setShowCreateGroup: (show: boolean) => void;
+  setShowJoinGroup: (show: boolean) => void;
+}) => {
   const navigate = useNavigate();
   return (
     <DashboardScreen
@@ -45,7 +55,13 @@ const DashboardWrapper = () => {
   );
 };
 
-const WalletWrapper = () => {
+const WalletWrapper = ({ 
+  setShowDeposit, 
+  setShowWithdraw 
+}: {
+  setShowDeposit: (show: boolean) => void;
+  setShowWithdraw: (show: boolean) => void;
+}) => {
   const navigate = useNavigate();
   return (
     <WalletScreen
@@ -178,8 +194,20 @@ const AppRoutes: React.FC = () => {
           <Route path="/" element={<Navigate to="dashboard" replace />} />
           
           {/* Main app screens */}
-          <Route path="dashboard" element={<DashboardWrapper />} />
-          <Route path="wallet" element={<WalletWrapper />} />
+          <Route path="dashboard" element={
+            <DashboardWrapper 
+              setShowDeposit={setShowDeposit}
+              setShowWithdraw={setShowWithdraw}
+              setShowCreateGroup={setShowCreateGroup}
+              setShowJoinGroup={setShowJoinGroup}
+            />
+          } />
+          <Route path="wallet" element={
+            <WalletWrapper 
+              setShowDeposit={setShowDeposit}
+              setShowWithdraw={setShowWithdraw}
+            />
+          } />
           <Route path="notifications" element={<NotificationsWrapper />} />
           <Route path="profile" element={<ProfileWrapper />} />
           
@@ -223,9 +251,7 @@ const AppRoutes: React.FC = () => {
       <CreateGroupModal 
         isOpen={showCreateGroup} 
         onClose={() => setShowCreateGroup(false)}
-        onSuccess={() => {
-          // Refresh dashboard or navigate to new group
-        }}
+        onNavigateToVIP={() => window.location.href = '/app/vip-management'}
       />
     </>
   );
