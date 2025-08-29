@@ -1170,6 +1170,15 @@ export type Database = {
           status: string
         }[]
       }
+      security_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          last_updated: string
+          metric_name: string
+          metric_value: number
+          status: string
+        }[]
+      }
       update_otp_expiry_to_production: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1227,6 +1236,17 @@ export type Database = {
         Returns: {
           check_name: string
           message: string
+          status: string
+        }[]
+      }
+      validate_security_posture: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          action_required: boolean
+          category: string
+          check_name: string
+          details: string
+          severity: string
           status: string
         }[]
       }
