@@ -917,6 +917,35 @@ export type Database = {
           status: string
         }[]
       }
+      comprehensive_security_validation: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          action_required: boolean
+          category: string
+          check_name: string
+          details: string
+          status: string
+        }[]
+      }
+      create_secure_temp_credentials: {
+        Args: { credential_type?: string; user_phone: string }
+        Returns: {
+          credential_id: string
+          expires_at: string
+          masked_credential: string
+        }[]
+      }
+      detect_security_anomalies: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          affected_entities: string[]
+          anomaly_type: string
+          description: string
+          detected_at: string
+          recommendations: string[]
+          severity: string
+        }[]
+      }
       encrypt_sensitive_config: {
         Args: { config_value: Json; is_sensitive?: boolean }
         Returns: Json
@@ -1069,6 +1098,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_security_event: {
+        Args: {
+          auto_alert?: boolean
+          event_data?: Json
+          event_type: string
+          severity?: string
+        }
+        Returns: undefined
+      }
       log_suspicious_access: {
         Args: { access_pattern: string; entity_type: string; metadata?: Json }
         Returns: undefined
@@ -1138,6 +1176,15 @@ export type Database = {
           policies_count: number
           security_level: string
           table_name: string
+        }[]
+      }
+      validate_password_strength: {
+        Args: { password: string }
+        Returns: {
+          is_valid: boolean
+          issues: string[]
+          recommendations: string[]
+          score: number
         }[]
       }
       validate_rls_security: {
