@@ -96,6 +96,7 @@ serve(async (req) => {
     if (userError && userError.code === 'PGRST116') {
       // User doesn't exist, create one
       const newUser = {
+        id: crypto.randomUUID(),
         phone: phone,
         email: `user_${Date.now()}@kixikila.pro`,
         full_name: 'Usuário',
