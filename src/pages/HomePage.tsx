@@ -6,30 +6,25 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import RoleBasedRedirect from '@/components/auth/RoleBasedRedirect';
-
 const HomePage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
-  
+  const {
+    isAuthenticated
+  } = useAuthStore();
+
   // Redirect authenticated users based on their role
   if (isAuthenticated) {
     return <RoleBasedRedirect />;
   }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+  return <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           <div className="text-center">
             <div className="mb-8">
-              <div className="inline-flex items-center justify-center bg-gradient-to-r from-primary to-secondary px-8 py-4 rounded-3xl shadow-2xl animate-fade-in">
-                <img 
-                  src="/src/assets/kixikila-logomain.png" 
-                  alt="KIXIKILA"
-                  className="h-12 w-auto"
-                />
+              <div className="\n">
+                <img src="/src/assets/kixikila-logomain.png" alt="KIXIKILA" className="h-12 w-auto" />
               </div>
             </div>
             
@@ -48,21 +43,12 @@ const HomePage = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground px-10 py-6 text-xl font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 animate-hover-scale"
-                onClick={() => navigate('/entrar?type=register')}
-              >
+              <Button size="lg" className="bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground px-10 py-6 text-xl font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 animate-hover-scale" onClick={() => navigate('/entrar?type=register')}>
                 <Zap className="mr-3 h-6 w-6" />
                 Começar Agora
                 <ArrowRight className="ml-3 h-6 w-6" />
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="px-10 py-6 text-xl font-semibold border-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all duration-300"
-                onClick={() => navigate('/entrar?type=login')}
-              >
+              <Button size="lg" variant="outline" className="px-10 py-6 text-xl font-semibold border-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all duration-300" onClick={() => navigate('/entrar?type=login')}>
                 Já tenho conta
               </Button>
             </div>
@@ -181,20 +167,13 @@ const HomePage = () => {
             Junte-se a milhares de portugueses que já descobriram uma forma mais inteligente de poupar.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Button 
-              size="lg"
-              variant="secondary"
-              className="px-10 py-6 text-xl font-semibold bg-white text-primary hover:bg-gray-100"
-              onClick={() => navigate('/entrar?type=register')}
-            >
+            <Button size="lg" variant="secondary" className="px-10 py-6 text-xl font-semibold bg-white text-primary hover:bg-gray-100" onClick={() => navigate('/entrar?type=register')}>
               <Crown className="mr-3 h-6 w-6" />
               Criar Conta Grátis
             </Button>
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default HomePage;
