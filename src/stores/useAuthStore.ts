@@ -2,13 +2,17 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import supabaseAuthService from '../services/supabaseAuthService';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   full_name: string;
+  name?: string; // Optional alias for full_name for compatibility
   phone?: string;
   role?: string;
   is_vip?: boolean;
+  vip_expiry_date?: string;
+  kyc_status?: 'pending' | 'approved' | 'rejected';
+  trust_score?: number;
   email_verified?: boolean;
   phone_verified?: boolean;
   avatar_url?: string;
@@ -61,7 +65,7 @@ export const useAuthStore = create<AuthState>()(
       const response = await supabaseAuthService.login({ email, password });
       
       if (response.success && response.data) {
-        const { user, session } = response.data;
+        const user = { ...response.data.user, name: response.data.user.full_name };
         set({
           isAuthenticated: true,
           user,
@@ -126,7 +130,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await supabaseAuthService.verifyPhoneOtp({ phone, token: otp });
           
           if (response.success && response.data) {
-            const { user, session } = response.data;
+            const user = { ...response.data.user, name: response.data.user.full_name };
         set({
           isAuthenticated: true,
           user,
@@ -213,7 +217,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await supabaseAuthService.verifyEmailOtp({ email, token: otp, type: 'email' });
           
           if (response.success && response.data) {
-            const { user, session } = response.data;
+            const user = { ...response.data.user, name: response.data.user.full_name };
           set({
             isAuthenticated: true,
             user,
@@ -271,9 +275,10 @@ export const useAuthStore = create<AuthState>()(
           const response = await supabaseAuthService.refreshToken();
           
           if (response.success && response.data.user) {
+            const user = { ...response.data.user, name: response.data.user.full_name };
             set({
               isAuthenticated: true,
-              user: response.data.user,
+              user,
               error: null,
             });
           }
@@ -293,8 +298,9 @@ export const useAuthStore = create<AuthState>()(
           const response = await supabaseAuthService.getProfile();
           
           if (response.success && response.data) {
+            const user = { ...response.data, name: response.data.full_name };
             set({
-              user: response.data,
+              user,
               isLoading: false,
               error: null,
             });
