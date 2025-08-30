@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/stores/useAppStore';
 import { formatCurrency } from '@/lib/utils';
+import { Group } from '@/lib/mockData';
 
 interface CreateGroupWizardProps {
   isOpen: boolean;
@@ -21,12 +22,12 @@ interface CreateGroupWizardProps {
 interface GroupData {
   name: string;
   description: string;
-  contributionAmount: number;
-  maxMembers: number;
-  frequency: 'weekly' | 'monthly';
-  groupType: 'lottery' | 'order';
-  privacy: 'public' | 'private' | 'invite_only';
-  category: 'family' | 'friends' | 'investment' | 'hobby' | 'other';
+  contribution_amount: number;
+  max_members: number;
+  contribution_frequency: 'weekly' | 'monthly';
+  payout_method: 'lottery' | 'order';
+  is_private: boolean;
+  type: 'savings' | 'investment' | 'emergency';
 }
 
 export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, onClose }) => {
@@ -38,12 +39,12 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
   const [formData, setFormData] = useState<GroupData>({
     name: '',
     description: '',
-    contributionAmount: 100,
-    maxMembers: 8,
-    frequency: 'monthly',
-    groupType: 'lottery',
-    privacy: 'private',
-    category: 'family'
+    contribution_amount: 100,
+    max_members: 8,
+    contribution_frequency: 'monthly',
+    payout_method: 'lottery',
+    is_private: true,
+    type: 'savings'
   });
 
   const totalSteps = 4;
@@ -78,26 +79,36 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    const newGroup = {
-      id: Date.now(),
-      ...formData,
-      adminId: 1, // Current user ID
-      currentMembers: 1,
-      nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      status: 'active' as const,
-      cycle: 1,
-      totalPool: formData.contributionAmount,
-      startDate: new Date().toISOString().split('T')[0],
+    const newGroup: Group = {
+      id: `grp_${Date.now()}`,
+      name: formData.name,
+      description: formData.description,
+      type: formData.type,
+      status: 'active',
+      payout_method: formData.payout_method,
+      contribution_amount: formData.contribution_amount,
+      contribution_frequency: formData.contribution_frequency,
+      max_members: formData.max_members,
+      current_members: 1,
+      current_cycle: 1,
+      total_pool: formData.contribution_amount,
+      creator_id: 'user_1',
+      created_at: new Date().toISOString(),
+      start_date: new Date().toISOString(),
+      next_payment_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      is_private: formData.is_private,
+      requires_approval: true,
+      settings: {
+        payment_window_hours: 72,
+        auto_exclude_late_payments: true
+      },
       members: [{
-        id: 1,
+        user_id: 'user_1',
         name: "Você",
         paid: false,
-        avatar: "V",
-        isWinner: false,
-        position: formData.groupType === 'order' ? 1 : null,
-        isAdmin: true
-      }],
-      history: []
+        is_admin: true,
+        joined_at: new Date().toISOString()
+      }]
     };
 
     addGroup(newGroup);
@@ -117,12 +128,12 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
     setFormData({
       name: '',
       description: '',
-      contributionAmount: 100,
-      maxMembers: 8,
-      frequency: 'monthly',
-      groupType: 'lottery',
-      privacy: 'private',
-      category: 'family'
+      contribution_amount: 100,
+      max_members: 8,
+      contribution_frequency: 'monthly',
+      payout_method: 'lottery',
+      is_private: true,
+      type: 'savings'
     });
   };
 
@@ -131,11 +142,11 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
       case 1:
         return formData.name.trim().length >= 3 && formData.description.trim().length >= 10;
       case 2:
-        return formData.contributionAmount >= 10 && formData.maxMembers >= 2;
+        return formData.contribution_amount >= 10 && formData.max_members >= 2;
       case 3:
-        return true; // Group type is always valid
+        return true;
       case 4:
-        return true; // Privacy settings are always valid
+        return true;
       default:
         return false;
     }
@@ -202,17 +213,15 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                 </div>
 
                 <div>
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select value={formData.category} onValueChange={(value: any) => setFormData({...formData, category: value})}>
+                  <Label htmlFor="type">Categoria</Label>
+                  <Select value={formData.type} onValueChange={(value: any) => setFormData({...formData, type: value})}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="family">Família</SelectItem>
-                      <SelectItem value="friends">Amigos</SelectItem>
+                      <SelectItem value="savings">Poupança</SelectItem>
                       <SelectItem value="investment">Investimento</SelectItem>
-                      <SelectItem value="hobby">Hobby/Lazer</SelectItem>
-                      <SelectItem value="other">Outro</SelectItem>
+                      <SelectItem value="emergency">Emergência</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -243,8 +252,8 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                       type="number"
                       min="10"
                       max="10000"
-                      value={formData.contributionAmount}
-                      onChange={(e) => setFormData({...formData, contributionAmount: Number(e.target.value)})}
+                      value={formData.contribution_amount}
+                      onChange={(e) => setFormData({...formData, contribution_amount: Number(e.target.value)})}
                       className="pl-8"
                     />
                   </div>
@@ -258,8 +267,8 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                     type="number"
                     min="2"
                     max="50"
-                    value={formData.maxMembers}
-                    onChange={(e) => setFormData({...formData, maxMembers: Number(e.target.value)})}
+                    value={formData.max_members}
+                    onChange={(e) => setFormData({...formData, max_members: Number(e.target.value)})}
                     className="mt-1"
                   />
                 </div>
@@ -267,8 +276,8 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                 <div>
                   <Label>Frequência de Pagamento</Label>
                   <RadioGroup 
-                    value={formData.frequency} 
-                    onValueChange={(value: any) => setFormData({...formData, frequency: value})}
+                    value={formData.contribution_frequency} 
+                    onValueChange={(value: any) => setFormData({...formData, contribution_frequency: value})}
                     className="mt-2"
                   >
                     <div className="flex items-center space-x-2">
@@ -282,12 +291,11 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                   </RadioGroup>
                 </div>
 
-                {/* Total Pool Preview */}
                 <Card className="p-4 bg-muted/50">
                   <div className="text-center">
                     <div className="text-sm text-muted-foreground mb-1">Valor Total do Grupo</div>
                     <div className="text-2xl font-bold text-foreground">
-                      {formatCurrency(formData.contributionAmount * formData.maxMembers)}
+                      {formatCurrency(formData.contribution_amount * formData.max_members)}
                     </div>
                   </div>
                 </Card>
@@ -311,11 +319,11 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
               <div className="space-y-3">
                 <Card 
                   className={`p-4 cursor-pointer transition-all ${
-                    formData.groupType === 'lottery' 
+                    formData.payout_method === 'lottery' 
                       ? 'ring-2 ring-primary bg-primary/5' 
                       : 'hover:bg-muted/50'
                   }`}
-                  onClick={() => setFormData({...formData, groupType: 'lottery'})}
+                  onClick={() => setFormData({...formData, payout_method: 'lottery'})}
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
@@ -330,7 +338,7 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                         A cada ciclo é feito um sorteio para determinar quem recebe o valor total.
                       </p>
                     </div>
-                    {formData.groupType === 'lottery' && (
+                    {formData.payout_method === 'lottery' && (
                       <Check className="w-5 h-5 text-primary" />
                     )}
                   </div>
@@ -338,11 +346,11 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
 
                 <Card 
                   className={`p-4 cursor-pointer transition-all ${
-                    formData.groupType === 'order' 
+                    formData.payout_method === 'order' 
                       ? 'ring-2 ring-primary bg-primary/5' 
                       : 'hover:bg-muted/50'
                   }`}
-                  onClick={() => setFormData({...formData, groupType: 'order'})}
+                  onClick={() => setFormData({...formData, payout_method: 'order'})}
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
@@ -354,7 +362,7 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                         Os membros escolhem sua posição na fila. Cada um recebe na sua vez.
                       </p>
                     </div>
-                    {formData.groupType === 'order' && (
+                    {formData.payout_method === 'order' && (
                       <Check className="w-5 h-5 text-primary" />
                     )}
                   </div>
@@ -379,11 +387,11 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
               <div className="space-y-3">
                 <Card 
                   className={`p-4 cursor-pointer transition-all ${
-                    formData.privacy === 'private' 
+                    formData.is_private === true 
                       ? 'ring-2 ring-primary bg-primary/5' 
                       : 'hover:bg-muted/50'
                   }`}
-                  onClick={() => setFormData({...formData, privacy: 'private'})}
+                  onClick={() => setFormData({...formData, is_private: true})}
                 >
                   <div className="flex items-start gap-3">
                     <Lock className="w-5 h-5 text-red-500 mt-0.5" />
@@ -393,7 +401,7 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                         Apenas você pode convidar membros. Não aparece em pesquisas.
                       </p>
                     </div>
-                    {formData.privacy === 'private' && (
+                    {formData.is_private === true && (
                       <Check className="w-5 h-5 text-primary" />
                     )}
                   </div>
@@ -401,33 +409,11 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
 
                 <Card 
                   className={`p-4 cursor-pointer transition-all ${
-                    formData.privacy === 'invite_only' 
+                    formData.is_private === false 
                       ? 'ring-2 ring-primary bg-primary/5' 
                       : 'hover:bg-muted/50'
                   }`}
-                  onClick={() => setFormData({...formData, privacy: 'invite_only'})}
-                >
-                  <div className="flex items-start gap-3">
-                    <UserCheck className="w-5 h-5 text-yellow-500 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="font-semibold mb-1">Apenas por Convite</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Visível em pesquisas, mas requer aprovação para entrar.
-                      </p>
-                    </div>
-                    {formData.privacy === 'invite_only' && (
-                      <Check className="w-5 h-5 text-primary" />
-                    )}
-                  </div>
-                </Card>
-
-                <Card 
-                  className={`p-4 cursor-pointer transition-all ${
-                    formData.privacy === 'public' 
-                      ? 'ring-2 ring-primary bg-primary/5' 
-                      : 'hover:bg-muted/50'
-                  }`}
-                  onClick={() => setFormData({...formData, privacy: 'public'})}
+                  onClick={() => setFormData({...formData, is_private: false})}
                 >
                   <div className="flex items-start gap-3">
                     <Globe className="w-5 h-5 text-green-500 mt-0.5" />
@@ -437,7 +423,7 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                         Qualquer pessoa pode encontrar e juntar-se ao grupo.
                       </p>
                     </div>
-                    {formData.privacy === 'public' && (
+                    {formData.is_private === false && (
                       <Check className="w-5 h-5 text-primary" />
                     )}
                   </div>
@@ -454,22 +440,22 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Contribuição:</span>
-                    <span className="font-medium">{formatCurrency(formData.contributionAmount)}</span>
+                    <span className="font-medium">{formatCurrency(formData.contribution_amount)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Membros:</span>
-                    <span className="font-medium">{formData.maxMembers}</span>
+                    <span className="font-medium">{formData.max_members}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tipo:</span>
                     <span className="font-medium">
-                      {formData.groupType === 'lottery' ? 'Sorteio' : 'Ordem'}
+                      {formData.payout_method === 'lottery' ? 'Sorteio' : 'Ordem'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total:</span>
                     <span className="font-bold text-lg">
-                      {formatCurrency(formData.contributionAmount * formData.maxMembers)}
+                      {formatCurrency(formData.contribution_amount * formData.max_members)}
                     </span>
                   </div>
                 </div>

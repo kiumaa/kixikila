@@ -339,6 +339,24 @@ export const vipAPI = {
   }
 };
 
+// Notifications API - Export getNotifications function
+export const getNotifications = () => {
+  return [
+    { id: 1, text: "Próximo pagamento em 2 dias", time: "há 1 hora", read: false, type: "payment" },
+    { id: 2, text: "Sorteio realizado! Maria João foi contemplada", time: "há 3 horas", read: false, type: "winner" },
+    { id: 3, text: "Depósito processado com sucesso", time: "há 1 dia", read: true, type: "deposit" },
+    { id: 4, text: "Novo membro no grupo", time: "há 2 dias", read: true, type: "member" }
+  ];
+};
+
+// Transaction history helper
+export const getTransactionHistory = () => {
+  return mockTransactions.map(tx => ({
+    ...tx,
+    date: tx.created_at
+  }));
+};
+
 // Referrals API
 export const referralsAPI = {
   async getReferralData() {

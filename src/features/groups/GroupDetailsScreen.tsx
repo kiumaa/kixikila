@@ -11,7 +11,7 @@ import { Group } from '@/lib/mockData';
 
 interface GroupDetailsScreenProps {
   group: Group;
-  userId: number;
+  userId: string;
   onBack: () => void;
   onPay: () => void;
   onInvite: () => void;
@@ -31,8 +31,13 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
   const paidMembers = group.members.filter(m => m.paid).length;
   const totalMembers = group.members.length;
   const progress = (paidMembers / totalMembers) * 100;
-  const isAdmin = group.adminId === userId;
-  const currentUserMember = group.members.find(m => m.id === userId);
+  const isAdmin = group.creator_id === userId;
+  const currentUserMember = group.members.find(m => m.user_id === userId);
+  
+  const mockHistory = [
+    { cycle: 1, winner: "Carlos Lima", amount: 800, date: "2025-06-15" },
+    { cycle: 2, winner: "Rita Costa", amount: 800, date: "2025-07-15" }
+  ];
   
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -66,13 +71,13 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
         <div className="grid grid-cols-3 gap-3">
           <Card className="bg-white/10 backdrop-blur-sm border-0 p-4 text-center">
             <div className="text-2xl font-bold text-primary-foreground">
-              {formatCurrency(group.totalPool)}
+              {formatCurrency(group.total_pool)}
             </div>
             <div className="text-xs text-primary-foreground/80 mt-1">Valor Total</div>
           </Card>
           <Card className="bg-white/10 backdrop-blur-sm border-0 p-4 text-center">
             <div className="text-2xl font-bold text-primary-foreground">
-              {group.cycle}º
+              {group.current_cycle}º
             </div>
             <div className="text-xs text-primary-foreground/80 mt-1">Ciclo Atual</div>
           </Card>
@@ -138,13 +143,13 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
                   <div className="bg-muted rounded-lg p-3">
                     <div className="text-xs text-muted-foreground mb-1">Contribuição</div>
                     <div className="font-semibold text-foreground">
-                      {formatCurrency(group.contributionAmount)}
+                      {formatCurrency(group.contribution_amount)}
                     </div>
                   </div>
                   <div className="bg-muted rounded-lg p-3">
                     <div className="text-xs text-muted-foreground mb-1">Próximo pagamento</div>
                     <div className="font-semibold text-foreground">
-                      {formatDate(group.nextPaymentDate)}
+                      {formatDate(group.next_payment_date || '')}
                     </div>
                   </div>
                 </div>
@@ -152,16 +157,16 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
             </Card>
 
             {/* Next Winner Card (for order groups) */}
-            {group.groupType === 'order' && group.nextReceiver && (
+            {group.payout_method === 'order' && (
               <Card className="p-5 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 dark:from-purple-950 dark:to-pink-950 dark:border-purple-800">
                 <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-3">🎯 Próximo Contemplado</h3>
                 <div className="flex items-center gap-3">
-                  <Avatar name={group.nextReceiver.name} size="lg" />
+                  <Avatar name="Próximo" size="lg" />
                   <div>
-                    <div className="font-semibold text-foreground">{group.nextReceiver.name}</div>
-                    <div className="text-sm text-muted-foreground">Posição #{group.nextReceiver.position}</div>
+                    <div className="font-semibold text-foreground">Próximo na fila</div>
+                    <div className="text-sm text-muted-foreground">Posição #1</div>
                     <div className="text-sm font-semibold text-purple-600 dark:text-purple-400 mt-1">
-                      Receberá {formatCurrency(group.contributionAmount * totalMembers)}
+                      Receberá {formatCurrency(group.contribution_amount * totalMembers)}
                     </div>
                   </div>
                 </div>
@@ -191,14 +196,14 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
 
           <TabsContent value="members" className="space-y-3 mt-4">
             {group.members.map((member) => (
-              <Card key={member.id} className="p-4">
+              <Card key={member.user_id} className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar name={member.name} size="md" />
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-foreground">{member.name}</span>
-                        {member.isAdmin && (
+                        {member.is_admin && (
                           <Badge variant="secondary" className="text-xs">
                             <Crown className="w-3 h-3 mr-1" />
                             Admin
@@ -208,7 +213,7 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
                       {member.position && (
                         <div className="text-sm text-muted-foreground">Posição #{member.position}</div>
                       )}
-                      {member.isWinner && (
+                      {member.is_winner && (
                         <div className="text-sm font-medium text-purple-600 dark:text-purple-400 mt-1">
                           👑 Último contemplado
                         </div>
@@ -235,8 +240,8 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
           </TabsContent>
 
           <TabsContent value="history" className="space-y-3 mt-4">
-            {group.history.length > 0 ? (
-              group.history.map((item, idx) => (
+            {mockHistory.length > 0 ? (
+              mockHistory.map((item, idx) => (
                 <Card key={idx} className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -280,7 +285,9 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
                   </div>
                   <div>
                     <div className="font-medium text-foreground">Frequência</div>
-                    <div className="text-sm text-muted-foreground">Pagamentos mensais, sempre no dia 15</div>
+                    <div className="text-sm text-muted-foreground">
+                      Pagamentos {group.contribution_frequency === 'monthly' ? 'mensais' : 'semanais'}
+                    </div>
                   </div>
                 </div>
                 
@@ -291,7 +298,7 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
                   <div>
                     <div className="font-medium text-foreground">Valor</div>
                     <div className="text-sm text-muted-foreground">
-                      {formatCurrency(group.contributionAmount)} por membro, por ciclo
+                      {formatCurrency(group.contribution_amount)} por membro, por ciclo
                     </div>
                   </div>
                 </div>
@@ -303,7 +310,7 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = ({
                   <div>
                     <div className="font-medium text-foreground">Tipo de Seleção</div>
                     <div className="text-sm text-muted-foreground">
-                      {group.groupType === 'lottery' 
+                      {group.payout_method === 'lottery' 
                         ? 'Sorteio aleatório a cada ciclo'
                         : 'Ordem predefinida pelos membros'}
                     </div>
