@@ -153,7 +153,7 @@ class SupabaseAuthService {
   }
 
   /**
-   * Send OTP to phone number using our Edge Function
+   * Send OTP to phone number using Enhanced Twilio Integration
    */
   async sendPhoneOtp(phoneData: PhoneLoginRequest): Promise<AuthServiceResponse> {
     try {
@@ -180,7 +180,7 @@ class SupabaseAuthService {
 
       return {
         success: true,
-        message: 'OTP enviado para o seu telefone',
+        message: 'Código enviado via SMS',
         data,
       };
     } catch (error: any) {
@@ -193,7 +193,7 @@ class SupabaseAuthService {
   }
 
   /**
-   * Verify phone OTP using our Edge Function
+   * Verify phone OTP using our Enhanced Edge Function with Twilio
    */
   async verifyPhoneOtp(otpData: VerifyPhoneOtpRequest): Promise<AuthServiceResponse<{ user: UserData; session: any }>> {
     try {
@@ -223,7 +223,7 @@ class SupabaseAuthService {
       const { user: userData, session: sessionData, tempCredentials } = data.data || {};
 
       if (userData && tempCredentials) {
-        // Use temporary credentials to create a proper Supabase Auth session
+        // Use temporary credentials to authenticate with Supabase
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email: tempCredentials.email,
           password: tempCredentials.password,
@@ -237,6 +237,7 @@ class SupabaseAuthService {
           };
         }
 
+        // Update the auth store manually since we have the session
         return {
           success: true,
           message: 'Login realizado com sucesso',
@@ -247,7 +248,7 @@ class SupabaseAuthService {
         };
       }
 
-      // Fallback for existing users without temp credentials
+      // Fallback for existing users
       if (userData && sessionData) {
         return {
           success: true,

@@ -1,138 +1,178 @@
 /**
- * Custom hook for Supabase Authentication
+ * Enhanced Supabase Authentication Hook
  * 
- * This hook provides authentication state management and listens to
- * Supabase auth state changes to keep the app in sync.
+ * This hook provides secure authentication state management with proper
+ * session handling, deadlock prevention, and error recovery.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../stores/useAuthStore';
-import supabaseAuthService from '../services/supabaseAuthService';
+import { supabase } from '@/integrations/supabase/client';
+import type { Session, User } from '@supabase/supabase-js';
 
 export const useSupabaseAuth = () => {
-  const { initializeAuth, user, isAuthenticated, isLoading, error } = useAuthStore();
+  const { user, isAuthenticated, isLoading, error } = useAuthStore();
+  const [session, setSession] = useState<Session | null>(null);
+  const initializationRef = useRef(false);
 
   useEffect(() => {
-    console.log('[useSupabaseAuth] Initializing auth hook...');
-    
-    // Initialize auth state on mount
-    initializeAuth();
+    if (initializationRef.current) return;
+    initializationRef.current = true;
 
-    // Check for existing session immediately
-    const checkExistingSession = async () => {
+    console.log('[useSupabaseAuth] Initializing enhanced auth hook...');
+    
+    let mounted = true;
+
+    const initializeAuth = async () => {
       try {
-        console.log('[useSupabaseAuth] Checking existing session...');
-        const session = await supabaseAuthService.getCurrentSession();
+        useAuthStore.setState({ isLoading: true, error: null });
+
+        // Set up auth state listener FIRST
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            if (!mounted) return;
+
+            console.log('[useSupabaseAuth] Auth state changed:', event, !!session?.user);
+            
+            // Update session state immediately (synchronous)
+            setSession(session);
+
+            // Update auth store state (synchronous)
+            if (event === 'SIGNED_OUT' || !session) {
+              useAuthStore.setState({
+                isAuthenticated: false,
+                user: null,
+                isLoading: false,
+                error: null,
+              });
+            } else if (session?.user) {
+              // Defer user profile fetch to avoid deadlock
+              setTimeout(async () => {
+                if (!mounted) return;
+
+                try {
+                  // Get user profile from our custom users table
+                  const { data: userProfile, error: profileError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                  if (!mounted) return;
+
+                  if (profileError) {
+                    console.error('Error fetching user profile:', profileError);
+                    useAuthStore.setState({
+                      isAuthenticated: true,
+                      user: {
+                        id: session.user.id,
+                        email: session.user.email || '',
+                        full_name: session.user.user_metadata?.full_name || 'Usuário',
+                        phone: session.user.phone,
+                        role: session.user.user_metadata?.role || 'user',
+                        email_verified: !!session.user.email_confirmed_at,
+                        phone_verified: !!session.user.phone_confirmed_at,
+                      },
+                      isLoading: false,
+                      error: null,
+                    });
+                  } else {
+                    useAuthStore.setState({
+                      isAuthenticated: true,
+                      user: {
+                        id: userProfile.id,
+                        email: userProfile.email,
+                        full_name: userProfile.full_name,
+                        phone: userProfile.phone,
+                        role: userProfile.role,
+                        is_vip: userProfile.is_vip,
+                        email_verified: userProfile.email_verified,
+                        phone_verified: userProfile.phone_verified,
+                        avatar_url: userProfile.avatar_url,
+                        created_at: userProfile.created_at,
+                        updated_at: userProfile.updated_at,
+                      },
+                      isLoading: false,
+                      error: null,
+                    });
+                  }
+                } catch (error) {
+                  console.error('[useSupabaseAuth] Error updating user data:', error);
+                  if (mounted) {
+                    useAuthStore.setState({
+                      isLoading: false,
+                      error: 'Erro ao carregar dados do usuário',
+                    });
+                  }
+                }
+              }, 0);
+            }
+          }
+        );
+
+        // THEN check for existing session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (session?.user) {
-          console.log('[useSupabaseAuth] Found existing session for user:', session.user.email);
-          const userData = await supabaseAuthService.getCurrentUser();
+        if (!mounted) {
+          subscription.unsubscribe();
+          return;
+        }
+
+        if (sessionError) {
+          console.error('[useSupabaseAuth] Session check error:', sessionError);
           useAuthStore.setState({
-            isAuthenticated: true,
-            user: userData,
+            isAuthenticated: false,
+            user: null,
             isLoading: false,
             error: null,
           });
         } else {
-          console.log('[useSupabaseAuth] No existing session found');
-          useAuthStore.setState({
-            isLoading: false,
-          });
-        }
-      } catch (error) {
-        console.error('[useSupabaseAuth] Error checking session:', error);
-        useAuthStore.setState({
-          isLoading: false,
-          error: 'Erro ao verificar sessão',
-        });
-      }
-    };
-
-    checkExistingSession();
-
-    // Listen to auth state changes
-    const { data: { subscription } } = supabaseAuthService.onAuthStateChange(
-      async (event, session) => {
-        console.log('[useSupabaseAuth] Auth state changed:', event, !!session, session?.user?.email);
-        
-        // Prevent calling Supabase functions inside onAuthStateChange to avoid deadlock
-        setTimeout(async () => {
-          try {
-            switch (event) {
-              case 'SIGNED_IN':
-                console.log('[useSupabaseAuth] Processing SIGNED_IN event');
-                if (session?.user) {
-                  const userData = await supabaseAuthService.getCurrentUser();
-                  useAuthStore.setState({
-                    isAuthenticated: true,
-                    user: userData,
-                    isLoading: false,
-                    error: null,
-                  });
-                }
-                break;
-                
-              case 'SIGNED_OUT':
-                console.log('[useSupabaseAuth] Processing SIGNED_OUT event');
-                useAuthStore.setState({
-                  isAuthenticated: false,
-                  user: null,
-                  isLoading: false,
-                  error: null,
-                });
-                break;
-                
-              case 'TOKEN_REFRESHED':
-                console.log('[useSupabaseAuth] Processing TOKEN_REFRESHED event');
-                if (session?.user) {
-                  const userData = await supabaseAuthService.getCurrentUser();
-                  useAuthStore.setState({
-                    user: userData,
-                    isLoading: false,
-                    error: null,
-                  });
-                }
-                break;
-                
-              case 'USER_UPDATED':
-                console.log('[useSupabaseAuth] Processing USER_UPDATED event');
-                if (session?.user) {
-                  const userData = await supabaseAuthService.getCurrentUser();
-                  useAuthStore.setState({
-                    user: userData,
-                    isLoading: false,
-                    error: null,
-                  });
-                }
-                break;
-                
-              default:
-                console.log('[useSupabaseAuth] Unhandled auth event:', event);
-                break;
-            }
-          } catch (error) {
-            console.error('[useSupabaseAuth] Error in auth state change handler:', error);
+          setSession(session);
+          if (!session) {
             useAuthStore.setState({
+              isAuthenticated: false,
+              user: null,
               isLoading: false,
-              error: 'Erro na autenticação',
+              error: null,
             });
           }
-        }, 0);
-      }
-    );
+          // Session handling will be done by onAuthStateChange
+        }
 
-    // Cleanup subscription on unmount
-    return () => {
-      console.log('[useSupabaseAuth] Cleaning up auth subscription');
-      subscription?.unsubscribe();
+        // Cleanup function
+        return () => {
+          console.log('[useSupabaseAuth] Cleaning up auth subscription');
+          subscription.unsubscribe();
+        };
+
+      } catch (error) {
+        console.error('[useSupabaseAuth] Initialization error:', error);
+        if (mounted) {
+          useAuthStore.setState({
+            isAuthenticated: false,
+            user: null,
+            isLoading: false,
+            error: 'Erro na inicialização da autenticação',
+          });
+        }
+      }
     };
-  }, [initializeAuth]);
+
+    const cleanup = initializeAuth();
+
+    // Return cleanup function
+    return () => {
+      mounted = false;
+      cleanup?.then((cleanupFn) => cleanupFn?.());
+    };
+  }, []); // Empty dependency array for one-time initialization
 
   return {
     user,
     isAuthenticated,
     isLoading,
     error,
+    session,
   };
 };
 

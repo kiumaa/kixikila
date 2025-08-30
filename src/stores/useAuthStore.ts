@@ -317,33 +317,9 @@ export const useAuthStore = create<AuthState>()(
 
       initializeAuth: async () => {
         set({ isLoading: true });
-        try {
-          const isAuth = await supabaseAuthService.isAuthenticated();
-          const userData = await supabaseAuthService.getCurrentUser();
-          
-          if (isAuth && userData) {
-            set({
-              isAuthenticated: true,
-              user: userData,
-              isLoading: false,
-              error: null,
-            });
-          } else {
-            set({
-              isAuthenticated: false,
-              user: null,
-              isLoading: false,
-              error: null,
-            });
-          }
-        } catch (error) {
-          set({
-            isAuthenticated: false,
-            user: null,
-            isLoading: false,
-            error: null,
-          });
-        }
+        // This method is no longer needed as the hook handles initialization
+        // But kept for backward compatibility
+        set({ isLoading: false });
       },
 
       isAdmin: () => {

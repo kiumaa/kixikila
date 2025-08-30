@@ -12,6 +12,50 @@ interface VerifyOtpRequest {
   type: 'phone_verification' | 'login';
 }
 
+// Verify OTP using Twilio Verify API
+const verifyTwilioOtp = async (phone: string, code: string): Promise<{ success: boolean; error?: string }> => {
+  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+  const verifyServiceSid = Deno.env.get('TWILIO_VERIFY_SERVICE_SID');
+  
+  if (!accountSid || !authToken || !verifyServiceSid) {
+    console.error('Twilio credentials not configured');
+    return { success: false, error: 'Twilio credentials not configured' };
+  }
+
+  try {
+    const formattedPhone = phone.startsWith('+') ? phone : `+351${phone}`;
+    
+    const response = await fetch(
+      `https://verify.twilio.com/v2/Services/${verifyServiceSid}/VerificationCheck`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: formattedPhone,
+          Code: code
+        })
+      }
+    );
+
+    const result = await response.json();
+    console.log('Twilio Verify check response:', result);
+    
+    if (response.ok && result.status === 'approved') {
+      return { success: true };
+    } else {
+      console.error('Twilio verification failed:', result);
+      return { success: false, error: result.message || 'Invalid or expired code' };
+    }
+  } catch (error) {
+    console.error('Error verifying Twilio OTP:', error);
+    return { success: false, error: 'Network error verifying OTP' };
+  }
+};
+
 // Generate secure random password
 function generateSecurePassword(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
@@ -36,74 +80,31 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client with service role for bypassing RLS
+    // Verify OTP with Twilio first
+    const twilioResult = await verifyTwilioOtp(phone, token);
+
+    if (!twilioResult.success) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: twilioResult.error || 'Código OTP inválido ou expirado' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase client with service role
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
 
-    // Find valid OTP
-    const { data: otpData, error: otpError } = await supabase
-      .from('otp_codes')
-      .select('*')
-      .eq('code', token)
-      .eq('type', type)
-      .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (otpError || !otpData || otpData.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Código OTP inválido ou expirado' 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const otpRecord = otpData[0];
-
-    // Check attempts
-    if (otpRecord.attempts >= otpRecord.max_attempts) {
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Muitas tentativas. Solicite um novo código.' 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Mark OTP as verified
-    const { error: updateError } = await supabase
-      .from('otp_codes')
-      .update({
-        status: 'verified',
-        verified_at: new Date().toISOString()
-      })
-      .eq('id', otpRecord.id);
-
-    if (updateError) {
-      console.error('Error updating OTP:', updateError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to verify OTP' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check if user already exists in auth.users
     let userData;
     let sessionData = null;
-    
-    // Generate cryptographically secure temporary password
-    const tempPassword = generateSecurePassword();
-    const tempEmail = `user_${phone.replace(/\D/g, '')}_${Date.now()}@kixikila.pro`;
 
     try {
-      // First check if user exists in our custom users table
+      // Check if user exists in our custom users table
       const { data: existingUser, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -111,9 +112,12 @@ serve(async (req) => {
         .single();
 
       if (userError && userError.code === 'PGRST116') {
-        // User doesn't exist, create both Auth user and custom user
+        // User doesn't exist, create new user
         console.log(`Creating new user for phone: ${phone}`);
         
+        const tempPassword = generateSecurePassword();
+        const tempEmail = `user_${phone.replace(/\D/g, '')}_${Date.now()}@kixikila.pro`;
+
         // Create Supabase Auth user
         const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
           email: tempEmail,
@@ -157,7 +161,6 @@ serve(async (req) => {
 
         if (createError) {
           console.error('Error creating custom user:', createError);
-          // Cleanup auth user if custom user creation fails
           await supabase.auth.admin.deleteUser(authUser.user.id);
           return new Response(
             JSON.stringify({ 
@@ -169,27 +172,45 @@ serve(async (req) => {
         }
 
         userData = createdUser;
-        
-        // Create session for new user
+
+        // Generate session tokens for the new user
         const { data: sessionResponse, error: sessionError } = await supabase.auth.admin.generateLink({
           type: 'magiclink',
-          email: tempEmail,
-          options: {
-            data: {
-              phone: phone,
-              phone_verified: true
-            }
-          }
+          email: tempEmail
         });
 
         if (!sessionError && sessionResponse) {
           sessionData = {
             access_token: sessionResponse.properties?.access_token,
             refresh_token: sessionResponse.properties?.refresh_token,
-            user: authUser.user,
-            expires_at: Date.now() + (60 * 60 * 1000) // 1 hour
+            expires_at: Date.now() + (60 * 60 * 1000), // 1 hour
+            user: {
+              id: authUser.user.id,
+              email: tempEmail,
+              phone: phone,
+              phone_confirmed_at: new Date().toISOString()
+            }
           };
         }
+
+        // Store temporary credentials for frontend authentication
+        const tempCredentials = {
+          email: tempEmail,
+          password: tempPassword
+        };
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Conta criada e verificada com sucesso',
+            data: {
+              user: userData,
+              session: sessionData,
+              tempCredentials: tempCredentials
+            }
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
 
       } else if (userError) {
         console.error('Error fetching user:', userError);
@@ -201,7 +222,7 @@ serve(async (req) => {
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } else {
-        // User exists, update login info
+        // User exists, update login info and generate session
         userData = existingUser;
         
         await supabase
@@ -212,16 +233,10 @@ serve(async (req) => {
           })
           .eq('id', userData.id);
 
-        // For existing users, create session using their auth user
+        // Generate session for existing user
         const { data: sessionResponse, error: sessionError } = await supabase.auth.admin.generateLink({
           type: 'magiclink',
-          email: userData.email,
-          options: {
-            data: {
-              phone: phone,
-              phone_verified: true
-            }
-          }
+          email: userData.email
         });
 
         if (!sessionError && sessionResponse) {
@@ -231,6 +246,18 @@ serve(async (req) => {
             expires_at: Date.now() + (60 * 60 * 1000) // 1 hour
           };
         }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Login realizado com sucesso',
+            data: {
+              user: userData,
+              session: sessionData
+            }
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
     } catch (error) {
@@ -243,22 +270,6 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log(`OTP verified successfully for ${phone}, user ID: ${userData?.id}`);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'OTP verified successfully',
-        data: {
-          user: userData,
-          session: sessionData,
-          // SECURITY: Never return passwords in API responses
-          authEmail: userData.email // For frontend auth only
-        }
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
 
   } catch (error) {
     console.error('Error in verify-otp function:', error);
