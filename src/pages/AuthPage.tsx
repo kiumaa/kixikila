@@ -95,14 +95,32 @@ const AuthPage = () => {
     if (otpCode.length !== 6) return;
 
     try {
+      console.log('AuthPage: Starting OTP verification...');
       const result = await verifyPhoneOtp(registerData.phone, otpCode);
 
       if (result.success) {
-        // After successful OTP, redirect to PIN setup
-        window.location.href = `/entrar?type=pin_setup&phone=${encodeURIComponent(registerData.phone)}&name=${encodeURIComponent(registerData.full_name)}`;
+        console.log('AuthPage: OTP verification successful - redirect handled by AuthStore');
+        toast({
+          title: "✅ Sucesso!",
+          description: result.message
+        });
+        // Note: AuthStore handles automatic redirect to /app/dashboard
+        // No manual redirect needed here
+      } else {
+        console.error('AuthPage: OTP verification failed:', result.message);
+        toast({
+          variant: "destructive",
+          title: "Erro na verificação",
+          description: result.message
+        });
       }
     } catch (error) {
-      console.error('OTP verification error:', error);
+      console.error('AuthPage: OTP verification error:', error);
+      toast({
+        variant: "destructive", 
+        title: "Erro",
+        description: "Erro na verificação do código. Tente novamente."
+      });
     }
   };
 
