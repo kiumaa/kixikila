@@ -1,4 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LoginRequest {
   email: string;
@@ -64,6 +65,7 @@ interface PhoneOtpResponse {
 }
 
 class AuthService {
+  private supabase = supabase;
   private getHeaders(includeAuth = false): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -172,17 +174,15 @@ class AuthService {
 
   async logout(): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.auth.logout}`, {
-        method: 'POST',
-        headers: this.getHeaders(true),
-      });
-
-      // Clear local storage regardless of response
-      this.clearAuthData();
-
-      if (!response.ok) {
-        console.warn('Logout request failed, but local data cleared');
+      // Use Supabase client directly for logout
+      const { error } = await this.supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Logout error:', error);
       }
+
+      // Clear local storage
+      this.clearAuthData();
     } catch (error) {
       console.error('Logout error:', error);
       // Clear local data even if request fails
@@ -220,18 +220,29 @@ class AuthService {
 
   async getProfile(): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.auth.me}`, {
-        method: 'GET',
-        headers: this.getHeaders(true),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Erro ao buscar perfil');
+      // Use Supabase client directly to get user profile
+      const { data: { user }, error } = await this.supabase.auth.getUser();
+      
+      if (error) {
+        throw new Error(error.message);
       }
 
-      return data;
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Get additional profile data from users table
+      const { data: profile, error: profileError } = await this.supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.warn('Profile fetch error:', profileError);
+      }
+
+      return { user, profile };
     } catch (error) {
       console.error('Get profile error:', error);
       throw error;

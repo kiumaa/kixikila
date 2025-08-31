@@ -1,99 +1,75 @@
 /**
- * API Configuration for KIXIKILA Frontend
+ * API Configuration for KIXIKILA Frontend - Supabase Edge Functions
  * 
- * This file contains the API endpoints and configuration for the frontend application.
- * It automatically detects the environment and uses the appropriate API URL.
+ * This file contains the API endpoints configuration for Supabase Edge Functions.
+ * All backend functionality is handled through Supabase Edge Functions.
  */
 
-// Environment detection
-const isDevelopment = import.meta.env.MODE === 'development';
-const isProduction = import.meta.env.MODE === 'production';
+// Supabase Edge Functions URLs
+const SUPABASE_URL = 'https://hkesrohuaurcyonpktyt.supabase.co';
 
-// API Base URLs - Now using Lovable integrated API routes
-const API_URLS = {
-  development: window.location.origin + '/api',
-  production: window.location.origin + '/api',
-  staging: window.location.origin + '/api'
-};
+// Get current API base URL - Using Supabase Edge Functions
+export const API_BASE_URL = `${SUPABASE_URL}/functions/v1`;
 
-// Get current API base URL - Always use current domain for integrated backend
-export const API_BASE_URL = window.location.origin + '/api';
-
-// API Endpoints
+// API Endpoints - Using Supabase Edge Functions
 export const API_ENDPOINTS = {
   // Authentication
   auth: {
-    register: '/auth/register',
-    login: '/auth/login',
-    logout: '/auth/logout', 
-    me: '/auth/me',
-    verify: '/auth/verify-otp',
-    resendOtp: '/auth/resend-otp'
+    register: '/send-otp-sms',
+    login: '/send-otp-sms', 
+    logout: '/auth/logout', // Placeholder - handled client-side
+    me: '/auth/me', // Placeholder - handled client-side  
+    verify: '/verify-otp',
+    resendOtp: '/send-otp-sms'
   },
 
-  // Users
-  users: {
-    profile: '/users/profile',
-    updateProfile: '/users/profile'
-  },
-
-  // Financial Groups
-  groups: {
-    list: '/groups',
-    create: '/groups',
-    details: (id: string) => `/groups/${id}`,
-    update: (id: string) => `/groups/${id}`,
-    delete: (id: string) => `/groups/${id}`,
-    join: (id: string) => `/groups/${id}/join`,
-    leave: (id: string) => `/groups/${id}/leave`,
-    members: (id: string) => `/groups/${id}/members`,
-    transactions: (id: string) => `/groups/${id}/transactions`,
-    draw: (id: string) => `/groups/${id}/draw`,
-    invite: (id: string) => `/groups/${id}/invite`
-  },
-
-  // Transactions
-  transactions: {
-    list: '/transactions',
-    create: '/transactions',
-    details: (id: string) => `/transactions/${id}`,
-    update: (id: string) => `/transactions/${id}`,
-    delete: (id: string) => `/transactions/${id}`,
-    history: '/transactions/history'
-  },
-
-  // Notifications
-  notifications: {
-    list: '/notifications',
-    unreadCount: '/notifications/unread-count',
-    markAsRead: (id: string) => `/notifications/${id}/read`,
-    markAllAsRead: '/notifications/mark-all-read',
-    preferences: '/notifications/preferences'
-  },
-
-  // Payments (Stripe)
+  // Payments & Subscriptions (Stripe)
   payments: {
-    createIntent: '/stripe/create-payment-intent',
-    confirmPayment: '/stripe/confirm-payment',
-    subscriptions: '/stripe/subscriptions',
-    createSubscription: '/stripe/create-subscription',
-    cancelSubscription: (id: string) => `/stripe/subscriptions/${id}/cancel`,
-    invoices: '/stripe/invoices'
+    createCheckout: '/create-checkout',
+    customerPortal: '/customer-portal',
+    createPayment: '/create-payment'
   },
 
-  // Admin
+  // Groups & Drawing
+  groups: {
+    draw: '/draw-group-winner',
+    invite: '/send-group-invitation'
+  },
+
+  // Messaging & Notifications
+  messaging: {
+    sendSMS: '/send-message',
+    sendEmail: '/send-email',
+    bulkMessages: '/send-bulk-messages'
+  },
+
+  // Admin & Monitoring
   admin: {
-    users: '/admin/users',
-    groups: '/admin/groups',
-    transactions: '/admin/transactions', 
-    stats: '/admin/stats',
-    emailConfig: '/admin/email-config',
-    stripeConfig: '/admin/stripe-config',
-    bulkSMSConfig: '/admin/bulksms-config'
+    monitoring: '/admin-monitoring',
+    health: '/health-check',
+    productionHealth: '/production-health',
+    serviceHealth: '/service-health-monitor',
+    auditLogs: '/get-audit-logs',
+    createAdmin: '/create-admin-user',
+    securityAlerts: '/security-alerts',
+    systemConfig: '/manage-system-config',
+    cleanup: '/cleanup-expired-data'
   },
 
-  // Health Check
-  health: '/health'
+  // KYC Management
+  kyc: {
+    manage: '/kyc-management'
+  },
+
+  // PIN Management  
+  pin: {
+    manage: '/pin-management'
+  },
+
+  // Subscription Management
+  subscription: {
+    check: '/check-subscription'
+  }
 };
 
 // Request configuration
@@ -129,15 +105,13 @@ export const getAuthHeaders = (): Record<string, string> => {
 
 // Export environment info
 export const ENV_INFO = {
-  isDevelopment,
-  isProduction,
   apiUrl: API_BASE_URL,
-  mode: import.meta.env.MODE
+  mode: import.meta.env.MODE,
+  isProduction: import.meta.env.MODE === 'production'
 };
 
-console.log('🔗 API Configuration:', {
+console.log('🔗 API Configuration (Supabase Edge Functions):', {
   environment: import.meta.env.MODE,
   apiUrl: API_BASE_URL,
-  isDevelopment,
-  isProduction
+  supabaseUrl: 'https://hkesrohuaurcyonpktyt.supabase.co'
 });
