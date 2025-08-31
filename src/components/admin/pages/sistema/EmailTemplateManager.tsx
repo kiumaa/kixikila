@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Edit, Trash2, Eye, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import DOMPurify from 'dompurify';
 
 interface EmailTemplate {
   id: string;
@@ -362,19 +363,26 @@ const EmailTemplateManager: React.FC = () => {
                   </div>
                 </div>
                 
-                <div>
-                  <Label>Pré-visualização</Label>
-                  <div className="border rounded-lg p-4 bg-gray-50 min-h-[400px]">
-                    <div className="mb-4">
-                      <strong>Assunto:</strong> {formData.subject.replace(/{{(\w+)}}/g, '[var]')}
+                  <div>
+                    <Label>Pré-visualização</Label>
+                    <div className="border rounded-lg p-4 bg-gray-50 min-h-[400px]">
+                      <div className="mb-4">
+                        <strong>Assunto:</strong> {formData.subject.replace(/{{(\w+)}}/g, '[var]')}
+                      </div>
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: DOMPurify.sanitize(
+                            formData.content.replace(/{{(\w+)}}/g, '<span class="bg-yellow-200 px-1">[$1]</span>'),
+                            {
+                              ALLOWED_TAGS: ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'hr', 'small'],
+                              ALLOWED_ATTR: ['style', 'class'],
+                              ALLOW_DATA_ATTR: false
+                            }
+                          )
+                        }}
+                      />
                     </div>
-                    <div 
-                      dangerouslySetInnerHTML={{ 
-                        __html: formData.content.replace(/{{(\w+)}}/g, '<span class="bg-yellow-200 px-1">[$1]</span>')
-                      }}
-                    />
                   </div>
-                </div>
               </div>
               
               <div className="flex justify-end gap-2 pt-4">
@@ -457,7 +465,13 @@ const EmailTemplateManager: React.FC = () => {
                 <Label>Conteúdo</Label>
                 <div 
                   className="border p-4 rounded bg-white"
-                  dangerouslySetInnerHTML={{ __html: previewData.content }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: DOMPurify.sanitize(previewData.content, {
+                      ALLOWED_TAGS: ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'hr', 'small', 'img', 'a'],
+                      ALLOWED_ATTR: ['style', 'class', 'href', 'src', 'alt', 'target'],
+                      ALLOW_DATA_ATTR: false
+                    })
+                  }}
                 />
               </div>
             </div>

@@ -1415,6 +1415,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_security_violation: {
+        Args: { details?: Json; severity?: string; violation_type: string }
+        Returns: undefined
+      }
       log_sensitive_access: {
         Args: { access_type?: string; entity_id: string; entity_type: string }
         Returns: undefined
@@ -1429,10 +1433,10 @@ export type Database = {
       }
       mask_personal_data: {
         Args: {
-          field_type: string
+          data_type: string
+          data_value: string
+          owner_id: string
           requesting_user_id?: string
-          user_id: string
-          value: string
         }
         Returns: string
       }

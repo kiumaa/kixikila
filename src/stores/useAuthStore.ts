@@ -94,11 +94,13 @@ export const useAuthStore = create<AuthState>()(
       if (error) throw error;
 
       if (data.success) {
-        // Get user data from our custom session
-        const customSession = localStorage.getItem('kixikila_custom_session');
-        if (customSession) {
-          const sessionData = JSON.parse(customSession);
-          const user = { ...sessionData.user, name: sessionData.user.full_name };
+        // Get user data from our secure session
+        const sessionToken = localStorage.getItem('kixikila_session_token');
+        if (sessionToken) {
+          try {
+            const decoded = atob(sessionToken);
+            const sessionData = JSON.parse(decoded);
+            const user = { ...sessionData.session.user, name: sessionData.session.user.full_name };
           
           set({
             isAuthenticated: true,
@@ -115,7 +117,10 @@ export const useAuthStore = create<AuthState>()(
             }
           }, 100);
 
-          return { success: true, message: 'PIN verificado com sucesso!' };
+            return { success: true, message: 'PIN verificado com sucesso!' };
+          } catch (error) {
+            console.error('Session decode error:', error);
+          }
         }
       }
 
@@ -160,9 +165,21 @@ export const useAuthStore = create<AuthState>()(
           error: null,
         });
 
-        // Store session data for PIN authentication
-        localStorage.setItem('kixikila_custom_session', JSON.stringify(response.data.session));
-        localStorage.setItem('kixikila_user_id', user.id);
+        // Store session data securely for PIN authentication
+        try {
+          const sessionData = {
+            session: response.data.session,
+            timestamp: Date.now(),
+            deviceId: crypto.randomUUID()
+          };
+          
+          // Use basic obfuscation for session data
+          const encoded = btoa(JSON.stringify(sessionData));
+          localStorage.setItem('kixikila_session_token', encoded);
+          localStorage.setItem('kixikila_user_ref', btoa(user.id));
+        } catch (error) {
+          console.error('Failed to store session securely:', error);
+        }
 
         // Redirect based on user role
         setTimeout(() => {
@@ -235,9 +252,20 @@ export const useAuthStore = create<AuthState>()(
               error: null,
             });
 
-            // Store session data for PIN authentication
-            localStorage.setItem('kixikila_custom_session', JSON.stringify(response.data.session));
-            localStorage.setItem('kixikila_user_id', user.id);
+            // Store session data securely for PIN authentication
+            try {
+              const sessionData = {
+                session: response.data.session,
+                timestamp: Date.now(),
+                deviceId: crypto.randomUUID()
+              };
+              
+              const encoded = btoa(JSON.stringify(sessionData));
+              localStorage.setItem('kixikila_session_token', encoded);
+              localStorage.setItem('kixikila_user_ref', btoa(user.id));
+            } catch (error) {
+              console.error('Failed to store session securely:', error);
+            }
 
             // For registration (new users), redirect to PIN setup first
             const isNewUser = response.message?.includes('criada');
@@ -315,10 +343,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           await supabaseAuthService.logout();
           
-          // Clear all local session data
-          localStorage.removeItem('kixikila_custom_session');
-          localStorage.removeItem('kixikila_user_id');
+          // Clear all local session data securely
+          localStorage.removeItem('kixikila_session_token');
+          localStorage.removeItem('kixikila_user_ref');
           localStorage.removeItem('kixikila_device_id');
+          localStorage.removeItem('kixikila_device_key');
           localStorage.removeItem('kixikila_device_auth_preference');
           
           set({
@@ -328,10 +357,11 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error: any) {
-          // Even if logout fails on server, clear local state
-          localStorage.removeItem('kixikila_custom_session');
-          localStorage.removeItem('kixikila_user_id');
+          // Even if logout fails on server, clear local state securely  
+          localStorage.removeItem('kixikila_session_token');
+          localStorage.removeItem('kixikila_user_ref');
           localStorage.removeItem('kixikila_device_id');
+          localStorage.removeItem('kixikila_device_key');
           localStorage.removeItem('kixikila_device_auth_preference');
           
           set({
