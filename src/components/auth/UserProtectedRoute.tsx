@@ -50,13 +50,13 @@ const UserProtectedRoute: React.FC<UserProtectedRouteProps> = ({ children }) => 
   }
 
   // Enhanced authentication check
-  if (!isAuthenticated || !session) {
+  if (!isAuthenticated) {
     return (
       <Navigate 
         to="/entrar" 
         state={{ 
           from: location.pathname,
-          message: 'Sessão expirada. Faça login novamente.' 
+          message: session ? undefined : 'Sessão expirada. Faça login novamente.' 
         }} 
         replace 
       />

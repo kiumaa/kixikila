@@ -322,10 +322,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       initializeAuth: async () => {
-        set({ isLoading: true });
-        // This method is no longer needed as the hook handles initialization
-        // But kept for backward compatibility
-        set({ isLoading: false });
+        // Initialization is now handled by useSupabaseAuth hook
+        // This is kept for backward compatibility only
       },
 
       isAdmin: () => {
