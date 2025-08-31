@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './auth/LoginPage';
 import SignupPage from './auth/SignupPage';
 import SetPinPage from './auth/SetPinPage';
+import HomePage from './HomePage';
 import MockAppPage from './MockAppPage';
 import MockProtectedRoute from '@/components/auth/MockProtectedRoute';
 
@@ -16,6 +17,16 @@ const AuthRoutes: React.FC = () => {
       <Route path="login" element={<LoginPage />} />
       <Route path="signup" element={<SignupPage />} />
       <Route path="set-pin" element={<SetPinPage />} />
+      
+      {/* Home - Protected */}
+      <Route 
+        path="/home" 
+        element={
+          <MockProtectedRoute>
+            <HomePage />
+          </MockProtectedRoute>
+        } 
+      />
       
       {/* Mock App - Protected */}
       <Route 

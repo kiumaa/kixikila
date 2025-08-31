@@ -8,16 +8,20 @@ import { PinDisplay } from '@/components/ui/pin-display';
 import { NumericKeypad } from '@/components/ui/numeric-keypad';
 import { useToast } from '@/hooks/use-toast';
 import { useMockAuthStore } from '@/stores/useMockAuthStore';
+import { usePinManagement } from '@/hooks/usePinManagement';
+import KycPopup from '@/components/modals/KycPopup';
 
 const SetPinPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAuthenticated, user } = useMockAuthStore();
+  const { isAuthenticated, user, setPinConfigured } = useMockAuthStore();
+  const { savePinHash, isLoading: pinLoading } = usePinManagement();
 
   const [step, setStep] = useState<'create' | 'confirm'>('create');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showKycModal, setShowKycModal] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -83,30 +87,42 @@ const SetPinPage: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast({
+        title: "Erro",
+        description: "Usuário não identificado. Faça login novamente.",
+        variant: "destructive",
+      });
+      navigate('/auth/login');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Simulate saving PIN (in real app would hash and save)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Generate device ID for trusted device
+      const deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // Save PIN to localStorage (mock implementation)
-      localStorage.setItem('mock_user_pin', JSON.stringify({
-        userId: user?.id,
-        pinHash: btoa(pin), // Simple encoding for demo
-        createdAt: new Date().toISOString()
-      }));
+      // Save PIN with bcrypt hash
+      const success = await savePinHash(pin, user.id, deviceId);
+
+      if (!success) {
+        throw new Error('Falha ao salvar PIN');
+      }
+
+      // Update auth store
+      setPinConfigured(true);
 
       toast({
         title: "PIN definido com sucesso! 🎉",
-        description: "Sua conta está pronta. Redirecionando...",
+        description: "Agora vamos verificar a sua identidade.",
       });
 
-      // Redirect to main app after short delay
-      setTimeout(() => {
-        navigate('/auth/app');
-      }, 1500);
+      // Show KYC modal after PIN success
+      setShowKycModal(true);
 
     } catch (error) {
+      console.error('Error saving PIN:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar PIN. Tente novamente.",
@@ -115,6 +131,25 @@ const SetPinPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleKycStart = () => {
+    setShowKycModal(false);
+    toast({
+      title: "KYC iniciado",
+      description: "Redirecionando para verificação de identidade...",
+    });
+    // In a real app, would navigate to KYC flow
+    // For now, just go to home
+    setTimeout(() => {
+      navigate('/home');
+    }, 1000);
+  };
+
+  const handleKycClose = () => {
+    setShowKycModal(false);
+    // Redirect to home even if user skips KYC
+    navigate('/home');
   };
 
   const handleBack = () => {
@@ -212,7 +247,7 @@ const SetPinPage: React.FC = () => {
             <Button
               onClick={step === 'create' ? handleContinue : handleConfirm}
               disabled={
-                isLoading || 
+                isLoading || pinLoading ||
                 (step === 'create' && pin.length !== 4) ||
                 (step === 'confirm' && (confirmPin.length !== 4 || pin !== confirmPin))
               }
@@ -220,7 +255,7 @@ const SetPinPage: React.FC = () => {
               size="lg"
               className="w-full"
             >
-              {isLoading ? (
+              {(isLoading || pinLoading) ? (
                 <LoadingSpinner size="sm" />
               ) : step === 'create' ? (
                 'Continuar'
@@ -244,6 +279,13 @@ const SetPinPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* KYC Modal */}
+      <KycPopup
+        isOpen={showKycModal}
+        onClose={handleKycClose}
+        onStartKyc={handleKycStart}
+      />
     </div>
   );
 };

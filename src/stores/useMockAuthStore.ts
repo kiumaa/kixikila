@@ -26,6 +26,9 @@ interface MockAuthState {
   // OTP Management
   currentOtpAttempt: OTPAttempt | null;
   
+  // PIN Management
+  hasPinConfigured: boolean;
+  
   // Actions
   sendOTP: (phone: string) => Promise<{ success: boolean; message: string }>;
   verifyOTP: (phone: string, code: string) => Promise<{ success: boolean; message: string; user?: MockUser }>;
@@ -34,6 +37,10 @@ interface MockAuthState {
   logout: () => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
+  
+  // PIN Actions
+  setPinConfigured: (configured: boolean) => void;
+  clearPinData: () => void;
 }
 
 export const useMockAuthStore = create<MockAuthState>()(
@@ -45,6 +52,7 @@ export const useMockAuthStore = create<MockAuthState>()(
       isLoading: false,
       error: null,
       currentOtpAttempt: null,
+      hasPinConfigured: false,
 
       // Send OTP (Mock)
       sendOTP: async (phone: string) => {
@@ -215,7 +223,8 @@ export const useMockAuthStore = create<MockAuthState>()(
           isAuthenticated: false,
           user: null,
           currentOtpAttempt: null,
-          error: null
+          error: null,
+          hasPinConfigured: false
         });
       },
 
@@ -227,13 +236,23 @@ export const useMockAuthStore = create<MockAuthState>()(
       // Set Loading
       setLoading: (loading: boolean) => {
         set({ isLoading: loading });
+      },
+
+      // PIN Actions
+      setPinConfigured: (configured: boolean) => {
+        set({ hasPinConfigured: configured });
+      },
+
+      clearPinData: () => {
+        set({ hasPinConfigured: false });
       }
     }),
     {
       name: 'mock-auth-storage',
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
-        user: state.user
+        user: state.user,
+        hasPinConfigured: state.hasPinConfigured
       })
     }
   )
