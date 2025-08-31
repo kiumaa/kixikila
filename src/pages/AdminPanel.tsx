@@ -13,6 +13,7 @@ const AdminDashboard = lazy(() => import('@/components/admin/pages/dashboard/Adm
 const UsersManagement = lazy(() => import('@/components/admin/pages/gestao/UsersManagement'));
 const GroupsManagement = lazy(() => import('@/components/admin/pages/gestao/GroupsManagement'));
 const PlansManagement = lazy(() => import('@/components/admin/pages/gestao/PlansManagement'));
+const WithdrawalsManagement = lazy(() => import('@/components/admin/pages/WithdrawalsManagement'));
 
 // Sistema
 const SystemSettings = lazy(() => import('@/components/admin/pages/sistema/SystemSettings'));
@@ -67,6 +68,7 @@ const AdminPanel: React.FC = () => {
           <Route path="users" element={<UsersManagement />} />
           <Route path="groups" element={<GroupsManagement />} />
           <Route path="plans" element={<PlansManagement />} />
+          <Route path="withdrawals" element={<WithdrawalsManagement />} />
           <Route path="settings" element={<SystemSettings />} />
           <Route path="advanced-settings" element={<AdvancedSystemSettings />} />
           <Route path="branding" element={<BrandingManagement />} />

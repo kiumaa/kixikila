@@ -398,3 +398,5 @@ export const WithdrawalsManagement: React.FC = () => {
     </div>
   );
 };
+
+export default WithdrawalsManagement;

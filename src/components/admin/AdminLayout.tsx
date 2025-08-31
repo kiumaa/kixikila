@@ -7,6 +7,7 @@ import {
   Users,
   FileText,
   CreditCard,
+  Banknote,
   Palette,
   Smartphone,
   Bell,
@@ -57,6 +58,12 @@ const sidebarItems = [
     icon: CreditCard, 
     label: 'Planos', 
     path: '/admin/plans',
+    group: 'gestao'
+  },
+  { 
+    icon: Banknote, 
+    label: 'Levantamentos', 
+    path: '/admin/withdrawals',
     group: 'gestao'
   },
   
