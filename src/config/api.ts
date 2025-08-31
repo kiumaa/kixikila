@@ -9,17 +9,15 @@
 const isDevelopment = import.meta.env.MODE === 'development';
 const isProduction = import.meta.env.MODE === 'production';
 
-// API Base URLs
+// API Base URLs - Now using Lovable integrated API routes
 const API_URLS = {
-  development: 'http://localhost:3001/api/v1',
-  production: import.meta.env.VITE_API_URL || 'https://kixikila.vercel.app/api/v1',
-  staging: import.meta.env.VITE_API_URL || 'https://kixikila-staging.vercel.app/api/v1'
+  development: window.location.origin + '/api',
+  production: window.location.origin + '/api',
+  staging: window.location.origin + '/api'
 };
 
-// Get current API base URL
-export const API_BASE_URL = isDevelopment 
-  ? API_URLS.development 
-  : API_URLS.production;
+// Get current API base URL - Always use current domain for integrated backend
+export const API_BASE_URL = API_URLS.development;
 
 // API Endpoints
 export const API_ENDPOINTS = {

@@ -93,22 +93,22 @@ export const api = new ApiService(API_BASE_URL);
 export const adminApi = {
   // Email configuration
   getEmailConfig: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/email-config`, {
+    const response = await fetch(`${API_BASE_URL}/admin/email-config`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
       }
     });
     return response.json();
   },
 
   updateEmailConfig: async (config: EmailConfig) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/email-config`, {
+    const response = await fetch(`${API_BASE_URL}/admin/email-config`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(config)
     });
@@ -116,11 +116,11 @@ export const adminApi = {
   },
 
   testEmailConfig: async (testEmail: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/email-config/test`, {
+    const response = await fetch(`${API_BASE_URL}/admin/email-config/test`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ testEmail })
     });
@@ -129,22 +129,22 @@ export const adminApi = {
 
   // Stripe configuration
   getStripeConfig: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/stripe-config`, {
+    const response = await fetch(`${API_BASE_URL}/admin/stripe-config`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
       }
     });
     return response.json();
   },
 
   updateStripeConfig: async (config: StripeConfig) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/stripe-config`, {
+    const response = await fetch(`${API_BASE_URL}/admin/stripe-config`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(config)
     });
@@ -153,22 +153,22 @@ export const adminApi = {
 
   // BulkSMS configuration
   getBulkSMSConfig: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/bulksms-config`, {
+    const response = await fetch(`${API_BASE_URL}/admin/bulksms-config`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
       }
     });
     return response.json();
   },
 
   updateBulkSMSConfig: async (config: BulkSMSConfig) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/bulksms-config`, {
+    const response = await fetch(`${API_BASE_URL}/admin/bulksms-config`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(config)
     });
@@ -176,13 +176,25 @@ export const adminApi = {
   },
 
   testBulkSMSConfig: async (testNumber: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/bulksms-config/test`, {
+    const response = await fetch(`${API_BASE_URL}/admin/bulksms-config/test`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ testPhone: testNumber })
+    });
+    return response.json();
+  },
+
+  // Users management
+  getUsers: async (page = 1, limit = 10) => {
+    const response = await fetch(`${API_BASE_URL}/admin/users?page=${page}&limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
+      }
     });
     return response.json();
   }
