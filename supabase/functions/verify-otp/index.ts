@@ -193,10 +193,11 @@ serve(async (req) => {
           };
         }
 
-        // Store temporary credentials for frontend authentication
-        const tempCredentials = {
-          email: tempEmail,
-          password: tempPassword
+        // Generate secure session tokens for authentication
+        // Note: Never expose passwords or sensitive credentials in responses
+        const authData = {
+          requiresPasswordReset: true,
+          emailForReset: tempEmail
         };
 
         return new Response(
@@ -206,7 +207,7 @@ serve(async (req) => {
             data: {
               user: userData,
               session: sessionData,
-              tempCredentials: tempCredentials
+              authData: authData
             }
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

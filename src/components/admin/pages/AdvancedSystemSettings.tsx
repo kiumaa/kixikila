@@ -678,10 +678,16 @@ const AdvancedSystemSettings: React.FC = () => {
                             <div className="font-semibold mb-2">
                               Assunto: {renderPreview(editingTemplate.subject || '')}
                             </div>
-                            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderPreview(editingTemplate.content)) }} />
+                            <div className="prose max-w-none">
+                              {DOMPurify.sanitize(renderPreview(editingTemplate.content), {
+                                ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'span', 'div'],
+                                ALLOWED_ATTR: ['style'],
+                                ALLOW_DATA_ATTR: false
+                              })}
+                            </div>
                           </div>
                         ) : (
-                          <div>{renderPreview(editingTemplate.content)}</div>
+                          <div className="whitespace-pre-wrap">{renderPreview(editingTemplate.content)}</div>
                         )}
                       </div>
                     </div>

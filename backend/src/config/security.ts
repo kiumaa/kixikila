@@ -83,10 +83,23 @@ const validateSecurityConfig = () => {
   const weakSecrets = [
     'your-super-secret-jwt-key-here',
     'your-session-secret-here',
+    'your-super-secure-jwt-secret-key-here',
+    'your-super-secure-session-secret-key-here',
     'admin123',
     'password123',
     'secret',
-    'test'
+    'test',
+    'demo',
+    'example',
+    '123456',
+    'qwerty',
+    'admin',
+    'password',
+    'secret123',
+    'test123',
+    'development',
+    'localhost',
+    'sample'
   ];
   
   weakSecrets.forEach(weak => {
