@@ -11,7 +11,7 @@ import { VIPUpgradeModal } from './VIPUpgradeModal';
 import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/store/useAppStore';
 import { useVIPStatus } from '@/hooks/useVIPStatus';
-import { formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/lib/mockData';
 
 interface CreateGroupModalProps {
   isOpen: boolean;

@@ -12,7 +12,7 @@ import { Avatar } from '@/components/design-system/Avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminStore } from '@/store/useAdminStore';
 import { User, Phone, Mail, Calendar, Shield, CreditCard, Activity, FileText } from 'lucide-react';
-import { formatCurrency, formatDateTime } from '@/data/mockData';
+import { formatCurrency, formatDateTime } from '@/lib/mockData';
 import { type AdminUser } from '@/store/useAdminStore';
 
 interface EditUserModalProps {

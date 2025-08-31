@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { mockGroups, mockTransactions, mockUser, type User, type Group, type Transaction } from '@/data/mockData';
+import { mockGroups, mockTransactions, mockUser, type User, type Group, type Transaction } from '@/lib/mockData';
 
 export type AdminRole = 'admin';
 export type UserStatus = 'active' | 'banned' | 'inactive';

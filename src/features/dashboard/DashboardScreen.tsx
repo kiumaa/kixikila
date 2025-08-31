@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { Avatar } from '@/components/design-system/Avatar';
 import { SkeletonCard } from '@/components/design-system/SkeletonCard';
-import { mockUser, mockGroups, formatCurrency, formatDate, type Group } from '@/data/mockData';
+import { mockUser, mockGroups, formatCurrency, formatDate, type Group } from '@/lib/mockData';
 import { useMemoizedFilteredGroups, useMemoizedGroupProgress } from '@/lib/performance';
 import { useAppStore } from '@/store/useAppStore';
 import { PlanLimitNotice } from '@/components/common/PlanLimitNotice';

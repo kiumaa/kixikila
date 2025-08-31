@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useNotifications } from '@/hooks/useNotifications';
-import { formatDate } from '@/data/mockData';
+import { formatDate } from '@/lib/mockData';
 interface NotificationsScreenProps {
   onBack: () => void;
 }

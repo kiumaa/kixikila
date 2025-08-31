@@ -7,7 +7,7 @@ import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useTransactions, useTransactionStats } from '@/hooks/useTransactions';
 import { useWithdrawals } from '@/hooks/useWithdrawals';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { formatCurrency, formatDate } from '@/data/mockData';
+import { formatCurrency, formatDate } from '@/lib/mockData';
 
 interface WalletScreenProps {
   onBack: () => void;

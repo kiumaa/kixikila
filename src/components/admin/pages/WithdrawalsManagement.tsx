@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency, formatDate } from '@/data/mockData';
+import { formatCurrency, formatDate } from '@/lib/mockData';
 import { 
   CheckCircle, 
   XCircle, 

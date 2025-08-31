@@ -35,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatCurrency, formatDate } from '@/data/mockData';
+import { formatCurrency, formatDate } from '@/lib/mockData';
 
 const UsersManagement: React.FC = () => {
   const { allUsers, banUser, unbanUser, updateUserPlan } = useAdminStore();

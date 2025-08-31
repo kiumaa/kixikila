@@ -8,7 +8,7 @@ import { AdvancedInviteModal } from '@/components/modals/AdvancedInviteModal';
 import { MemberManagementPanel } from '@/components/group/MemberManagementPanel';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import { useToast } from '@/hooks/use-toast';
-import { type Group, formatCurrency, formatDate } from '@/data/mockData';
+import { type Group, formatCurrency, formatDate } from '@/lib/mockData';
 import { useMemoizedGroupProgress } from '@/lib/performance';
 
 interface GroupDetailsScreenProps {

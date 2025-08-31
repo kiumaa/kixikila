@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/lib/mockData';
 
 interface SupportScreenProps {
   onBack: () => void;

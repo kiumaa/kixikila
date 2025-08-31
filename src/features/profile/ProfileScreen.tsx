@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/design-system/Avatar';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { ThemeToggle } from '@/components/design-system/ThemeToggle';
-import { mockUser, formatCurrency, formatDate } from '@/data/mockData';
+import { mockUser, formatCurrency, formatDate } from '@/lib/mockData';
 import { useAppStore } from '@/store/useAppStore';
 
 interface ProfileScreenProps {

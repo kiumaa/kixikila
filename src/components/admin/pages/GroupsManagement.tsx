@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { mockGroups } from '@/data/mockData';
+import { mockGroups } from '@/lib/mockData';
 import { useAdminStore } from '@/store/useAdminStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/design-system/Avatar';
 import EditGroupModal from '@/components/admin/modals/EditGroupModal';
 import { useToast } from '@/hooks/use-toast';
-import { type Group } from '@/data/mockData';
+import { type Group } from '@/lib/mockData';
 import { 
   FileText, 
   Search, 
@@ -38,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatCurrency, formatDate } from '@/data/mockData';
+import { formatCurrency, formatDate } from '@/lib/mockData';
 
 const GroupsManagement: React.FC = () => {
   const { deleteGroup, freezeGroup } = useAdminStore();

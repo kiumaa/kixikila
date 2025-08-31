@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { useToast } from '@/hooks/use-toast';
-import { mockUser, formatCurrency } from '@/data/mockData';
+import { mockUser, formatCurrency } from '@/lib/mockData';
 
 interface KYCScreenProps {
   onBack: () => void;

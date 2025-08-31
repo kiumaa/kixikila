@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/design-system/Avatar';
 import { useToast } from '@/hooks/use-toast';
-import { formatCurrency, formatDate } from '@/data/mockData';
+import { formatCurrency, formatDate } from '@/lib/mockData';
+import { type Group } from '@/lib/mockData';
 import { 
   FileText, 
   Search, 

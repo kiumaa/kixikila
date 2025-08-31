@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
-import { formatCurrency, formatDate } from '@/data/mockData';
+import { formatCurrency, formatDate } from '@/lib/mockData';
 import { useVIPStatus } from '@/hooks/useVIPStatus';
 import { useStripeIntegration } from '@/hooks/useStripeIntegration';
 import { toast } from '@/hooks/use-toast';

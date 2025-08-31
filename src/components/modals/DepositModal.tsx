@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useStripeIntegration } from '@/hooks/useStripeIntegration';
-import { formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/lib/mockData';
 
 interface DepositModalProps {
   isOpen: boolean;

@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/design-system/Avatar';
 import { useToast } from '@/hooks/use-toast';
-import { mockUser } from '@/data/mockData';
+import { mockUser } from '@/lib/mockData';
 
 interface PersonalDataScreenProps {
   onBack: () => void;

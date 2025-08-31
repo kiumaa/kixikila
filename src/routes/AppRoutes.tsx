@@ -4,7 +4,7 @@ import { LoadingScreen } from '@/components/screens/LoadingScreen';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { mockNotifications, mockGroups, mockUser } from '@/data/mockData';
+import { mockNotifications, mockGroups, mockUser } from '@/lib/mockData';
 import { DepositModal } from '@/components/modals/DepositModal';
 import { WithdrawModal } from '@/components/modals/WithdrawModal';
 import { CreateGroupModal } from '@/components/modals/CreateGroupModal';

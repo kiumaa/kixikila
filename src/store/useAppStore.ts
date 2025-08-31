@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { mockGroups, type Group } from '@/data/mockData';
+import { mockGroups, type Group } from '@/lib/mockData';
 
 export type UserPlan = 'free' | 'vip';
 
@@ -13,7 +13,7 @@ interface AppState {
   setPlan: (plan: UserPlan) => void;
   canCreateGroup: () => boolean;
   addGroup: (group: Group) => void;
-  removeGroup: (groupId: number) => void;
+  removeGroup: (groupId: string) => void;
   getGroupCount: () => number;
 }
 
@@ -22,7 +22,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       userPlan: 'vip', // Inicialmente VIP baseado no mockUser
       userGroups: mockGroups.filter(group => 
-        group.members.some(member => member.id === 1) // Filtrar grupos onde o usuário (ID 1) participa
+        group.members.some(member => member.user_id === 'user_1') // Filtrar grupos onde o usuário participa
       ),
 
       togglePlan: () => {
@@ -47,7 +47,7 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      removeGroup: (groupId: number) => {
+      removeGroup: (groupId: string) => {
         set((state) => ({
           userGroups: state.userGroups.filter(group => group.id !== groupId)
         }));

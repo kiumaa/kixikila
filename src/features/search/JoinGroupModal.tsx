@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { type Group, formatCurrency, mockGroups } from '@/data/mockData';
+import { type Group, formatCurrency, mockGroups } from '@/lib/mockData';
 
 interface JoinGroupModalProps {
   isOpen: boolean;
