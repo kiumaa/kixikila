@@ -14,6 +14,8 @@ import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { authMiddleware } from './middleware/auth.js';
 import { generalRateLimit } from './middleware/rateLimiting.js';
 import { auditMiddleware } from './middleware/auditLogger.js';
+import { securityHeaders } from './middleware/securityHeaders.js';
+import { inputSanitization } from './middleware/inputSanitization.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -34,7 +36,10 @@ const server = createServer(app);
 
 // Rate limiting is now handled by specific middlewares in routes
 
-// Security middleware
+// Enhanced security middleware
+app.use(securityHeaders);
+
+// Content Security Policy and security headers
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
@@ -63,10 +68,11 @@ app.use(generalRateLimit);
 // Audit logging middleware - track all requests
 app.use(auditMiddleware('REQUEST'));
 
-// Body parsing middleware
+// Body parsing middleware with input sanitization
 app.use('/api/webhooks', express.raw({ type: 'application/json' })); // Raw body for webhooks
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(inputSanitization);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
