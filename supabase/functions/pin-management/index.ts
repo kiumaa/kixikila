@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-kixikila-user-id',
 };
 
 // Hash PIN usando Web Crypto API (similar ao Argon2)
@@ -51,21 +51,44 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Authorization header missing');
-    }
-
-    // Verificar se o utilizador está autenticado
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // Check for custom authentication first
+    const customUserId = req.headers.get('x-kixikila-user-id');
+    let userId = null;
     
-    if (authError || !user) {
-      throw new Error('Invalid authentication token');
+    if (customUserId) {
+      // Verify the custom user exists in our users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', customUserId)
+        .single();
+      
+      if (!userError && userData) {
+        userId = customUserId;
+        console.log('✅ Custom authentication successful for user:', userId);
+      } else {
+        console.error('❌ Custom user not found:', customUserId);
+        throw new Error('Invalid user authentication');
+      }
+    } else {
+      // Try Supabase JWT authentication as fallback
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        throw new Error('No authentication provided');
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        throw new Error('Invalid authentication token');
+      }
+      
+      userId = user.id;
+      console.log('✅ Supabase JWT authentication successful for user:', userId);
     }
 
     const { action, pin, deviceId, deviceName } = await req.json();
-    const userId = user.id;
     const salt = userId; // Usar userId como salt único
 
     console.log(`🔐 PIN Management - Action: ${action}, User: ${userId}`);
