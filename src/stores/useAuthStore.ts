@@ -132,7 +132,8 @@ export const useAuthStore = create<AuthState>()(
           const response = await supabaseAuthService.verifyPhoneOtp({ phone, token: otp });
           console.log('AuthStore: Verification response:', response);
           
-          if (response.success && response.data) {
+          // Critical: Only proceed if response is truly successful
+          if (response.success === true && response.data && response.data.user) {
             const user = { ...response.data.user, name: response.data.user.full_name };
             console.log('AuthStore: Login successful for user:', user.id);
             
@@ -154,13 +155,22 @@ export const useAuthStore = create<AuthState>()(
 
             return { success: true, message: response.message };
           } else {
+            // Handle all failure cases consistently
             console.error('AuthStore: Verification failed:', response.message);
-            set({ error: response.message, isLoading: false });
-            return { success: false, message: response.message };
+            const errorMsg = response.message || 'Código OTP inválido ou expirado. Tente novamente.';
+            
+            set({ 
+              error: errorMsg, 
+              isLoading: false,
+              isAuthenticated: false,
+              user: null 
+            });
+            
+            return { success: false, message: errorMsg };
           }
         } catch (error: any) {
-          const errorMessage = error.message || 'Erro na verificação do OTP';
-          console.error('AuthStore: Verification error:', errorMessage);
+          const errorMessage = error.message || 'Erro na verificação do OTP. Tente novamente.';
+          console.error('AuthStore: Critical verification error:', errorMessage, error);
           
           set({
             isAuthenticated: false,
@@ -168,6 +178,7 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: errorMessage,
           });
+          
           return { success: false, message: errorMessage };
         }
       },

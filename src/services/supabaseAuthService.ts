@@ -197,7 +197,9 @@ class SupabaseAuthService {
    */
   async verifyPhoneOtp(otpData: VerifyPhoneOtpRequest): Promise<AuthServiceResponse<{ user: UserData; session: any }>> {
     try {
-      // Step 1: Verify OTP via Edge Function
+      console.log('SupabaseAuthService: Verifying OTP for phone:', otpData.phone);
+      
+      // Step 1: Verify OTP via Edge Function with enhanced error handling
       const { data, error } = await supabase.functions.invoke('verify-otp', {
         body: {
           phone: otpData.phone,
@@ -206,15 +208,29 @@ class SupabaseAuthService {
         }
       });
 
+      console.log('Edge function response:', { data, error });
+
+      // Check for HTTP errors first (500, timeout, etc.)
       if (error) {
-        console.error('Edge Function error:', error);
+        console.error('Edge function HTTP error:', error);
+        
+        // Handle different types of HTTP errors
+        if (error.message?.includes('FunctionsHttpError')) {
+          return {
+            success: false,
+            message: 'Erro interno no servidor. Tente novamente em alguns instantes.',
+          };
+        }
+        
         return {
           success: false,
           message: 'Erro na verificação. Tente novamente.',
         };
       }
 
+      // Check for successful response from edge function
       if (!data?.success) {
+        console.error('Edge function application error:', data);
         return {
           success: false,
           message: data?.error || 'Código OTP inválido ou expirado',
@@ -267,10 +283,22 @@ class SupabaseAuthService {
         },
       };
     } catch (error: any) {
-      console.error('Verify phone OTP error:', error);
+      console.error('Critical error in verifyPhoneOtp:', error);
+      
+      // Enhanced error handling for different scenarios
+      let errorMessage = 'Erro na verificação OTP';
+      
+      if (error.message?.includes('fetch')) {
+        errorMessage = 'Erro de conectividade. Verifique sua conexão e tente novamente.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Timeout na verificação. Tente novamente em alguns instantes.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       return {
         success: false,
-        message: 'Erro na verificação do OTP. Tente novamente.',
+        message: errorMessage,
       };
     }
   }
