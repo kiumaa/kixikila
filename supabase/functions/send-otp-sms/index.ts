@@ -132,10 +132,10 @@ const handler = async (req: Request): Promise<Response> => {
 // Function to send SMS via BulkSMS API
 async function sendSMS(phone: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const tokenId = Deno.env.get('BULKSMS_TOKEN_ID');
-    const tokenSecret = Deno.env.get('BULKSMS_TOKEN_SECRET');
+    const username = Deno.env.get('BULKSMS_USERNAME');
+    const password = Deno.env.get('BULKSMS_PASSWORD');
 
-    if (!tokenId || !tokenSecret) {
+    if (!username || !password) {
       return { success: false, error: 'BulkSMS credentials not configured' };
     }
 
@@ -148,7 +148,7 @@ async function sendSMS(phone: string, message: string): Promise<{ success: boole
       from: "KIXIKILA"
     };
 
-    const authHeader = 'Basic ' + btoa(`${tokenId}:${tokenSecret}`);
+    const authHeader = 'Basic ' + btoa(`${username}:${password}`);
 
     const response = await fetch('https://api.bulksms.com/v1/messages', {
       method: 'POST',
