@@ -10,12 +10,6 @@ max_rows = 1000
 [functions.production-health]
 verify_jwt = true
 
-[functions.get-audit-logs]
-verify_jwt = false
-
-[functions.security-alerts]
-verify_jwt = false
-
 [functions.manage-system-config]
 verify_jwt = true
 
