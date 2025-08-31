@@ -31,6 +31,46 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check if user exists or create one for registration
+    let user_id: string;
+    
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('phone', phone)
+      .single();
+    
+    if (existingUser) {
+      user_id = existingUser.id;
+    } else if (type === 'register') {
+      // Create new user for registration
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({
+          phone,
+          full_name: `User ${phone}`,
+          phone_verified: false,
+          is_active: true
+        })
+        .select('id')
+        .single();
+        
+      if (createError) {
+        console.error('User creation error:', createError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create user' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      user_id = newUser.id;
+    } else {
+      return new Response(
+        JSON.stringify({ error: 'User not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Generate 6-digit OTP
     const otp_code = Math.floor(100000 + Math.random() * 900000).toString();
     const expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -39,7 +79,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { error: otpError } = await supabase
       .from('otp_codes')
       .insert({
-        phone,
+        user_id,
         code: otp_code,
         type,
         expires_at: expires_at.toISOString(),

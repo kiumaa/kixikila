@@ -32,11 +32,25 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Verify OTP
+    // First find user by phone
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('phone', phone)
+      .single();
+      
+    if (userError || !userData) {
+      return new Response(
+        JSON.stringify({ error: 'User not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify OTP using user_id
     const { data: otpData, error: otpError } = await supabase
       .from('otp_codes')
       .select('*')
-      .eq('phone', phone)
+      .eq('user_id', userData.id)
       .eq('code', code)
       .eq('status', 'pending')
       .gt('expires_at', new Date().toISOString())
@@ -55,61 +69,37 @@ const handler = async (req: Request): Promise<Response> => {
       .update({ status: 'used' })
       .eq('id', otpData.id);
 
-    // Check if user exists
-    const { data: userData, error: userError } = await supabase
+    // Mark user as phone verified
+    const { data: updatedUser, error: updateError } = await supabase
       .from('users')
-      .select('*')
-      .eq('phone', phone)
+      .update({ 
+        phone_verified: true,
+        last_login: new Date().toISOString()
+      })
+      .eq('id', userData.id)
+      .select()
       .single();
-
-    let user = userData;
-
-    // If register type and user doesn't exist, create user
-    if (type === 'register' && userError) {
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({
-          phone,
-          full_name: `User ${phone}`,
-          phone_verified: true,
-          is_active: true
-        })
-        .select()
-        .single();
-
-      if (createError) {
-        console.error('User creation error:', createError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to create user' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      user = newUser;
-    }
-
-    if (!user) {
+      
+    if (updateError) {
+      console.error('User update error:', updateError);
       return new Response(
-        JSON.stringify({ error: 'User not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Failed to update user' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Update last login
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', user.id);
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        user: {
-          id: user.id,
-          phone: user.phone,
-          full_name: user.full_name,
-          role: user.role,
-          is_vip: user.is_vip
+        data: {
+          user: {
+            id: updatedUser.id,
+            phone: updatedUser.phone,
+            full_name: updatedUser.full_name,
+            role: updatedUser.role,
+            is_vip: updatedUser.is_vip
+          },
+          isNewUser: false
         }
       }),
       { 
