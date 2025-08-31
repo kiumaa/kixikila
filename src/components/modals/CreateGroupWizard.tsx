@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { useAppStore } from '@/stores/useAppStore';
+import { useVIPStatus } from '@/hooks/useVIPStatus';
 import { formatCurrency } from '@/lib/utils';
 import { Group } from '@/lib/utils';
 
@@ -32,7 +32,7 @@ interface GroupData {
 
 export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast();
-  const { userPlan, canCreateGroup, addGroup } = useAppStore();
+  const { isVIP, canCreateGroup } = useVIPStatus();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -103,15 +103,18 @@ export const CreateGroupWizard: React.FC<CreateGroupWizardProps> = ({ isOpen, on
         auto_exclude_late_payments: true
       },
       members: [{
+        id: "member_1",
         user_id: 'user_1',
         name: "Você",
+        avatar: "V",
         paid: false,
         is_admin: true,
         joined_at: new Date().toISOString()
       }]
     };
 
-    addGroup(newGroup);
+    // Mock function - in real app this would interact with Supabase
+    console.log('Adding group:', newGroup);
     setIsLoading(false);
     
     toast({

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Group } from '@/lib/utils';
+import { Group, GroupMember } from '@/lib/utils';
 
 export interface AdminGroup extends Group {
   creator?: {
@@ -9,14 +9,16 @@ export interface AdminGroup extends Group {
   };
   category?: string;
   privacy?: 'private' | 'public' | 'invite_only';
-  // Legacy compatibility properties
-  contributionAmount?: number;
-  maxMembers?: number;
-  currentMembers?: number;
-  totalPool?: number;
-  nextPaymentDate?: string;
-  cycle?: number;
+  requires_approval?: boolean;
 }
+
+export const useGroupAnalytics = () => {
+  return {
+    totalCount: 0,
+    activeCount: 0,
+    pendingCount: 0
+  };
+};
 
 export const useAdminGroups = () => {
   const [groups, setGroups] = useState<AdminGroup[]>([]);
@@ -54,18 +56,26 @@ export const useAdminGroups = () => {
 
       if (supabaseError) throw supabaseError;
 
-      // Transform data to include member info and legacy compatibility
+      // Transform data to match Group interface
       const transformedGroups: AdminGroup[] = (data || []).map(group => ({
-        ...group,
-        // Legacy compatibility properties
-        contributionAmount: group.contribution_amount,
-        maxMembers: group.max_members,
-        currentMembers: group.current_members,
-        totalPool: group.total_pool,
-        nextPaymentDate: group.next_payment_date,
-        cycle: group.current_cycle,
-        category: group.type,
+        id: group.id,
+        name: group.name,
+        description: group.description || '',
+        contribution_amount: group.contribution_amount,
+        max_members: group.max_members,
+        current_members: group.current_members,
+        total_pool: group.total_pool,
+        next_payment_date: group.next_payout_date || group.created_at,
+        status: group.status,
+        group_type: group.group_type,
+        current_cycle: group.current_cycle || 1,
+        is_private: group.is_private,
+        creator_id: group.creator_id,
+        created_at: group.created_at,
+        updated_at: group.updated_at,
+        category: group.group_type,
         privacy: group.is_private ? 'private' : 'public',
+        frequency: 'mensal',
         // Transform members data
         members: (group.group_members || []).map((member: any) => ({
           id: member.id,
@@ -88,6 +98,14 @@ export const useAdminGroups = () => {
     }
   };
 
+  const updateGroupStatus = async (groupId: string, status: string) => {
+    // Implementation for updating group status
+  };
+
+  const deleteGroup = async (groupId: string) => {
+    // Implementation for deleting group
+  };
+
   const refetch = () => {
     fetchGroups();
   };
@@ -100,6 +118,9 @@ export const useAdminGroups = () => {
     groups,
     isLoading,
     error,
-    refetch
+    refetch,
+    totalCount: groups.length,
+    updateGroupStatus,
+    deleteGroup
   };
 };

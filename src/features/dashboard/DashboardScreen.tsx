@@ -10,12 +10,11 @@ import { Avatar } from '@/components/design-system/Avatar';
 import { SkeletonCard } from '@/components/design-system/SkeletonCard';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
-import { useAppStore } from '@/store/useAppStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useUserData } from '@/hooks/useUserData';
 import { useUserGroups } from '@/hooks/useGroupData';
 import { useVIPStatus } from '@/hooks/useVIPStatus';
-import { PlanLimitNotice } from '@/components/common/PlanLimitNotice';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { PWAInstallBanner } from '@/components/common/PWAInstallBanner';
 import { toast } from '@/hooks/use-toast';
 
@@ -42,7 +41,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
 }) => {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
-  const { } = useAppStore();
+  const { } = {};
   const { user } = useAuthStore();
   const { userStats, isLoading: userLoading } = useUserData();
   const { groups, isLoading: groupsLoading } = useUserGroups();
@@ -230,8 +229,32 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
           </div>
         )}
 
-        {/* Plan Notice */}
-        {!isVIP && <PlanLimitNotice className="mb-4" onNavigateToVIP={onNavigateToVIP} />}
+        {!isVIP && (
+          <div className="mb-4">
+            <Card className="ios-card bg-gradient-to-r from-warning-subtle to-warning-subtle/50 border-warning/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-warning/20 rounded-xl flex items-center justify-center">
+                      <Crown className="w-5 h-5 text-warning" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold font-system text-warning-foreground">
+                        Upgrade para VIP
+                      </h3>
+                      <p className="text-xs text-warning-foreground/70">
+                        Grupos ilimitados e benefícios exclusivos
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="default" size="sm" className="ios-button" onClick={onNavigateToVIP}>
+                    Ver mais
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* VIP Banner - Only for non-VIP users who haven't reached limit */}
         {!isVIP && canCreateGroup() && (

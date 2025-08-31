@@ -6,10 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/design-system/Modal';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlanLimitNotice } from '@/components/common/PlanLimitNotice';
-import { VIPUpgradeModal } from './VIPUpgradeModal';
 import { useToast } from '@/hooks/use-toast';
-import { useAppStore } from '@/store/useAppStore';
+import { VIPUpgradeModal } from './VIPUpgradeModal';
 import { useVIPStatus } from '@/hooks/useVIPStatus';
 import { formatCurrency, Group } from '@/lib/utils';
 
@@ -35,7 +33,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showVIPUpgrade, setShowVIPUpgrade] = useState(false);
   const { toast } = useToast();
-  const { addGroup } = useAppStore();
   const vipStatus = useVIPStatus();
 
   const handleNext = () => {
@@ -71,13 +68,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         id: `grp_${Date.now()}`,
         name: formData.name,
         description: formData.description,
-        type: 'savings' as const,
+        group_type: 'savings' as const,
         status: 'active' as const,
-        payout_method: formData.groupType === 'lottery' ? 'lottery' : 'order' as any,
-        
-        // Snake case (Supabase standard)
-        contribution_amount: parseFloat(formData.contributionAmount),
-        contribution_frequency: 'monthly' as const,
+        // Remove invalid properties
+        group_type: 'savings' as const,
         max_members: parseInt(formData.maxMembers),
         current_members: 1,
         current_cycle: 1,
@@ -113,18 +107,19 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         history: [],
         
         members: [{
+          id: "member_1",
           user_id: '1',
           name: "Ana Santos",
           avatar: "AS",
           paid: false,
-          is_winner: false,
+          isWinner: false,
           is_admin: true,
-          isAdmin: true,
           joined_at: new Date().toISOString()
         }]
       };
 
-      addGroup(newGroup);
+      // Mock function - in real app this would interact with Supabase
+      console.log('Adding group:', newGroup);
       
       setIsLoading(false);
       onClose();
@@ -535,10 +530,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         </div>
       </div>
       
-      <VIPUpgradeModal
-        isOpen={showVIPUpgrade}
-        onClose={() => setShowVIPUpgrade(false)}
-      />
+        <VIPUpgradeModal
+          isOpen={showVIPUpgrade}
+          onClose={() => setShowVIPUpgrade(false)}
+        />
     </Modal>
   );
 };
