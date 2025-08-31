@@ -47,24 +47,57 @@ const HomePage = () => {
               mais rapidamente com total segurança e transparência.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground px-10 py-6 text-xl font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 animate-hover-scale"
-                onClick={() => navigate('/entrar?type=register')}
-              >
-                <Zap className="mr-3 h-6 w-6" />
-                Começar Agora
-                <ArrowRight className="ml-3 h-6 w-6" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="px-10 py-6 text-xl font-semibold border-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all duration-300"
-                onClick={() => navigate('/entrar?type=login')}
-              >
-                Já tenho conta
-              </Button>
+            <div className="space-y-8 animate-fade-in">
+              {/* Primary Actions */}
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground px-10 py-6 text-xl font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 animate-hover-scale"
+                  onClick={() => navigate('/entrar?type=register')}
+                >
+                  <Zap className="mr-3 h-6 w-6" />
+                  Começar Agora
+                  <ArrowRight className="ml-3 h-6 w-6" />
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  className="px-10 py-6 text-xl font-semibold border-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all duration-300"
+                  onClick={() => navigate('/entrar?type=login')}
+                >
+                  Já tenho conta
+                </Button>
+              </div>
+
+              {/* Demo Auth Section */}
+              <div className="bg-muted/30 backdrop-blur-sm rounded-2xl p-6 max-w-md mx-auto">
+                <div className="text-center mb-4">
+                  <Badge variant="secondary" className="mb-2">🚧 DEMO - Fase 1</Badge>
+                  <h3 className="text-lg font-semibold text-foreground">Fluxo OTP com Mocks</h3>
+                  <p className="text-sm text-muted-foreground">Sistema simplificado para testes</p>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/auth/login')}
+                    className="w-full"
+                  >
+                    🔐 Mock Login
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/auth/signup')}
+                    className="w-full"
+                  >
+                    📝 Mock Signup
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    💡 Use código: <strong>123456</strong>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
