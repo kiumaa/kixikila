@@ -23,7 +23,9 @@ const sendTwilioOtp = async (phone: string): Promise<{ success: boolean; sid?: s
   }
 
   try {
+    // Accept international phone numbers (must start with +)
     const formattedPhone = phone.startsWith('+') ? phone : `+351${phone}`;
+    console.log('📱 Sending OTP to international number:', formattedPhone);
     
     const response = await fetch(
       `https://verify.twilio.com/v2/Services/${verifyServiceSid}/Verifications`,

@@ -12,32 +12,27 @@ interface VerifyOtpRequest {
   type: 'phone_verification' | 'login';
 }
 
-// Verify OTP using Twilio Verify API
+// Verify OTP using Twilio Verify API - PRODUCTION MODE
 const verifyTwilioOtp = async (phone: string, code: string): Promise<{ success: boolean; error?: string }> => {
   const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
   const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
   const verifyServiceSid = Deno.env.get('TWILIO_VERIFY_SERVICE_SID');
   
-  console.log('Twilio credentials check:', {
+  console.log('🔐 Twilio credentials check:', {
     accountSid: accountSid ? 'present' : 'missing',
     authToken: authToken ? 'present' : 'missing',
     verifyServiceSid: verifyServiceSid ? 'present' : 'missing'
   });
   
   if (!accountSid || !authToken || !verifyServiceSid) {
-    console.error('Twilio credentials not configured properly');
-    return { success: false, error: 'Serviço SMS temporariamente indisponível' };
-  }
-
-  // Development bypass: if code is "123456", allow it for testing
-  if (code === '123456') {
-    console.log('Development bypass: accepting code 123456');
-    return { success: true };
+    console.error('❌ Twilio credentials missing - check environment variables');
+    return { success: false, error: 'Serviço de autenticação temporariamente indisponível' };
   }
 
   try {
+    // Ensure phone has country code (accept international numbers)
     const formattedPhone = phone.startsWith('+') ? phone : `+351${phone}`;
-    console.log('Attempting Twilio verification for:', formattedPhone, 'with service:', verifyServiceSid);
+    console.log('📞 Attempting Twilio verification for:', formattedPhone, 'with service:', verifyServiceSid);
     
     const response = await fetch(
       `https://verify.twilio.com/v2/Services/${verifyServiceSid}/VerificationCheck`,

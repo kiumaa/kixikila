@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Phone, Lock, Shield, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PhoneInput, validatePortuguesePhone } from '@/components/ui/phone-input';
+import { InternationalPhoneInput, Country } from '@/components/ui/international-phone-input';
 import { OtpInput } from '@/components/ui/otp-input';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
@@ -20,8 +20,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onSuccess,
   onRegister
 }) => {
-  const [rawPhone, setRawPhone] = useState('');
+  const [fullPhone, setFullPhone] = useState('');
   const [formattedPhone, setFormattedPhone] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [phoneValid, setPhoneValid] = useState(false);
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
@@ -68,10 +69,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!rawPhone || !phoneValid) {
+    if (!fullPhone || !phoneValid || !selectedCountry) {
       toast({
         title: "Número inválido",
-        description: "Por favor, insira um número de telefone português válido",
+        description: `Por favor, insira um número de telefone válido para ${selectedCountry?.name || 'o país selecionado'}`,
         variant: "destructive",
       });
       return;
@@ -90,7 +91,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
 
     try {
-      const fullPhone = `+351${rawPhone}`;
       await sendPhoneOtp(fullPhone);
       
       // Record attempt after successful send
@@ -101,7 +101,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       setOtpTimer(60);
       toast({
         title: "Código enviado! 📱",
-        description: `Código OTP enviado para +351 ${formattedPhone}`,
+        description: `Código OTP enviado para ${fullPhone}`,
       });
     } catch (error) {
       // Error is handled by the store and useEffect
@@ -140,10 +140,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
 
     setIsVerifying(true);
-    console.log('Starting OTP verification for:', `+351${rawPhone}`, 'OTP:', otp);
+    console.log('Starting OTP verification for:', fullPhone, 'OTP:', otp);
 
     try {
-      const fullPhone = `+351${rawPhone}`;
       const result = await verifyPhoneOtp(fullPhone, otp);
       
       console.log('Verification result:', result);
@@ -187,7 +186,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
 
     try {
-      const fullPhone = `+351${rawPhone}`;
       await sendPhoneOtp(fullPhone);
       
       // Record attempt after successful send
@@ -197,7 +195,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       setOtpTimer(60);
       toast({
         title: "Código reenviado! 📱",
-        description: `Novo código OTP enviado para +351 ${formattedPhone}`,
+        description: `Novo código OTP enviado para ${fullPhone}`,
       });
     } catch (error) {
       // Error is handled by the store and useEffect
@@ -212,9 +210,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     verifyRateLimit.reset();
   };
 
-  const handlePhoneChange = (rawValue: string, formatted: string, isValid: boolean) => {
-    setRawPhone(rawValue);
+  const handlePhoneChange = (fullPhoneValue: string, formatted: string, country: Country, isValid: boolean) => {
+    setFullPhone(fullPhoneValue);
     setFormattedPhone(formatted);
+    setSelectedCountry(country);
     setPhoneValid(isValid);
   };
 
@@ -249,19 +248,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             </h1>
             <p className="text-muted-foreground">
               {step === 'phone' 
-                ? 'Entre com seu número de telefone português' 
-                : `Código enviado para +351 ${formattedPhone}`
+                ? 'Entre com seu número de telefone internacional' 
+                : `Código enviado para ${fullPhone}`
               }
             </p>
-            
-            {/* Development mode notice */}
-            {step === 'otp' && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-700">
-                  💡 <strong>Modo de desenvolvimento:</strong> Use o código <code className="font-mono bg-blue-100 px-1 rounded">123456</code> para testar
-                </p>
-              </div>
-            )}
             
             {/* Rate limit warnings */}
             {step === 'phone' && !otpRateLimit.checkLimit().allowed && (
@@ -286,25 +276,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           {step === 'phone' ? (
             <form onSubmit={handleSendOtp} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Número de telefone
-                  <span className="text-xs text-muted-foreground ml-2">
-                    (formato: 91/92/93/96 XXX XXX)
-                  </span>
+                <label className="block text-sm font-medium text-foreground mb-3">
+                  Número de telefone internacional
                 </label>
-                <PhoneInput
-                  value={rawPhone}
+                <InternationalPhoneInput
+                  value={fullPhone}
                   onChange={handlePhoneChange}
-                  placeholder="91 234 567"
                   autoComplete="tel"
                   disabled={isLoading}
+                  defaultCountry="PT"
                 />
-                {rawPhone && !phoneValid && (
-                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                    <span>⚠️</span>
-                    Número português inválido. Use 91/92/93/96 seguido de 7 dígitos.
-                  </p>
-                )}
               </div>
 
               <Button
@@ -327,6 +308,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               {otpRateLimit.checkLimit().allowed && otpRateLimit.attemptsLeft < 3 && (
                 <p className="text-xs text-amber-600 text-center">
                   ⚠️ {otpRateLimit.attemptsLeft} tentativas restantes
+                </p>
+              )}
+              
+              {selectedCountry && (
+                <p className="text-xs text-center text-muted-foreground">
+                  🌍 País selecionado: {selectedCountry.flag} {selectedCountry.name}
                 </p>
               )}
 
