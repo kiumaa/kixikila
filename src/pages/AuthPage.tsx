@@ -18,6 +18,11 @@ const AuthPage = () => {
     getNextRoute 
   } = useAuthStore();
 
+  // Detectar se é signup ou login baseado na URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const authType = searchParams.get('type') || 'login'; // default para login
+  const isSignup = authType === 'register';
+
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
@@ -42,6 +47,11 @@ const AuthPage = () => {
 
   const handleBack = () => {
     window.location.href = '/';
+  };
+
+  const toggleAuthType = () => {
+    const newType = isSignup ? 'login' : 'register';
+    window.location.href = `/entrar?type=${newType}`;
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -113,15 +123,25 @@ const AuthPage = () => {
         </button>
 
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-xl">
+          <div className={`w-20 h-20 mx-auto mb-4 rounded-3xl flex items-center justify-center shadow-xl ${
+            isSignup 
+              ? 'bg-gradient-to-br from-emerald-500 to-green-500' 
+              : 'bg-gradient-to-br from-indigo-500 to-purple-500'
+          }`}>
             <Phone className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            {step === 'phone' ? 'Entrar' : 'Verificar Código'}
+            {step === 'phone' 
+              ? (isSignup ? 'Criar Conta' : 'Entrar na Conta')
+              : 'Verificar Código'
+            }
           </h1>
           <p className="text-muted-foreground">
             {step === 'phone' 
-              ? 'Digite o seu número de telemóvel' 
+              ? (isSignup 
+                  ? 'Digite o seu número para criar uma conta nova' 
+                  : 'Digite o seu número de telemóvel registado'
+                )
               : 'Digite o código que recebeu por SMS'
             }
           </p>
@@ -147,16 +167,26 @@ const AuthPage = () => {
               disabled={!phone || isLoading}
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Enviar Código SMS
+              {isSignup ? 'Criar Conta com SMS' : 'Enviar Código SMS'}
             </Button>
 
-            <div className="text-center">
+            <div className="text-center space-y-3">
               <p className="text-sm text-muted-foreground">
-                Ao continuar, aceita os nossos{' '}
+                {isSignup ? 'Ao criar conta, aceita os nossos' : 'Ao continuar, aceita os nossos'}{' '}
                 <button type="button" className="text-primary hover:underline">
                   Termos de Serviço
                 </button>
               </p>
+              
+              <div className="pt-2 border-t">
+                <button
+                  type="button"
+                  onClick={toggleAuthType}
+                  className="text-sm text-primary hover:underline font-medium"
+                >
+                  {isSignup ? 'Já tem conta? Entrar aqui' : 'Não tem conta? Criar conta aqui'}
+                </button>
+              </div>
             </div>
           </form>
         ) : (
@@ -183,7 +213,7 @@ const AuthPage = () => {
                 disabled={otpCode.length !== 6 || isLoading}
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Verificar e Entrar
+                {isSignup ? 'Criar Conta e Entrar' : 'Verificar e Entrar'}
               </Button>
             </form>
 
