@@ -23,7 +23,8 @@ import {
   TermsScreen,
   VIPManagementScreen,
   GroupDetailsScreen,
-  NotificationsScreen
+  NotificationsScreen,
+  OnboardingScreen
 } from '@/routes/LazyRoutes';
 
 // Route wrapper components to handle navigation

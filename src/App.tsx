@@ -3,7 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import AppPage from "./pages/AppPage";
@@ -15,9 +14,6 @@ import AdminProtectedRoute from "./components/auth/AdminProtectedRoute";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Initialize Supabase auth and listen to state changes
-  useSupabaseAuth();
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

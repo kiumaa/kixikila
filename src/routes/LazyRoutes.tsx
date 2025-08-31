@@ -91,12 +91,6 @@ export const LoginScreen = lazy(() =>
   }))
 );
 
-export const RegisterScreen = lazy(() => 
-  import('@/components/screens/RegisterScreen').then(module => ({ 
-    default: module.RegisterScreen 
-  }))
-);
-
 // Lazy load modals
 export const CreateGroupModal = lazy(() => 
   import('@/components/modals/CreateGroupModal').then(module => ({ 
