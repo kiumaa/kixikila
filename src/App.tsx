@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import AppPage from "./pages/AppPage";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
@@ -50,7 +52,26 @@ const App = () => {
               } 
             />
             
-            {/* Authentication Page - Login/Register */}
+            {/* Authentication Pages */}
+            <Route 
+              path="/login" 
+              element={
+                <ProtectedRoute requireAuth={false}>
+                  <LoginPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/signup" 
+              element={
+                <ProtectedRoute requireAuth={false}>
+                  <SignupPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Legacy Auth Route - Redirect to login */}
             <Route 
               path="/entrar" 
               element={

@@ -52,7 +52,7 @@ const HomePage = () => {
               <Button 
                 size="lg" 
                 className="bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground px-10 py-6 text-xl font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 animate-hover-scale"
-                onClick={() => navigate('/entrar?type=register')}
+                onClick={() => navigate('/signup')}
               >
                 <Zap className="mr-3 h-6 w-6" />
                 Começar Agora
@@ -62,7 +62,7 @@ const HomePage = () => {
                 size="lg" 
                 variant="outline"
                 className="px-10 py-6 text-xl font-semibold border-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all duration-300"
-                onClick={() => navigate('/entrar?type=login')}
+                onClick={() => navigate('/login')}
               >
                 Já tenho conta
               </Button>
@@ -186,7 +186,7 @@ const HomePage = () => {
               size="lg"
               variant="secondary"
               className="px-10 py-6 text-xl font-semibold bg-white text-primary hover:bg-gray-100"
-              onClick={() => navigate('/entrar?type=register')}
+              onClick={() => navigate('/signup')}
             >
               <Crown className="mr-3 h-6 w-6" />
               Criar Conta Grátis
