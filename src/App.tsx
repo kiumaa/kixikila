@@ -10,6 +10,7 @@ import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 import OnboardingPage from "./pages/OnboardingPage";
 import KycPage from "./pages/KycPage";
+import GroupDetailsPage from "./pages/GroupDetailsPage";
 import UserProtectedRoute from "./components/auth/UserProtectedRoute";
 import AdminProtectedRoute from "./components/auth/AdminProtectedRoute";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -73,6 +74,18 @@ const App = () => {
                 <ProtectedRoute>
                   <KycPage />
                 </ProtectedRoute>
+              } 
+            />
+            
+            {/* Group Details Page */}
+            <Route 
+              path="/groups/:groupId" 
+              element={
+                <UserProtectedRoute>
+                  <RequireKyc>
+                    <GroupDetailsPage />
+                  </RequireKyc>
+                </UserProtectedRoute>
               } 
             />
             
