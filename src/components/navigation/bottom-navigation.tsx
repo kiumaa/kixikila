@@ -1,14 +1,14 @@
 'use client'
 
 import { Home, Wallet, Plus, Users, User } from 'lucide-react'
-import { usePathname } from 'next/navigation'
-import Link from 'next/link'
+import { useLocation, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { CreateGroupModal } from '@/components/modals/create-group-modal'
 
 export function BottomNavigation() {
-  const pathname = usePathname()
+  const location = useLocation()
+  const pathname = location.pathname
   const [showCreateGroup, setShowCreateGroup] = useState(false)
 
   const navItems = [
@@ -45,7 +45,7 @@ export function BottomNavigation() {
               return (
                 <Link
                   key={item.key}
-                  href={item.path!}
+                  to={item.path!}
                   className={`relative flex flex-col items-center gap-1 py-3 px-4 rounded-xl transition-all duration-200 ios-button ${
                     isActive 
                       ? 'text-primary bg-primary/10 scale-105' 

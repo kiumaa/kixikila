@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,9 +10,10 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 export function AuthScreen() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const mode = searchParams?.get('modo') || 'entrar'
+  const navigate = useNavigate()
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+  const mode = searchParams.get('modo') || 'entrar'
   
   const [currentStep, setCurrentStep] = useState<'phone' | 'otp' | 'register'>('phone')
   const [phone, setPhone] = useState('')
@@ -78,7 +79,7 @@ export function AuthScreen() {
       if (data.isNewUser) {
         setCurrentStep('register')
       } else {
-        router.push('/dashboard')
+        navigate('/dashboard')
       }
     } catch (error: any) {
       toast.error(error.message || 'Código inválido')
@@ -109,7 +110,7 @@ export function AuthScreen() {
       
       if (error) throw error
       
-      router.push('/dashboard')
+      navigate('/dashboard')
       toast.success('Conta criada com sucesso!')
     } catch (error: any) {
       toast.error(error.message || 'Erro ao criar conta')
@@ -123,7 +124,7 @@ export function AuthScreen() {
       <Card className="w-full max-w-md transition-all duration-300">
         <CardHeader>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors w-fit"
           >
             <ArrowLeft className="w-4 h-4" />
