@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Crown, Calendar, CreditCard, Star, Gift, 
-  TrendingUp, Zap, Award, Shield, CheckCircle, X, Lock
+  TrendingUp, Zap, Award, Shield, CheckCircle, X, Lock,
+  RefreshCw
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { Badge } from '@/components/ui/badge';
-import { mockUser, formatCurrency, formatDate } from '@/data/mockData';
-import { useAppStore } from '@/store/useAppStore';
+import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
+import { formatCurrency, formatDate } from '@/data/mockData';
+import { useVIPStatus } from '@/hooks/useVIPStatus';
+import { useStripeIntegration } from '@/hooks/useStripeIntegration';
 import { toast } from '@/hooks/use-toast';
 
 interface VIPManagementScreenProps {
@@ -16,21 +19,45 @@ interface VIPManagementScreenProps {
 }
 
 export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack }) => {
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
-  const { userPlan, togglePlan, getGroupCount } = useAppStore();
-  const isVIP = userPlan === 'vip';
-  const groupCount = getGroupCount();
+  const [selectedPlan, setSelectedPlan] = useState<'vip_monthly' | 'vip_yearly'>('vip_yearly');
+  const { 
+    isVIP, 
+    planType, 
+    expiryDate, 
+    loading: statusLoading, 
+    groupCount, 
+    refreshStatus 
+  } = useVIPStatus();
+  
+  const { 
+    createVIPCheckout, 
+    openCustomerPortal, 
+    loading: stripeLoading 
+  } = useStripeIntegration();
 
-  const handlePlanToggle = () => {
-    togglePlan();
-    const newPlan = userPlan === 'free' ? 'vip' : 'free';
-    
-    toast({
-      title: "Plano alterado com sucesso!",
-      description: newPlan === 'vip' 
-        ? "Bem-vindo ao Plano VIP! Agora pode criar grupos ilimitados."
-        : "Plano alterado para Gratuito. Máximo de 2 grupos ativos.",
-    });
+  // Refresh status on mount
+  useEffect(() => {
+    refreshStatus();
+  }, [refreshStatus]);
+
+  const handleUpgrade = async () => {
+    const result = await createVIPCheckout(selectedPlan);
+    if (result.success) {
+      toast({
+        title: "Redirecionado para o pagamento",
+        description: "Complete o seu upgrade no Stripe.",
+      });
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    const result = await openCustomerPortal();
+    if (result.success) {
+      toast({
+        title: "Portal de gestão aberto",
+        description: "Pode gerir a sua subscrição no Stripe.",
+      });
+    }
   };
 
   const vipFeatures = [
@@ -67,17 +94,30 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
   ];
 
   const plans = {
-    monthly: {
+    vip_monthly: {
       price: 9.99,
       period: "mês",
-      savings: null
+      savings: null,
+      name: "VIP Mensal"
     },
-    yearly: {
-      price: 89.99,
+    vip_yearly: {
+      price: 99.99,
       period: "ano",
-      savings: "Poupa 25%"
+      savings: "Poupa €19.89",
+      name: "VIP Anual"
     }
   };
+
+  if (statusLoading) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-muted-foreground">A carregar estado VIP...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface pb-24 animate-fade-in">
@@ -115,7 +155,7 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
                   </h2>
                    <p className="text-muted-foreground text-sm font-system">
                      {isVIP 
-                       ? `Válido até ${formatDate(mockUser.vipExpiry!)}`
+                       ? expiryDate ? `Válido até ${formatDate(expiryDate)}` : 'Subscrição ativa'
                        : 'Participa em até 2 grupos por convite.'
                      }
                    </p>
@@ -144,13 +184,35 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
             {isVIP ? (
               <div className="bg-warning/20 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-system text-foreground">Próxima renovação</span>
+                  <span className="text-sm font-system text-foreground">
+                    {planType === 'vip_yearly' ? 'Subscrição Anual' : 'Subscrição Mensal'}
+                  </span>
                   <span className="text-sm font-bold font-system text-foreground">
-                    {formatCurrency(89.99)}
+                    {planType === 'vip_yearly' ? formatCurrency(99.99) : formatCurrency(9.99)}
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Renovação automática em {formatDate(mockUser.vipExpiry!)}
+                  {expiryDate ? `Renovação em ${formatDate(expiryDate)}` : 'Subscrição ativa'}
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={handleManageSubscription}
+                    disabled={stripeLoading}
+                  >
+                    <CreditCard className="w-3 h-3 mr-1" />
+                    Gerir
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={refreshStatus}
+                    disabled={statusLoading}
+                  >
+                    <RefreshCw className={`w-3 h-3 mr-1 ${statusLoading ? 'animate-spin' : ''}`} />
+                    Atualizar
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -216,9 +278,9 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
             {/* Plan Toggle */}
             <div className="flex bg-surface rounded-xl p-1 mb-6">
               <button
-                onClick={() => setSelectedPlan('monthly')}
+                onClick={() => setSelectedPlan('vip_monthly')}
                 className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium font-system transition-all ${
-                  selectedPlan === 'monthly'
+                  selectedPlan === 'vip_monthly'
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground'
                 }`}
@@ -226,17 +288,17 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
                 Mensal
               </button>
               <button
-                onClick={() => setSelectedPlan('yearly')}
+                onClick={() => setSelectedPlan('vip_yearly')}
                 className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium font-system transition-all relative ${
-                  selectedPlan === 'yearly'
+                  selectedPlan === 'vip_yearly'
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground'
                 }`}
               >
                 Anual
-                {plans.yearly.savings && (
+                {plans.vip_yearly.savings && (
                   <span className="absolute -top-2 -right-2 bg-success text-success-foreground text-xs px-2 py-0.5 rounded-full">
-                    {plans.yearly.savings}
+                    {plans.vip_yearly.savings}
                   </span>
                 )}
               </button>
@@ -262,28 +324,45 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
             <div className="space-y-3">
               {isVIP ? (
                 <>
-                  <Button variant="outline" className="w-full ios-button">
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Alterar Plano
-                  </Button>
                   <Button 
-                    variant="destructive" 
+                    variant="outline" 
                     className="w-full ios-button"
-                    onClick={handlePlanToggle}
+                    onClick={handleManageSubscription}
+                    disabled={stripeLoading}
                   >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancelar Subscrição VIP
+                    {stripeLoading ? (
+                      <LoadingSpinner size="sm" className="mr-2" />
+                    ) : (
+                      <CreditCard className="w-4 h-4 mr-2" />
+                    )}
+                    Gerir Subscrição
                   </Button>
+                  <div className="bg-success/10 rounded-xl p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Crown className="w-4 h-4 text-success" />
+                      <span className="text-sm font-medium text-success">
+                        Subscrição VIP Ativa
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Aproveite todas as funcionalidades premium
+                    </p>
+                  </div>
                 </>
               ) : (
                 <>
                   <Button 
                     variant="default" 
                     className="w-full ios-button text-lg font-semibold py-4"
-                    onClick={handlePlanToggle}
+                    onClick={handleUpgrade}
+                    disabled={stripeLoading}
                   >
-                    <Crown className="w-5 h-5 mr-2" />
-                    Assinar Plano VIP
+                    {stripeLoading ? (
+                      <LoadingSpinner size="sm" className="mr-2" />
+                    ) : (
+                      <Crown className="w-5 h-5 mr-2" />
+                    )}
+                    Assinar {plans[selectedPlan].name}
                   </Button>
                   <div className="bg-muted/50 rounded-xl p-4 text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
@@ -311,18 +390,18 @@ export const VIPManagementScreen: React.FC<VIPManagementScreenProps> = ({ onBack
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-surface rounded-lg p-3 text-center">
                 <div className="text-2xl font-bold font-system text-primary">
-                  {mockUser.activeGroups}
+                  {isVIP ? '∞' : `${groupCount}/2`}
                 </div>
                 <div className="text-xs text-muted-foreground font-system mt-1">
-                  Grupos Ativos
+                  Grupos Permitidos
                 </div>
               </div>
               <div className="bg-surface rounded-lg p-3 text-center">
                 <div className="text-2xl font-bold font-system text-success">
-                  {formatCurrency(mockUser.totalSaved)}
+                  {isVIP ? 'Premium' : 'Básico'}
                 </div>
                 <div className="text-xs text-muted-foreground font-system mt-1">
-                  Total Poupado
+                  Nível da Conta
                 </div>
               </div>
             </div>

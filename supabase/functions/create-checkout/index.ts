@@ -45,8 +45,17 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Get request body for plan information
-    const { plan = 'vip_monthly', amount = 999 } = await req.json();
-    logStep("Request data", { plan, amount });
+    const { plan_type = 'vip_monthly', amount } = await req.json();
+    
+    // Determine correct amount based on plan
+    let finalAmount;
+    if (plan_type === 'vip_yearly') {
+      finalAmount = 9999; // €99.99
+    } else {
+      finalAmount = 999;  // €9.99
+    }
+    
+    logStep("Request data", { plan: plan_type, amount: finalAmount });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
@@ -70,13 +79,13 @@ serve(async (req) => {
           price_data: {
             currency: "eur",
             product_data: { 
-              name: plan === 'vip_monthly' ? "KIXIKILA VIP Mensal" : "KIXIKILA VIP Anual",
-              description: plan === 'vip_monthly' 
+              name: plan_type === 'vip_monthly' ? "KIXIKILA VIP Mensal" : "KIXIKILA VIP Anual",
+              description: plan_type === 'vip_monthly' 
                 ? "Grupos ilimitados, relatórios avançados e suporte prioritário"
                 : "Grupos ilimitados, relatórios avançados e suporte prioritário (12 meses)"
             },
-            unit_amount: amount, // amount in cents
-            ...(plan === 'vip_annual' ? { 
+            unit_amount: finalAmount, // amount in cents
+            ...(plan_type === 'vip_yearly' ? { 
               recurring: { interval: "year" } 
             } : { 
               recurring: { interval: "month" } 
@@ -86,11 +95,11 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/app?upgrade=success`,
-      cancel_url: `${origin}/app/vip-management?upgrade=cancelled`,
+      success_url: `${origin}/payment/success?upgrade=success`,
+      cancel_url: `${origin}/app?upgrade=cancelled`,
       metadata: {
         user_id: user.id,
-        plan: plan,
+        plan: plan_type,
       },
     });
 

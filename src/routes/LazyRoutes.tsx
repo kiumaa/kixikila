@@ -85,6 +85,12 @@ export const OnboardingScreen = lazy(() =>
   }))
 );
 
+export const PaymentSuccessPage = lazy(() => 
+  import('@/pages/PaymentSuccessPage').then(module => ({ 
+    default: module.PaymentSuccessPage 
+  }))
+);
+
 export const LoginScreen = lazy(() => 
   import('@/features/auth/LoginScreen').then(module => ({ 
     default: module.LoginScreen 

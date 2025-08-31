@@ -3,41 +3,62 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useStripeIntegration } from '@/hooks/useStripeIntegration';
+import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
+import { useVIPStatus } from '@/hooks/useVIPStatus';
 import { CheckCircle, ArrowRight, Crown, Gift, Home } from 'lucide-react';
 
 export const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { checkSubscription, loading } = useStripeIntegration();
-  const [isVIP, setIsVIP] = useState(false);
+  const { isVIP, refreshStatus, loading } = useVIPStatus();
+  const [isVerifying, setIsVerifying] = useState(true);
 
   const sessionId = searchParams.get('session_id');
-  const isSubscription = searchParams.get('type') === 'subscription';
+  const upgrade = searchParams.get('upgrade');
 
   useEffect(() => {
-    // Auto-refresh subscription status after successful payment
-    if (sessionId) {
-      const refreshStatus = async () => {
-        const status = await checkSubscription();
-        if (status?.is_vip) {
-          setIsVIP(true);
-        }
-      };
-      
-      // Delay to allow Stripe webhook processing
-      const timeoutId = setTimeout(refreshStatus, 2000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [sessionId, checkSubscription]);
+    const verifyPayment = async () => {
+      if (sessionId || upgrade === 'success') {
+        // Refresh VIP status to get updated subscription
+        await refreshStatus();
+        
+        // Small delay to allow webhook processing
+        setTimeout(() => {
+          setIsVerifying(false);
+        }, 1500);
+      } else {
+        setIsVerifying(false);
+      }
+    };
+
+    verifyPayment();
+  }, [sessionId, upgrade, refreshStatus]);
 
   const handleContinue = () => {
     if (isVIP) {
-      navigate('/profile');
+      navigate('/app/profile/vip-management');
     } else {
-      navigate('/wallet');
+      navigate('/app/wallet');
     }
   };
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center p-6">
+        <Card className="max-w-md w-full p-8 text-center">
+          <div className="mb-6">
+            <LoadingSpinner size="lg" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            A verificar pagamento...
+          </h2>
+          <p className="text-gray-600">
+            Aguarde enquanto confirmamos a sua transação
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center p-6">
@@ -56,7 +77,7 @@ export const PaymentSuccessPage = () => {
 
         {/* Success Message */}
         <h1 className="text-2xl font-bold text-gray-900 mb-3">
-          Pagamento Confirmado!
+          {isVIP ? '🎉 Bem-vindo ao VIP!' : 'Pagamento Confirmado!'}
         </h1>
         
         {isVIP ? (
@@ -133,7 +154,7 @@ export const PaymentSuccessPage = () => {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/app/dashboard')}
           >
             <Home className="w-4 h-4 mr-2" />
             Voltar ao Início

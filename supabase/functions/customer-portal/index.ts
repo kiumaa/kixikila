@@ -58,7 +58,7 @@ serve(async (req) => {
     // Create customer portal session
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/profile`,
+      return_url: `${origin}/app/profile/vip-management`,
     });
 
     logStep("Customer portal session created", { 

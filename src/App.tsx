@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import OnboardingPage from "./pages/OnboardingPage";
 import KycPage from "./pages/KycPage";
 import GroupDetailsPage from "./pages/GroupDetailsPage";
+import { PaymentSuccessPage } from "./pages/PaymentSuccessPage";
 import UserProtectedRoute from "./components/auth/UserProtectedRoute";
 import AdminProtectedRoute from "./components/auth/AdminProtectedRoute";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -87,6 +88,12 @@ const App = () => {
                   </RequireKyc>
                 </UserProtectedRoute>
               } 
+            />
+            
+            {/* Payment Success - Public route */}
+            <Route 
+              path="/payment/success" 
+              element={<PaymentSuccessPage />} 
             />
             
             {/* Main App - User Protected with KYC requirement */}

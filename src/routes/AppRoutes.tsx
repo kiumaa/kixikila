@@ -24,7 +24,8 @@ import {
   VIPManagementScreen,
   GroupDetailsScreen,
   NotificationsScreen,
-  OnboardingScreen
+  OnboardingScreen,
+  PaymentSuccessPage
 } from '@/routes/LazyRoutes';
 
 // Route wrapper components to handle navigation
