@@ -132,11 +132,17 @@ const AuthPage = () => {
   };
 
   const handlePinSetupComplete = () => {
-    window.location.href = '/app';
+    // After PIN setup, redirect to dashboard
+    setTimeout(() => {
+      window.location.href = '/app/dashboard';
+    }, 500);
   };
 
   const handlePinUnlockSuccess = () => {
-    window.location.href = '/app';
+    // After PIN unlock, redirect to dashboard  
+    setTimeout(() => {
+      window.location.href = '/app/dashboard';
+    }, 500);
   };
 
   const handlePinFallbackToOtp = () => {

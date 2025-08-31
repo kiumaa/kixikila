@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import supabaseAuthService from '../services/supabaseAuthService';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface User {
   id: string;
@@ -28,6 +29,8 @@ interface AuthState {
   
   // Actions
   login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; message: string }>;
+  loginWithPhone: (phone: string) => Promise<{ success: boolean; message: string }>;
+  verifyPin: (pin: string) => Promise<{ success: boolean; message: string }>;
   sendPhoneOtp: (phone: string) => Promise<{ success: boolean; message: string }>;
   verifyPhoneOtp: (phone: string, otp: string) => Promise<{ success: boolean; message: string }>;
   register: (userData: {
@@ -59,6 +62,83 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
+  // PIN and device management
+  verifyPin: async (pin: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const deviceId = localStorage.getItem('kixikila_device_id') || crypto.randomUUID();
+      const customUserId = localStorage.getItem('kixikila_user_id');
+      
+      if (!customUserId) {
+        throw new Error('Utilizador não está autenticado');
+      }
+
+      const { data, error } = await supabase.functions.invoke('pin-management', {
+        body: {
+          action: 'verify',
+          pin,
+          deviceId
+        },
+        headers: {
+          'x-kixikila-user-id': customUserId
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        // Get user data from our custom session
+        const customSession = localStorage.getItem('kixikila_custom_session');
+        if (customSession) {
+          const sessionData = JSON.parse(customSession);
+          const user = { ...sessionData.user, name: sessionData.user.full_name };
+          
+          set({
+            isAuthenticated: true,
+            user,
+            isLoading: false,
+            error: null,
+          });
+
+          setTimeout(() => {
+            if (user.role === 'admin') {
+              window.location.href = '/admin/dashboard';
+            } else {
+              window.location.href = '/app/dashboard';
+            }
+          }, 100);
+
+          return { success: true, message: 'PIN verificado com sucesso!' };
+        }
+      }
+
+      set({ error: data.error || 'PIN incorreto', isLoading: false });
+      return { success: false, message: data.error || 'PIN incorreto' };
+      
+    } catch (error: any) {
+      const errorMessage = error.message || 'Erro na verificação do PIN';
+      set({ error: errorMessage, isLoading: false });
+      return { success: false, message: errorMessage };
+    }
+  },
+
+  loginWithPhone: async (phone: string) => {
+    // Start login process by checking if device is trusted
+    try {
+      const deviceId = localStorage.getItem('kixikila_device_id');
+      if (!deviceId) {
+        // New device, send OTP
+        return await get().sendPhoneOtp(phone);
+      }
+
+      // TODO: Check if device is trusted and user has PIN
+      // For now, send OTP as fallback
+      return await get().sendPhoneOtp(phone);
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Erro no login' };
+    }
+  },
+
   login: async (email: string, password: string, rememberMe = false) => {
     set({ isLoading: true, error: null });
     try {
@@ -72,6 +152,10 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
           error: null,
         });
+
+        // Store session data for PIN authentication
+        localStorage.setItem('kixikila_custom_session', JSON.stringify(response.data.session));
+        localStorage.setItem('kixikila_user_id', user.id);
 
         // Redirect based on user role
         setTimeout(() => {
@@ -144,11 +228,21 @@ export const useAuthStore = create<AuthState>()(
               error: null,
             });
 
-            // Redirect based on user role  
+            // Store session data for PIN authentication
+            localStorage.setItem('kixikila_custom_session', JSON.stringify(response.data.session));
+            localStorage.setItem('kixikila_user_id', user.id);
+
+            // For registration (new users), redirect to PIN setup first
+            const isNewUser = response.message?.includes('criada');
+            
             setTimeout(() => {
               if (user.role === 'admin') {
                 window.location.href = '/admin/dashboard';
+              } else if (isNewUser) {
+                // New users go to PIN setup first
+                window.location.href = `/entrar?type=pin_setup&phone=${encodeURIComponent(phone)}&name=${encodeURIComponent(user.full_name)}`;
               } else {
+                // Existing users go straight to dashboard
                 window.location.href = '/app/dashboard';
               }
             }, 100);
@@ -213,6 +307,13 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           await supabaseAuthService.logout();
+          
+          // Clear all local session data
+          localStorage.removeItem('kixikila_custom_session');
+          localStorage.removeItem('kixikila_user_id');
+          localStorage.removeItem('kixikila_device_id');
+          localStorage.removeItem('kixikila_device_auth_preference');
+          
           set({
             isAuthenticated: false,
             user: null,
@@ -221,6 +322,11 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error: any) {
           // Even if logout fails on server, clear local state
+          localStorage.removeItem('kixikila_custom_session');
+          localStorage.removeItem('kixikila_user_id');
+          localStorage.removeItem('kixikila_device_id');
+          localStorage.removeItem('kixikila_device_auth_preference');
+          
           set({
             isAuthenticated: false,
             user: null,

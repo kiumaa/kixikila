@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useRateLimit } from '@/hooks/useRateLimit';
 import { supabase } from '@/integrations/supabase/client';
+import { checkDeviceTrust, checkUserHasPin } from '@/utils/deviceUtils';
+import PinLoginComponent from '@/components/auth/PinLoginComponent';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -26,10 +28,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [phoneValid, setPhoneValid] = useState(false);
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<'phone' | 'otp' | 'pin'>('phone');
   const [otpTimer, setOtpTimer] = useState(0);
+  const [deviceTrusted, setDeviceTrusted] = useState(false);
+  const [userHasPin, setUserHasPin] = useState(false);
   const { toast } = useToast();
-  const { sendPhoneOtp, verifyPhoneOtp, isLoading, error, clearError } = useAuthStore();
+  const { sendPhoneOtp, verifyPhoneOtp, verifyPin, isLoading, error, clearError } = useAuthStore();
   const [isVerifying, setIsVerifying] = useState(false);
   
   // Rate limiting for OTP requests
@@ -45,6 +49,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     windowMs: 10 * 60 * 1000, // 10 minutes
     blockDurationMs: 30 * 60 * 1000 // 30 minutes block
   });
+
+  // Check device trust and PIN availability on mount
+  useEffect(() => {
+    const checkDeviceAndPin = async () => {
+      try {
+        const deviceInfo = await checkDeviceTrust();
+        const hasPin = await checkUserHasPin();
+        
+        setDeviceTrusted(deviceInfo?.trusted || false);
+        setUserHasPin(hasPin);
+        
+        // If device is trusted and user has PIN, show PIN entry immediately
+        if (deviceInfo?.trusted && hasPin) {
+          setStep('pin');
+        }
+      } catch (error) {
+        console.log('Device/PIN check failed, using default flow');
+      }
+    };
+    
+    checkDeviceAndPin();
+  }, []);
 
   useEffect(() => {
     if (error) {
@@ -110,6 +136,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
   };
 
+  const handlePinVerification = async (pin: string) => {
+    if (pin.length !== 4) return;
+    
+    try {
+      const result = await verifyPin(pin);
+      if (result.success) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('PIN verification error:', error);
+    }
+  };
+
   const handleVerifyOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
@@ -153,32 +192,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         otpRateLimit.reset();
         verifyRateLimit.reset();
         
-        // Verificar se tem PIN configurado ou se é dispositivo confiável
-        const deviceId = localStorage.getItem('kixikila_device_id');
-        const customSession = localStorage.getItem('kixikila_custom_session');
-        
-        if (deviceId && customSession) {
-          // Verificar se dispositivo é confiável
-          try {
-            const { data: pinData } = await supabase.functions.invoke('pin-management', {
-              body: { action: 'check_device', deviceId }
-            });
-            
-            if (pinData?.trusted) {
-              // Dispositivo confiável - redirecionar para PIN unlock
-              window.location.href = '/entrar?type=pin&phone=' + encodeURIComponent(fullPhone);
-              return;
-            }
-          } catch (error) {
-            console.log('Device check failed, proceeding with normal flow');
-          }
-        }
-        
         toast({
           title: "Login realizado com sucesso! 🎉",
           description: "Bem-vindo de volta ao KIXIKILA",
         });
-        // Redirection is now handled by the auth store based on user role
+        // Redirection is now handled by the auth store
       } else {
         // Record verification attempt only on failure
         verifyRateLimit.recordAttempt();
@@ -259,19 +277,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
           <div className="text-center mb-8">
             <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary to-primary-hover rounded-3xl flex items-center justify-center shadow-lg">
-              {step === 'phone' ? (
+              {step === 'pin' ? (
+                <Shield className="w-10 h-10 text-primary-foreground" />
+              ) : step === 'phone' ? (
                 <Phone className="w-10 h-10 text-primary-foreground" />
               ) : (
                 <Lock className="w-10 h-10 text-primary-foreground" />
               )}
             </div>
             <h1 className="text-3xl font-bold font-system text-foreground mb-2">
-              {step === 'phone' ? 'Bem-vindo de volta' : 'Verificar código'}
+              {step === 'pin' ? 'Acesso com PIN' : step === 'phone' ? 'Bem-vindo de volta' : 'Verificar código'}
             </h1>
             <p className="text-muted-foreground">
-              {step === 'phone' 
-                ? 'Entre com seu número de telefone internacional' 
-                : `Código enviado para ${fullPhone}`
+              {step === 'pin'
+                ? 'Dispositivo confiável detectado'
+                : step === 'phone' 
+                  ? 'Entre com seu número de telefone internacional' 
+                  : `Código enviado para ${fullPhone}`
               }
             </p>
             
@@ -295,7 +317,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             )}
           </div>
 
-          {step === 'phone' ? (
+          {step === 'pin' ? (
+            <PinLoginComponent
+              onVerifyPin={handlePinVerification}
+              onFallbackToOtp={() => setStep('phone')}
+              isLoading={isLoading}
+              userName={undefined} // We don't have user name until after authentication
+            />
+          ) : step === 'phone' ? (
             <form onSubmit={handleSendOtp} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-3">
