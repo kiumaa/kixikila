@@ -34,16 +34,18 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
     const setCurrentPin = isConfirm ? setConfirmPin : setPin;
     
     if (currentPin.length < 4) {
-      setCurrentPin(currentPin + digit);
+      const newPin = currentPin + digit;
+      setCurrentPin(newPin);
       
-      // Auto-avançar para confirmação
-      if (!isConfirm && currentPin.length === 3) {
+      // Auto-avançar para confirmação quando PIN setup está completo
+      if (!isConfirm && newPin.length === 4) {
         setTimeout(() => setStep('confirm'), 300);
       }
       
       // Auto-submeter quando confirmação completa
-      if (isConfirm && currentPin.length === 3) {
-        setTimeout(() => handleSubmit(), 300);
+      if (isConfirm && newPin.length === 4) {
+        // Usar valores calculados em vez dos estados para evitar timing issues
+        setTimeout(() => handleSubmitWithValues(pin, newPin), 300);
       }
     }
   };
@@ -59,8 +61,10 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
     }
   };
 
-  const handleSubmit = async () => {
-    if (pin !== confirmPin) {
+  const handleSubmitWithValues = async (setupPin: string, confirmationPin: string) => {
+    console.log('PIN Debug:', { setupPin, confirmationPin }); // Debug log
+    
+    if (setupPin !== confirmationPin) {
       toast({
         title: "PINs não coincidem",
         description: "Os PINs inseridos são diferentes. Tenta novamente.",
@@ -72,7 +76,7 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
       return;
     }
 
-    if (pin.length !== 4) {
+    if (setupPin.length !== 4) {
       toast({
         title: "PIN incompleto",
         description: "O PIN deve ter exatamente 4 dígitos.",
@@ -81,6 +85,15 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
       return;
     }
 
+    await performPinSetup(setupPin);
+  };
+
+  const handleSubmit = async () => {
+    await handleSubmitWithValues(pin, confirmPin);
+  };
+
+  const performPinSetup = async (pinValue: string) => {
+
     setIsLoading(true);
 
     try {
@@ -88,7 +101,7 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
       const { data, error } = await supabase.functions.invoke('pin-management', {
         body: {
           action: 'set',
-          pin: pin,
+          pin: pinValue,
           deviceId: rememberDevice ? getDeviceId() : null,
           deviceName: `${navigator.userAgent.split(' ')[0]} - ${new Date().toLocaleDateString('pt-PT')}`
         }
