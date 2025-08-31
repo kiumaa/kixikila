@@ -1,46 +1,18 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-kixikila-user-id',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Hash PIN usando Web Crypto API (similar ao Argon2)
-async function hashPin(pin: string, salt: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pin + salt);
-  
-  const key = await crypto.subtle.importKey(
-    'raw',
-    data,
-    { name: 'PBKDF2' },
-    false,
-    ['deriveBits']
-  );
-  
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      salt: encoder.encode(salt),
-      iterations: 100000,
-      hash: 'SHA-256',
-    },
-    key,
-    256
-  );
-  
-  return Array.from(new Uint8Array(derivedBits))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+interface PinRequest {
+  action: 'set' | 'verify' | 'change';
+  pin?: string;
+  newPin?: string;
 }
 
-// Verificar PIN
-async function verifyPin(pin: string, hash: string, salt: string): Promise<boolean> {
-  const pinHash = await hashPin(pin, salt);
-  return pinHash === hash;
-}
-
-Deno.serve(async (req) => {
+const handler = async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -51,289 +23,189 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Support both custom and Supabase authentication
-    const authHeader = req.headers.get('Authorization');
-    const customUserId = req.headers.get('x-kixikila-user-id');
-    
-    let userId: string;
-    
-    if (customUserId) {
-      // Custom authentication system
-      console.log('Using custom authentication system for user:', customUserId);
-      
-      // Verify user exists in our users table
-      const { data: customUser, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', customUserId)
-        .single();
-      
-      if (userError || !customUser) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Invalid custom user ID' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      userId = customUserId;
-    } else if (authHeader) {
-      // Supabase authentication system
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-      if (authError || !user) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Invalid or expired token' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      userId = user.user_metadata?.kixikila_user_id || user.id;
-    } else {
+    // Get user from JWT token
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Authentication required (Authorization header or x-kixikila-user-id)' }),
+        JSON.stringify({ error: 'Authorization header required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { action, pin, deviceId, deviceName } = await req.json();
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-    console.log(`🔐 PIN Management - Action: ${action}, User: ${userId}`);
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { action, pin, newPin }: PinRequest = await req.json();
+
+    if (!action) {
+      return new Response(
+        JSON.stringify({ error: 'Action is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     switch (action) {
-      case 'set': {
-        if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-          throw new Error('PIN deve ter exatamente 4 dígitos');
-        }
-
-        // Hash the PIN with a random salt
-        const salt = crypto.getRandomValues(new Uint8Array(16));
-        const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
-        const pinHash = await hashPin(pin, saltHex);
-        
-        // Insert or update PIN
-        const { error: pinError } = await supabase
-          .from('auth_pin')
-          .upsert({
-            user_id: userId,
-            pin_hash: `${saltHex}:${pinHash}`,
-            updated_at: new Date().toISOString()
-          });
-
-        if (pinError) {
-          console.error('❌ Erro ao definir PIN:', pinError);
-          throw pinError;
-        }
-
-        // Se fornecido deviceId, marcar como confiável
-        if (deviceId) {
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 30); // 30 dias
-
-          const { error: deviceError } = await supabase
-            .from('device_sessions')
-            .upsert({
-              user_id: userId,
-              device_id: deviceId,
-              device_name: deviceName || 'Dispositivo desconhecido',
-              trusted: true,
-              failed_pin_attempts: 0,
-              expires_at: expiresAt.toISOString()
-            });
-
-          if (deviceError) {
-            console.error('❌ Erro ao marcar dispositivo confiável:', deviceError);
-            throw deviceError;
-          }
-        }
-
-        console.log('✅ PIN definido com sucesso');
-        return new Response(
-          JSON.stringify({ success: true, message: 'PIN definido com sucesso' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      case 'verify': {
-        if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-          throw new Error('PIN inválido');
-        }
-
-        // Buscar PIN hash do utilizador
-        const { data: pinData, error: fetchError } = await supabase
-          .from('auth_pin')
-          .select('pin_hash')
-          .eq('user_id', userId)
-          .single();
-
-        if (fetchError || !pinData) {
-          throw new Error('PIN não configurado');
-        }
-
-        // Verificar se dispositivo está bloqueado
-        if (deviceId) {
-          const { data: deviceData } = await supabase
-            .from('device_sessions')
-            .select('failed_pin_attempts, lock_until')
-            .eq('user_id', userId)
-            .eq('device_id', deviceId)
-            .single();
-
-          if (deviceData?.lock_until && new Date(deviceData.lock_until) > new Date()) {
-            const lockUntil = new Date(deviceData.lock_until);
-            const minutesRemaining = Math.ceil((lockUntil.getTime() - Date.now()) / 60000);
-            throw new Error(`Dispositivo bloqueado. Tente novamente em ${minutesRemaining} minutos`);
-          }
-        }
-
-        // Extract salt and hash from stored data
-        const [salt, storedHash] = pinData.pin_hash.split(':');
-        const isValid = await verifyPin(pin, storedHash, salt);
-
-        if (!isValid) {
-          // Incrementar tentativas falhadas
-          if (deviceId) {
-            const { data: deviceData } = await supabase
-              .from('device_sessions')
-              .select('failed_pin_attempts')
-              .eq('user_id', userId)
-              .eq('device_id', deviceId)
-              .single();
-
-            const failedAttempts = (deviceData?.failed_pin_attempts || 0) + 1;
-            let lockUntil = null;
-
-            // Bloquear após 5 tentativas
-            if (failedAttempts >= 5) {
-              lockUntil = new Date();
-              lockUntil.setMinutes(lockUntil.getMinutes() + 15); // 15 minutos
-            }
-
-            await supabase
-              .from('device_sessions')
-              .upsert({
-                user_id: userId,
-                device_id: deviceId,
-                failed_pin_attempts: failedAttempts,
-                lock_until: lockUntil?.toISOString()
-              });
-
-            const remainingAttempts = Math.max(0, 5 - failedAttempts);
-            if (failedAttempts >= 5) {
-              throw new Error('Muitas tentativas falhadas. Dispositivo bloqueado por 15 minutos');
-            } else {
-              throw new Error(`PIN incorreto. Restam ${remainingAttempts} tentativas`);
-            }
-          }
-
-          throw new Error('PIN incorreto');
-        }
-
-        // PIN correto - resetar tentativas falhadas
-        if (deviceId) {
-          await supabase
-            .from('device_sessions')
-            .upsert({
-              user_id: userId,
-              device_id: deviceId,
-              failed_pin_attempts: 0,
-              lock_until: null,
-              last_seen: new Date().toISOString()
-            });
-        }
-
-        console.log('✅ PIN verificado com sucesso');
-        return new Response(
-          JSON.stringify({ success: true, valid: true }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      case 'trust-device': {
-        if (!deviceId) {
-          throw new Error('Device ID é obrigatório');
-        }
-
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 30); // 30 dias
-
-        const { error: deviceError } = await supabase
-          .from('device_sessions')
-          .upsert({
-            user_id: userId,
-            device_id: deviceId,
-            device_name: deviceName || 'Dispositivo desconhecido',
-            trusted: true,
-            failed_pin_attempts: 0,
-            expires_at: expiresAt.toISOString(),
-            last_seen: new Date().toISOString()
-          });
-
-        if (deviceError) {
-          console.error('❌ Erro ao marcar dispositivo confiável:', deviceError);
-          throw deviceError;
-        }
-
-        console.log('✅ Dispositivo marcado como confiável');
-        return new Response(
-          JSON.stringify({ success: true, message: 'Dispositivo marcado como confiável' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      case 'check-device': {
-        if (!deviceId) {
-          throw new Error('Device ID é obrigatório');
-        }
-
-        // Verificar se existe PIN configurado para o utilizador
-        const { data: userPinData, error: pinFetchError } = await supabase
-          .from('auth_pin')
-          .select('pin_hash')
-          .eq('user_id', userId)
-          .single();
-
-        const { data: deviceData, error: deviceError } = await supabase
-          .from('device_sessions')
-          .select('trusted, expires_at, lock_until')
-          .eq('user_id', userId)
-          .eq('device_id', deviceId)
-          .single();
-
-        if (deviceError && deviceError.code !== 'PGRST116') {
-          console.error('❌ Erro ao verificar dispositivo:', deviceError);
-          throw deviceError;
-        }
-
-        const isTrusted = deviceData?.trusted && 
-                         new Date(deviceData.expires_at) > new Date() &&
-                         (!deviceData.lock_until || new Date(deviceData.lock_until) <= new Date());
-
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            trusted: isTrusted,
-            hasPin: !!userPinData 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
+      case 'set':
+        return await setPIN(supabase, user.id, pin!);
+      case 'verify':
+        return await verifyPIN(supabase, user.id, pin!);
+      case 'change':
+        return await changePIN(supabase, user.id, pin!, newPin!);
       default:
-        throw new Error('Ação não reconhecida');
+        return new Response(
+          JSON.stringify({ error: 'Invalid action' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
     }
 
   } catch (error) {
-    console.error('❌ Erro no PIN Management:', error);
+    console.error('PIN management error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Erro interno do servidor'
-      }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-});
+};
+
+// Set a new PIN for user
+async function setPIN(supabase: any, userId: string, pin: string): Promise<Response> {
+  if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+    return new Response(
+      JSON.stringify({ error: 'PIN deve ter exatamente 6 dígitos' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  try {
+    // Hash the PIN using crypto API
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pin + userId); // Salt with user ID
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Check if PIN already exists
+    const { data: existingPin } = await supabase
+      .from('auth_pin')
+      .select('user_id')
+      .eq('user_id', userId)
+      .single();
+
+    let result;
+    if (existingPin) {
+      // Update existing PIN
+      result = await supabase
+        .from('auth_pin')
+        .update({ pin_hash: hashHex })
+        .eq('user_id', userId);
+    } else {
+      // Insert new PIN
+      result = await supabase
+        .from('auth_pin')
+        .insert({ user_id: userId, pin_hash: hashHex });
+    }
+
+    if (result.error) {
+      console.error('PIN set error:', result.error);
+      return new Response(
+        JSON.stringify({ error: 'Falha ao definir PIN' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`✅ PIN definido para user ${userId}`);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'PIN definido com sucesso'
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Set PIN error:', error);
+    return new Response(
+      JSON.stringify({ error: 'Erro interno do servidor' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+// Verify PIN
+async function verifyPIN(supabase: any, userId: string, pin: string): Promise<Response> {
+  if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+    return new Response(
+      JSON.stringify({ error: 'PIN deve ter exatamente 6 dígitos' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  try {
+    // Get stored PIN hash
+    const { data: storedPin, error } = await supabase
+      .from('auth_pin')
+      .select('pin_hash')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !storedPin) {
+      return new Response(
+        JSON.stringify({ error: 'PIN não encontrado' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Hash provided PIN
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pin + userId); // Salt with user ID
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Compare hashes
+    const isValid = hashHex === storedPin.pin_hash;
+
+    console.log(`🔐 PIN verification for user ${userId}: ${isValid ? 'SUCCESS' : 'FAILED'}`);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        valid: isValid,
+        message: isValid ? 'PIN correto' : 'PIN incorreto'
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Verify PIN error:', error);
+    return new Response(
+      JSON.stringify({ error: 'Erro interno do servidor' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+// Change PIN (verify current PIN then set new one)
+async function changePIN(supabase: any, userId: string, currentPin: string, newPin: string): Promise<Response> {
+  // First verify current PIN
+  const verifyResult = await verifyPIN(supabase, userId, currentPin);
+  const verifyData = await verifyResult.json();
+  
+  if (!verifyData.valid) {
+    return new Response(
+      JSON.stringify({ error: 'PIN atual incorreto' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Then set new PIN
+  return await setPIN(supabase, userId, newPin);
+}
+
+serve(handler);
