@@ -13,7 +13,14 @@ import { OtpInput } from '@/components/ui/otp-input';
 import { useToast } from '@/hooks/use-toast';
 
 const AuthPage = () => {
-  const { isAuthenticated, sendPhoneOtp, verifyPhoneOtp, error, isLoading } = useAuthStore();
+  const { 
+    isAuthenticated, 
+    sendPhoneOtp, 
+    verifyPhoneOtp, 
+    error, 
+    isLoading, 
+    getNextRoute 
+  } = useAuthStore();
   const [searchParams] = useSearchParams();
   const [authType, setAuthType] = useState<'login' | 'register' | 'pin_setup' | 'pin_unlock'>('login');
   const [step, setStep] = useState<'form' | 'otp'>('form');
@@ -53,9 +60,10 @@ const AuthPage = () => {
     }
   }, [error, toast]);
 
-  // Redirect authenticated users
+  // Redirect authenticated users with intelligent routing
   if (isAuthenticated) {
-    return <Navigate to="/app" replace />;
+    const nextRoute = getNextRoute();
+    return <Navigate to={nextRoute} replace />;
   }
 
   const handleBack = () => {
@@ -132,16 +140,18 @@ const AuthPage = () => {
   };
 
   const handlePinSetupComplete = () => {
-    // After PIN setup, redirect to dashboard
+    // After PIN setup, use intelligent routing
+    const nextRoute = getNextRoute();
     setTimeout(() => {
-      window.location.href = '/app/dashboard';
+      window.location.href = nextRoute;
     }, 500);
   };
 
   const handlePinUnlockSuccess = () => {
-    // After PIN unlock, redirect to dashboard  
+    // After PIN unlock, use intelligent routing
+    const nextRoute = getNextRoute();
     setTimeout(() => {
-      window.location.href = '/app/dashboard';
+      window.location.href = nextRoute;
     }, 500);
   };
 

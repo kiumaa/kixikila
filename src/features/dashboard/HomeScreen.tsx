@@ -21,6 +21,11 @@ export const HomeScreen: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const [groupsRes, recommendedRes, walletRes] = await Promise.all([
           groupsAPI.getMyGroups(),
@@ -33,13 +38,17 @@ export const HomeScreen: React.FC = () => {
         setWalletData(walletRes);
       } catch (error) {
         console.error('Error loading dashboard data:', error);
+        // Fallback to empty states
+        setMyGroups([]);
+        setRecommendedGroups([]);
+        setWalletData({ balance: user?.wallet_balance || 0 });
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (

@@ -14,7 +14,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAuth = true,
   redirectTo = '/entrar'
 }) => {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, getNextRoute } = useAuthStore();
   const location = useLocation();
 
   // Show loading spinner while checking authentication
@@ -46,8 +46,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // If route doesn't require authentication but user is authenticated
   // (e.g., login page when already logged in)
   if (!requireAuth && isAuthenticated) {
-    // Redirect to app or intended page
-    const from = location.state?.from || '/app';
+    // Use intelligent routing based on user state
+    const nextRoute = getNextRoute();
+    const from = location.state?.from || nextRoute;
     return <Navigate to={from} replace />;
   }
 

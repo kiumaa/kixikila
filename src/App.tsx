@@ -8,8 +8,13 @@ import AuthPage from "./pages/AuthPage";
 import AppPage from "./pages/AppPage";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
+import OnboardingPage from "./pages/OnboardingPage";
+import KycPage from "./pages/KycPage";
 import UserProtectedRoute from "./components/auth/UserProtectedRoute";
 import AdminProtectedRoute from "./components/auth/AdminProtectedRoute";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import RequireKyc from "./components/auth/RequireKyc";
+import SmartRedirect from "./components/auth/SmartRedirect";
 
 const queryClient = new QueryClient();
 
@@ -21,18 +26,64 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Homepage - Onboarding */}
-            <Route path="/" element={<HomePage />} />
+            {/* Homepage - Onboarding for new users, redirect for authenticated */}
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute requireAuth={false}>
+                  <HomePage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Smart redirect for authenticated users */}
+            <Route 
+              path="/redirect" 
+              element={
+                <ProtectedRoute>
+                  <SmartRedirect />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Authentication Page - Login/Register */}
-            <Route path="/entrar" element={<AuthPage />} />
+            <Route 
+              path="/entrar" 
+              element={
+                <ProtectedRoute requireAuth={false}>
+                  <AuthPage />
+                </ProtectedRoute>
+              } 
+            />
             
-            {/* Main App - User Protected */}
+            {/* Onboarding - For new users */}
+            <Route 
+              path="/onboarding" 
+              element={
+                <ProtectedRoute>
+                  <OnboardingPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* KYC Verification */}
+            <Route 
+              path="/kyc" 
+              element={
+                <ProtectedRoute>
+                  <KycPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Main App - User Protected with KYC requirement */}
             <Route 
               path="/app/*" 
               element={
                 <UserProtectedRoute>
-                  <AppPage />
+                  <RequireKyc>
+                    <AppPage />
+                  </RequireKyc>
                 </UserProtectedRoute>
               } 
             />

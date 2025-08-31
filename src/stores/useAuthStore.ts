@@ -19,6 +19,8 @@ export interface User {
   avatar_url?: string;
   created_at?: string;
   updated_at?: string;
+  first_login?: boolean; // For onboarding flow
+  wallet_balance?: number; // Wallet balance
 }
 
 interface AuthState {
@@ -52,6 +54,11 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   initializeAuth: () => void;
   isAdmin: () => boolean;
+  
+  // Enhanced flow helpers
+  needsOnboarding: () => boolean;
+  needsKyc: () => boolean;
+  getNextRoute: () => string;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -455,6 +462,41 @@ export const useAuthStore = create<AuthState>()(
         const { user } = get();
         return user?.role === 'admin';
       },
+
+      // Enhanced flow helpers
+      needsOnboarding: () => {
+        const { user } = get();
+        return user?.first_login === true;
+      },
+
+      needsKyc: () => {
+        const { user } = get();
+        return user?.kyc_status === 'pending';
+      },
+
+      getNextRoute: () => {
+        const { user, needsOnboarding, needsKyc } = get();
+        
+        if (!user) return '/entrar';
+        
+        // Check if user needs onboarding first
+        if (needsOnboarding()) {
+          return '/onboarding';
+        }
+        
+        // Then check if user needs KYC
+        if (needsKyc()) {
+          return '/kyc';
+        }
+        
+        // If user is admin, go to admin panel
+        if (user.role === 'admin') {
+          return '/admin/dashboard';
+        }
+        
+        // Otherwise go to main app
+        return '/app/dashboard';
+      }
     }),
     {
       name: 'auth-storage',
