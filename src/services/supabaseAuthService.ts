@@ -303,23 +303,23 @@ class SupabaseAuthService {
     }
   }
 
-  /**
-   * Format custom user data to our UserData interface
-   */
-  private formatCustomUserData(userData: any): UserData {
-    return {
-      id: userData.id,
-      email: userData.email || '',
-      full_name: userData.full_name || 'Utilizador',
-      phone: userData.phone,
-      role: userData.role || 'user',
-      email_verified: userData.email_verified || false,
-      phone_verified: userData.phone_verified || true,
-      avatar_url: userData.avatar_url,
-      created_at: userData.created_at,
-      updated_at: userData.updated_at,
-    };
-  }
+   /**
+    * Format custom user data to our UserData interface (phone-only system)
+    */
+   private formatCustomUserData(userData: any): UserData {
+     return {
+       id: userData.id,
+       email: userData.email || '', // Email pode ser vazio agora
+       full_name: userData.full_name || 'Utilizador',
+       phone: userData.phone,
+       role: userData.role || 'user',
+       email_verified: userData.email_verified || false,
+       phone_verified: userData.phone_verified || true,
+       avatar_url: userData.avatar_url,
+       created_at: userData.created_at,
+       updated_at: userData.updated_at,
+     };
+   }
 
   /**
    * Send OTP to email

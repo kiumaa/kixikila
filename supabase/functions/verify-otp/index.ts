@@ -175,13 +175,12 @@ Deno.serve(async (req) => {
       // Create new user in our custom table only (no auth.users entry)
       console.log(`🆕 Creating new user for phone: ${phone}`);
 
-      // Generate unique ID and email for the user
+      // Generate unique ID for the user
       const userId = crypto.randomUUID();
-      const uniqueEmail = `phone_${phone.replace('+', '').replace(' ', '')}@kixikila.app`;
       
       const newUser = {
         id: userId,
-        email: uniqueEmail,
+        email: null, // Email não é obrigatório no sistema
         phone: phone,
         full_name: 'Novo Utilizador',
         phone_verified: true,

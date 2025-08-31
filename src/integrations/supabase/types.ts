@@ -893,7 +893,7 @@ export type Database = {
           country: string | null
           created_at: string | null
           date_of_birth: string | null
-          email: string
+          email: string | null
           email_verified: boolean | null
           full_name: string
           id: string
@@ -921,7 +921,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           date_of_birth?: string | null
-          email: string
+          email?: string | null
           email_verified?: boolean | null
           full_name: string
           id: string
@@ -949,7 +949,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           date_of_birth?: string | null
-          email?: string
+          email?: string | null
           email_verified?: boolean | null
           full_name?: string
           id?: string
