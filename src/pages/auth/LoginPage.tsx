@@ -10,6 +10,9 @@ import { OtpInput } from '@/components/ui/otp-input';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useMockAuthStore } from '@/stores/useMockAuthStore';
+import { useTrustedDevice } from '@/hooks/useTrustedDevice';
+import { usePinManagement } from '@/hooks/usePinManagement';
+import PinLoginScreen from '@/components/auth/PinLoginScreen';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,20 +23,76 @@ const LoginPage: React.FC = () => {
     isLoading, 
     error, 
     clearError,
-    isAuthenticated 
+    isAuthenticated,
+    user,
+    verifyPinLogin,
+    createTrustedSession 
   } = useMockAuthStore();
 
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const { 
+    isTrustedDevice,
+    incrementFailedAttempts,
+    resetFailedAttempts,
+    isDeviceLocked,
+    getFailedAttempts,
+    clearDeviceSession,
+    createDeviceSession 
+  } = useTrustedDevice();
+
+  const { hasPinConfigured } = usePinManagement();
+
+  const [step, setStep] = useState<'check_device' | 'pin' | 'phone' | 'otp'>('check_device');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
+  const [lockTimer, setLockTimer] = useState(0);
 
-  // Redirect if already authenticated
+  // Initial device check and redirect logic
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/auth/set-pin');
+    if (isAuthenticated && user) {
+      // Check if user has PIN configured and device is trusted
+      const hasPin = hasPinConfigured(user.id);
+      const isTrusted = isTrustedDevice(user.id);
+      
+      if (hasPin && isTrusted) {
+        // Go directly to /home for trusted devices
+        navigate('/home');
+        return;
+      } else if (hasPin) {
+        // Has PIN but not trusted device, redirect to set-pin
+        navigate('/auth/set-pin');
+        return;
+      } else {
+        // No PIN configured, redirect to set-pin
+        navigate('/auth/set-pin');
+        return;
+      }
     }
-  }, [isAuthenticated, navigate]);
+
+    // Check for trusted device session
+    const storedUser = localStorage.getItem('mock-auth-storage');
+    if (storedUser) {
+      try {
+        const parsedData = JSON.parse(storedUser);
+        if (parsedData.state?.user) {
+          const userId = parsedData.state.user.id;
+          const hasPin = hasPinConfigured(userId);
+          const isTrusted = isTrustedDevice(userId);
+          const isLocked = isDeviceLocked(userId);
+          
+          if (hasPin && isTrusted && !isLocked) {
+            setStep('pin');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing stored auth data:', error);
+      }
+    }
+    
+    // Default to phone step
+    setStep('phone');
+  }, [isAuthenticated, navigate, user, hasPinConfigured, isTrustedDevice, isDeviceLocked]);
 
   // Error handling
   useEffect(() => {
@@ -57,6 +116,17 @@ const LoginPage: React.FC = () => {
     }
     return () => clearInterval(interval);
   }, [resendTimer]);
+
+  // Timer for device lock
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (lockTimer > 0) {
+      interval = setInterval(() => {
+        setLockTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [lockTimer]);
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +166,11 @@ const LoginPage: React.FC = () => {
 
     const result = await verifyOTP(phone, otp);
     
-    if (result.success) {
+    if (result.success && result.user) {
+      // Create trusted device session after successful OTP login
+      const deviceId = createDeviceSession(result.user.id);
+      createTrustedSession(result.user.id, deviceId);
+      
       toast({
         title: "Login realizado! 🎉",
         description: "Redirecionando para configurar PIN...",
@@ -125,6 +199,83 @@ const LoginPage: React.FC = () => {
   const handleOtpComplete = (otpValue: string) => {
     setOtp(otpValue);
   };
+
+  // PIN Login Handlers
+  const handlePinSuccess = () => {
+    if (user) {
+      resetFailedAttempts(user.id);
+      navigate('/home');
+    }
+  };
+
+  const handlePinFailure = () => {
+    if (user) {
+      const attempts = incrementFailedAttempts(user.id);
+      
+      if (attempts >= 5) {
+        // Device is locked, clear session and force SMS
+        clearDeviceSession(user.id);
+        setStep('phone');
+        setLockTimer(300); // 5 minutes in seconds
+        
+        toast({
+          title: "Dispositivo bloqueado 🔒",
+          description: "Muitas tentativas inválidas. Use SMS para entrar.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleUseSMS = () => {
+    if (user) {
+      clearDeviceSession(user.id);
+    }
+    setStep('phone');
+  };
+
+  const handleBackFromPin = () => {
+    setStep('phone');
+  };
+
+  // Get stored user for PIN screen
+  const getStoredUser = () => {
+    try {
+      const storedUser = localStorage.getItem('mock-auth-storage');
+      if (storedUser) {
+        const parsedData = JSON.parse(storedUser);
+        return parsedData.state?.user || null;
+      }
+    } catch (error) {
+      console.error('Error getting stored user:', error);
+    }
+    return null;
+  };
+
+  // Render PIN screen for trusted devices
+  if (step === 'pin') {
+    const storedUser = getStoredUser();
+    if (!storedUser) {
+      // No user found, redirect to phone
+      setStep('phone');
+      return null;
+    }
+
+    const failedAttempts = getFailedAttempts(storedUser.id);
+    const isLocked = isDeviceLocked(storedUser.id);
+
+    return (
+      <PinLoginScreen
+        user={storedUser}
+        onPinSuccess={handlePinSuccess}
+        onUseSMS={handleUseSMS}
+        onBack={handleBackFromPin}
+        failedAttempts={failedAttempts}
+        isLocked={isLocked}
+        lockTimeRemaining={lockTimer > 0 ? lockTimer : undefined}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-subtle via-background to-accent flex items-center justify-center p-6">

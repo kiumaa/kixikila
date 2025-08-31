@@ -2,6 +2,8 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useMockAuthStore } from '@/stores/useMockAuthStore';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
+import { useTrustedDevice } from '@/hooks/useTrustedDevice';
+import { usePinManagement } from '@/hooks/usePinManagement';
 
 interface MockProtectedRouteProps {
   children: React.ReactNode;
@@ -9,6 +11,8 @@ interface MockProtectedRouteProps {
 
 const MockProtectedRoute: React.FC<MockProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading, user } = useMockAuthStore();
+  const { isTrustedDevice, isDeviceLocked } = useTrustedDevice();
+  const { hasPinConfigured } = usePinManagement();
   const location = useLocation();
 
   if (isLoading) {
@@ -22,9 +26,6 @@ const MockProtectedRoute: React.FC<MockProtectedRouteProps> = ({ children }) => 
     );
   }
 
-  // Check if user has PIN setup (for demo purposes)
-  const hasPin = localStorage.getItem('mock_user_pin');
-  
   if (!isAuthenticated || !user) {
     // Redirect to mock login with return path
     return <Navigate 
@@ -33,9 +34,22 @@ const MockProtectedRoute: React.FC<MockProtectedRouteProps> = ({ children }) => 
     />;
   }
 
-  // If authenticated but no PIN, redirect to PIN setup
+  // Check PIN configuration and device trust
+  const hasPin = hasPinConfigured(user.id);
+  const isTrusted = isTrustedDevice(user.id);
+  const isLocked = isDeviceLocked(user.id);
+
+  // If authenticated but no PIN configured, redirect to PIN setup
   if (!hasPin) {
     return <Navigate to="/auth/set-pin" replace />;
+  }
+
+  // If device is locked or not trusted, redirect to login
+  if (isLocked || !isTrusted) {
+    return <Navigate 
+      to={`/auth/login?redirect=${encodeURIComponent(location.pathname)}`} 
+      replace 
+    />;
   }
 
   return <>{children}</>;

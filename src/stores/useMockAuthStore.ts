@@ -29,6 +29,9 @@ interface MockAuthState {
   // PIN Management
   hasPinConfigured: boolean;
   
+  // Trusted Device Management
+  deviceSessionId: string | null;
+  
   // Actions
   sendOTP: (phone: string) => Promise<{ success: boolean; message: string }>;
   verifyOTP: (phone: string, code: string) => Promise<{ success: boolean; message: string; user?: MockUser }>;
@@ -41,6 +44,11 @@ interface MockAuthState {
   // PIN Actions
   setPinConfigured: (configured: boolean) => void;
   clearPinData: () => void;
+  
+  // Trusted Device Actions
+  createTrustedSession: (userId: string, deviceId: string) => void;
+  verifyPinLogin: (pin: string, userId: string) => Promise<{ success: boolean; message: string }>;
+  clearTrustedSession: () => void;
 }
 
 export const useMockAuthStore = create<MockAuthState>()(
@@ -53,6 +61,7 @@ export const useMockAuthStore = create<MockAuthState>()(
       error: null,
       currentOtpAttempt: null,
       hasPinConfigured: false,
+      deviceSessionId: null,
 
       // Send OTP (Mock)
       sendOTP: async (phone: string) => {
@@ -224,7 +233,8 @@ export const useMockAuthStore = create<MockAuthState>()(
           user: null,
           currentOtpAttempt: null,
           error: null,
-          hasPinConfigured: false
+          hasPinConfigured: false,
+          deviceSessionId: null
         });
       },
 
@@ -245,6 +255,63 @@ export const useMockAuthStore = create<MockAuthState>()(
 
       clearPinData: () => {
         set({ hasPinConfigured: false });
+      },
+
+      // Trusted Device Actions
+      createTrustedSession: (userId: string, deviceId: string) => {
+        set({ 
+          deviceSessionId: deviceId,
+          hasPinConfigured: true 
+        });
+        console.log(`✅ [MOCK AUTH] Sessão confiável criada para usuário ${userId}: ${deviceId}`);
+      },
+
+      verifyPinLogin: async (pin: string, userId: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          // Simulate PIN verification delay
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          // For demo, accept "1234" as valid PIN
+          if (pin === '1234') {
+            set({ isLoading: false });
+            console.log(`✅ [MOCK AUTH] PIN verificado com sucesso para usuário ${userId}`);
+            
+            return {
+              success: true,
+              message: "PIN verificado com sucesso!"
+            };
+          } else {
+            set({ 
+              error: "PIN incorreto",
+              isLoading: false 
+            });
+            
+            return {
+              success: false,
+              message: "PIN incorreto"
+            };
+          }
+        } catch (error) {
+          set({ 
+            error: "Erro na verificação do PIN", 
+            isLoading: false 
+          });
+          
+          return {
+            success: false,
+            message: "Erro na verificação do PIN"
+          };
+        }
+      },
+
+      clearTrustedSession: () => {
+        set({ 
+          deviceSessionId: null,
+          hasPinConfigured: false 
+        });
+        console.log(`🗑️ [MOCK AUTH] Sessão confiável removida`);
       }
     }),
     {
@@ -252,7 +319,8 @@ export const useMockAuthStore = create<MockAuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,
-        hasPinConfigured: state.hasPinConfigured
+        hasPinConfigured: state.hasPinConfigured,
+        deviceSessionId: state.deviceSessionId
       })
     }
   )
