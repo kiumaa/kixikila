@@ -6,9 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Settings, Key, Database, Save, Mail, MessageSquare, CreditCard, TestTube, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Settings, Key, Database, Save, Mail, MessageSquare, CreditCard, TestTube, CheckCircle, XCircle, Loader2, FileText, Monitor } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { systemConfigService, type EmailConfig, type StripeConfig, type BulkSMSConfig } from '@/services/systemConfigService';
+import EmailTemplateManager from './EmailTemplateManager';
+import EmailLogsMonitor from './EmailLogsMonitor';
 
 // Interfaces are now imported from systemConfigService
 
@@ -45,6 +48,40 @@ const SystemSettings: React.FC = () => {
   // Test email/phone
   const [testEmail, setTestEmail] = useState('');
   const [testPhone, setTestPhone] = useState('');
+
+  // Email provider presets
+  const emailPresets = {
+    gmail: {
+      name: 'Gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      description: 'Use uma senha de app para Gmail'
+    },
+    outlook: {
+      name: 'Outlook/Hotmail',
+      host: 'smtp-mail.outlook.com',
+      port: 587,
+      secure: false,
+      description: 'Funciona com contas Microsoft'
+    },
+    yahoo: {
+      name: 'Yahoo Mail',
+      host: 'smtp.mail.yahoo.com',
+      port: 587,
+      secure: false,
+      description: 'Configure uma senha de app'
+    },
+    custom: {
+      name: 'Personalizado',
+      host: '',
+      port: 587,
+      secure: false,
+      description: 'Configure manualmente'
+    }
+  };
+
+  const [selectedPreset, setSelectedPreset] = useState('custom');
 
   // Load configurations on component mount
   useEffect(() => {
@@ -276,10 +313,14 @@ const SystemSettings: React.FC = () => {
       </div>
 
       <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="w-4 h-4" />
             Email
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Templates
           </TabsTrigger>
           <TabsTrigger value="stripe" className="flex items-center gap-2">
             <CreditCard className="w-4 h-4" />
@@ -288,6 +329,10 @@ const SystemSettings: React.FC = () => {
           <TabsTrigger value="sms" className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             SMS
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="flex items-center gap-2">
+            <Monitor className="w-4 h-4" />
+            Logs
           </TabsTrigger>
         </TabsList>
 
@@ -300,6 +345,48 @@ const SystemSettings: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              <Alert>
+                <Mail className="w-4 h-4" />
+                <AlertDescription>
+                  Escolha um provedor pré-configurado ou configure manualmente as configurações SMTP.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <Label htmlFor="email-preset">Provedor de Email</Label>
+                <Select 
+                  value={selectedPreset} 
+                  onValueChange={(value) => {
+                    setSelectedPreset(value);
+                    if (value !== 'custom') {
+                      const preset = emailPresets[value as keyof typeof emailPresets];
+                      setEmailConfig(prev => ({
+                        ...prev,
+                        host: preset.host,
+                        port: preset.port,
+                        secure: preset.secure
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um provedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(emailPresets).map(([key, preset]) => (
+                      <SelectItem key={key} value={key}>
+                        {preset.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedPreset !== 'custom' && (
+                  <p className="text-sm text-muted-foreground">
+                    {emailPresets[selectedPreset as keyof typeof emailPresets].description}
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="email-host">Servidor SMTP</Label>
@@ -411,6 +498,20 @@ const SystemSettings: React.FC = () => {
                   Salvar Configuração
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Gestão de Templates
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EmailTemplateManager />
             </CardContent>
           </Card>
         </TabsContent>
@@ -589,6 +690,20 @@ const SystemSettings: React.FC = () => {
                   Salvar Configuração
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="logs">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Monitor className="w-5 h-5" />
+                Logs e Monitorização
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EmailLogsMonitor />
             </CardContent>
           </Card>
         </TabsContent>
