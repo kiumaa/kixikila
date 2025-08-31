@@ -1,18 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { mockGroups, mockTransactions, mockUser, type User, type Group, type Transaction } from '@/lib/mockData';
+import { mockAdminUsers, mockGroups, mockTransactions, mockUser, type User, type Group, type Transaction, type AdminUser } from '@/lib/mockData';
 
+// Use AdminUser from mockData
+export type { AdminUser } from '@/lib/mockData';
 export type AdminRole = 'admin';
 export type UserStatus = 'active' | 'banned' | 'inactive';
-
-export interface AdminUser extends User {
-  role: AdminRole;
-  lastLogin?: string;
-  status: UserStatus;
-  banReason?: string;
-  email: string;
-  password: string;
-}
 
 export interface PlanConfig {
   name: string;
@@ -126,15 +119,15 @@ interface AdminState {
   adminStats: AdminStats;
   
   // Actions - Users
-  banUser: (userId: number, reason: string) => void;
-  unbanUser: (userId: number) => void;
-  updateUserPlan: (userId: number, plan: 'free' | 'vip') => void;
-  updateUserData: (userId: number, data: Partial<User>) => void;
+  banUser: (userId: string, reason: string) => void;
+  unbanUser: (userId: string) => void;
+  updateUserPlan: (userId: string, plan: 'free' | 'vip') => void;
+  updateUserData: (userId: string, data: Partial<AdminUser>) => void;
   
   // Actions - Groups
-  deleteGroup: (groupId: number) => void;
-  freezeGroup: (groupId: number) => void;
-  updateGroup: (groupId: number, data: Partial<Group>) => void;
+  deleteGroup: (groupId: string) => void;
+  freezeGroup: (groupId: string) => void;
+  updateGroup: (groupId: string, data: Partial<Group>) => void;
   
   // Actions - Plans
   updatePlanConfig: (planName: string, config: Partial<PlanConfig>) => void;
@@ -155,61 +148,7 @@ interface AdminState {
   refreshStats: () => void;
 }
 
-// Mock admin data
-const mockAdminUser: AdminUser = {
-  ...mockUser,
-  role: 'admin',
-  lastLogin: new Date().toISOString(),
-  status: 'active',
-  email: 'admin@kixikila.com',
-  password: 'admin123'
-};
-
-const mockUsers: AdminUser[] = [
-  mockAdminUser,
-  {
-    id: 2,
-    name: "Pedro Silva",
-    phone: "+351 913 456 789",
-    avatar: "PS",
-    isVIP: false,
-    joinDate: "2024-10-15",
-    walletBalance: 250.00,
-    kycStatus: "verified",
-    totalSaved: 850.00,
-    totalWithdrawn: 200.00,
-    totalEarned: 150.00,
-    activeGroups: 1,
-    completedCycles: 3,
-    trustScore: 85,
-    role: 'admin',
-    status: 'active',
-    lastLogin: "2025-01-20T10:30:00Z",
-    email: 'pedro.silva@admin.com',
-    password: 'pedro123'
-  },
-  {
-    id: 3,
-    name: "Maria Costa",
-    phone: "+351 914 567 890",
-    avatar: "MC",
-    isVIP: true,
-    vipExpiry: "2025-06-15",
-    joinDate: "2024-12-01",
-    walletBalance: 500.00,
-    kycStatus: "pending",
-    totalSaved: 1200.00,
-    totalWithdrawn: 0.00,
-    totalEarned: 400.00,
-    activeGroups: 2,
-    completedCycles: 1,
-    trustScore: 92,
-    role: 'admin',
-    status: 'active',
-    email: 'maria.costa@admin.com',
-    password: 'maria123'
-  }
-];
+// Mock admin data - remove duplicate, use mockAdminUsers from mockData
 
 const initialPlanConfigs: PlanConfig[] = [
   {
@@ -295,7 +234,7 @@ export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
       // Data
-      allUsers: mockUsers,
+      allUsers: mockAdminUsers,
       planConfigs: initialPlanConfigs,
       promotions: [],
       brandingConfig: initialBrandingConfig,
@@ -310,22 +249,22 @@ export const useAdminStore = create<AdminState>()(
       },
       activityLogs: mockActivityLogs,
       adminStats: {
-        totalUsers: mockUsers.length,
-        activeUsers: mockUsers.filter(u => u.status === 'active').length,
-        bannedUsers: mockUsers.filter(u => u.status === 'banned').length,
+        totalUsers: mockAdminUsers.length,
+        activeUsers: mockAdminUsers.filter(u => u.status === 'active').length,
+        bannedUsers: mockAdminUsers.filter(u => u.status === 'banned').length,
         totalGroups: mockGroups.length,
         totalRevenue: 2499.75,
-        freeUsers: mockUsers.filter(u => !u.isVIP).length,
-        vipUsers: mockUsers.filter(u => u.isVIP).length,
+        freeUsers: mockAdminUsers.filter(u => !u.isVIP).length,
+        vipUsers: mockAdminUsers.filter(u => u.isVIP).length,
         monthlyGrowth: 12.5
       },
       
       // User actions
-      banUser: (userId: number, reason: string) => {
+      banUser: (userId: string, reason: string) => {
         set((state) => ({
           allUsers: state.allUsers.map(user =>
             user.id === userId
-              ? { ...user, status: 'banned' as UserStatus, banReason: reason }
+              ? { ...user, status: 'banned' as UserStatus }
               : user
           )
         }));
@@ -333,21 +272,21 @@ export const useAdminStore = create<AdminState>()(
         if (user) {
           get().addActivityLog({
             action: 'Utilizador banido',
-            adminId: 1, // Default admin ID for now
+            adminId: 1,
             adminName: 'Admin',
             targetType: 'user',
-            targetId: userId,
-            details: `Utilizador ${user.name} banido. Razão: ${reason}`
+            targetId: 1,
+            details: `Utilizador ${user.name || user.full_name} banido. Razão: ${reason}`
           });
         }
         get().refreshStats();
       },
       
-      unbanUser: (userId: number) => {
+      unbanUser: (userId: string) => {
         set((state) => ({
           allUsers: state.allUsers.map(user =>
             user.id === userId
-              ? { ...user, status: 'active' as UserStatus, banReason: undefined }
+              ? { ...user, status: 'active' as UserStatus }
               : user
           )
         }));
@@ -355,24 +294,24 @@ export const useAdminStore = create<AdminState>()(
         if (user) {
           get().addActivityLog({
             action: 'Utilizador desbaneado',
-            adminId: 1, // Default admin ID for now
+            adminId: 1,
             adminName: 'Admin',
             targetType: 'user',
-            targetId: userId,
-            details: `Utilizador ${user.name} foi desbaneado`
+            targetId: 1,
+            details: `Utilizador ${user.name || user.full_name} foi desbaneado`
           });
         }
         get().refreshStats();
       },
       
-      updateUserPlan: (userId: number, plan: 'free' | 'vip') => {
+      updateUserPlan: (userId: string, plan: 'free' | 'vip') => {
         set((state) => ({
           allUsers: state.allUsers.map(user =>
             user.id === userId
               ? { 
                   ...user, 
                   isVIP: plan === 'vip',
-                  vipExpiry: plan === 'vip' ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : undefined
+                  is_vip: plan === 'vip'
                 }
               : user
           )
@@ -381,17 +320,17 @@ export const useAdminStore = create<AdminState>()(
         if (user) {
           get().addActivityLog({
             action: 'Plano alterado',
-            adminId: 1, // Default admin ID for now
+            adminId: 1,
             adminName: 'Admin',
             targetType: 'user',
-            targetId: userId,
-            details: `Plano do utilizador ${user.name} alterado para ${plan.toUpperCase()}`
+            targetId: 1,
+            details: `Plano do utilizador ${user.name || user.full_name} alterado para ${plan.toUpperCase()}`
           });
         }
         get().refreshStats();
       },
       
-      updateUserData: (userId: number, data: Partial<User>) => {
+      updateUserData: (userId: string, data: Partial<AdminUser>) => {
         set((state) => ({
           allUsers: state.allUsers.map(user =>
             user.id === userId ? { ...user, ...data } : user
@@ -401,53 +340,53 @@ export const useAdminStore = create<AdminState>()(
         if (user) {
           get().addActivityLog({
             action: 'Dados do utilizador alterados',
-            adminId: 1, // Default admin ID for now
+            adminId: 1,
             adminName: 'Admin',
             targetType: 'user',
-            targetId: userId,
-            details: `Dados do utilizador ${user.name} foram alterados`
+            targetId: 1,
+            details: `Dados do utilizador ${user.name || user.full_name} foram alterados`
           });
         }
       },
       
       // Group actions
-      deleteGroup: (groupId: number) => {
+      deleteGroup: (groupId: string) => {
         const group = mockGroups.find(g => g.id === groupId);
         if (group) {
           get().addActivityLog({
             action: 'Grupo eliminado',
-            adminId: 1, // Default admin ID for now
+            adminId: 1,
             adminName: 'Admin',
             targetType: 'group',
-            targetId: groupId,
+            targetId: 1,
             details: `Grupo "${group.name}" foi eliminado`
           });
         }
       },
       
-      freezeGroup: (groupId: number) => {
+      freezeGroup: (groupId: string) => {
         const group = mockGroups.find(g => g.id === groupId);
         if (group) {
           get().addActivityLog({
             action: 'Grupo congelado',
-            adminId: 1, // Default admin ID for now
+            adminId: 1,
             adminName: 'Admin',
             targetType: 'group',
-            targetId: groupId,
+            targetId: 1,
             details: `Grupo "${group.name}" foi congelado`
           });
         }
       },
       
-      updateGroup: (groupId: number, data: Partial<Group>) => {
+      updateGroup: (groupId: string, data: Partial<Group>) => {
         const group = mockGroups.find(g => g.id === groupId);
         if (group) {
           get().addActivityLog({
             action: 'Grupo alterado',
-            adminId: 1, // Default admin ID for now
+            adminId: 1,
             adminName: 'Admin',
             targetType: 'group',
-            targetId: groupId,
+            targetId: 1,
             details: `Grupo "${group.name}" foi alterado`
           });
         }

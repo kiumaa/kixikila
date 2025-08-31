@@ -1,5 +1,8 @@
 import type { User } from '@/stores/useAuthStore';
 
+// Re-export User type for compatibility
+export type { User } from '@/stores/useAuthStore';
+
 // Mock User Data
 export const mockUser: User = {
   id: 'user_1',
@@ -17,16 +20,19 @@ export const mockUser: User = {
 
 // Group Types
 export type GroupType = 'savings' | 'investment' | 'emergency';
-export type GroupStatus = 'draft' | 'active' | 'completed' | 'paused';
+export type GroupStatus = 'draft' | 'active' | 'completed' | 'paused' | 'pending';
 export type PayoutMethod = 'order' | 'lottery';
 
 export interface GroupMember {
+  id?: string; // For legacy compatibility
   user_id: string;
   name: string;
+  avatar?: string; // For legacy compatibility
   avatar_url?: string;
   paid: boolean;
   position?: number;
   is_winner?: boolean;
+  isAdmin?: boolean; // For legacy compatibility
   is_admin?: boolean;
   joined_at: string;
 }
@@ -39,28 +45,84 @@ export interface Group {
   status: GroupStatus;
   payout_method: PayoutMethod;
   
+  // Snake case (Supabase standard)
   contribution_amount: number;
   contribution_frequency: 'weekly' | 'monthly';
   max_members: number;
   current_members: number;
-  
   current_cycle: number;
   total_pool: number;
+  next_payment_date?: string;
+  
+  // Legacy camelCase (for admin components compatibility)
+  contributionAmount?: number;
+  maxMembers?: number;
+  currentMembers?: number;
+  totalPool?: number;
+  nextPaymentDate?: string;
+  cycle?: number;
+  
+  // Additional properties for admin/legacy components
+  category?: string;
+  privacy?: 'private' | 'public' | 'invite_only';
+  frequency?: string;
+  adminId?: string;
+  groupType?: 'lottery' | 'order';
+  nextReceiver?: { id: string; name: string; position: number };
   
   creator_id: string;
   created_at: string;
   start_date?: string;
-  next_payment_date?: string;
   
   members: GroupMember[];
   is_private: boolean;
   requires_approval: boolean;
+  
+  // Group history for admin components
+  history?: Array<{
+    cycle: number;
+    winner: string;
+    amount: number;
+    date: string;
+  }>;
   
   settings: {
     payment_window_hours: number;
     late_payment_fee?: number;
     auto_exclude_late_payments: boolean;
   };
+}
+
+// Admin User Type (extended from Supabase User with legacy properties)
+export interface AdminUser {
+  id: string;
+  email?: string;
+  full_name: string;
+  phone?: string;
+  role?: string;
+  avatar_url?: string;
+  kyc_status?: string;
+  is_vip?: boolean;
+  is_active?: boolean;
+  wallet_balance?: number;
+  trust_score?: number;
+  active_groups?: number;
+  completed_cycles?: number;
+  created_at?: string;
+  updated_at?: string;
+  
+  // Legacy properties for admin components
+  name?: string;
+  avatar?: string;
+  kycStatus?: string;
+  isVIP?: boolean;
+  walletBalance?: number;
+  activeGroups?: number;
+  trustScore?: number;
+  completedCycles?: number;
+  joinDate?: string;
+  lastLogin?: string;
+  status?: 'active' | 'banned' | 'inactive';
 }
 
 export interface GroupCycle {
@@ -82,30 +144,110 @@ export const mockGroups: Group[] = [
     type: 'savings',
     status: 'active',
     payout_method: 'lottery',
+    
+    // Snake case (Supabase standard)
     contribution_amount: 100,
     contribution_frequency: 'monthly',
     max_members: 8,
     current_members: 7,
     current_cycle: 3,
     total_pool: 700,
+    next_payment_date: '2025-09-15T00:00:00Z',
+    
+    // Legacy camelCase properties
+    contributionAmount: 100,
+    maxMembers: 8,
+    currentMembers: 7,
+    totalPool: 700,
+    nextPaymentDate: '2025-09-15T00:00:00Z',
+    cycle: 3,
+    
+    // Additional admin properties
+    category: 'family',
+    privacy: 'private',
+    frequency: 'mensal',
+    adminId: 'user_1',
+    groupType: 'lottery',
+    
     creator_id: 'user_1',
     created_at: '2025-06-15T00:00:00Z',
     start_date: '2025-06-15T00:00:00Z',
-    next_payment_date: '2025-09-15T00:00:00Z',
     is_private: true,
     requires_approval: true,
+    
     settings: {
       payment_window_hours: 72,
       auto_exclude_late_payments: true
     },
+    
+    // Group history for admin components
+    history: [
+      { cycle: 1, winner: 'Carlos Lima', amount: 800, date: '2025-06-15' },
+      { cycle: 2, winner: 'Rita Costa', amount: 800, date: '2025-07-15' },
+      { cycle: 3, winner: 'Maria João', amount: 800, date: '2025-08-15' }
+    ],
+    
     members: [
-      { user_id: 'user_1', name: 'Ana Santos', paid: true, is_admin: true, joined_at: '2025-06-15T00:00:00Z' },
-      { user_id: 'user_2', name: 'Pedro Neto', paid: true, joined_at: '2025-06-16T00:00:00Z' },
-      { user_id: 'user_3', name: 'Maria João', paid: true, is_winner: true, joined_at: '2025-06-17T00:00:00Z' },
-      { user_id: 'user_4', name: 'João Silva', paid: false, joined_at: '2025-06-18T00:00:00Z' },
-      { user_id: 'user_5', name: 'Carlos Lima', paid: true, joined_at: '2025-06-19T00:00:00Z' },
-      { user_id: 'user_6', name: 'Rita Costa', paid: true, joined_at: '2025-06-20T00:00:00Z' },
-      { user_id: 'user_7', name: 'Paulo Dias', paid: true, joined_at: '2025-06-21T00:00:00Z' }
+      { 
+        id: 'user_1',
+        user_id: 'user_1', 
+        name: 'Ana Santos', 
+        avatar: 'AS',
+        avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b647?w=150&h=150&fit=crop&crop=face',
+        paid: true, 
+        is_admin: true,
+        isAdmin: true,
+        joined_at: '2025-06-15T00:00:00Z' 
+      },
+      { 
+        id: 'user_2',
+        user_id: 'user_2', 
+        name: 'Pedro Neto', 
+        avatar: 'PN',
+        paid: true, 
+        joined_at: '2025-06-16T00:00:00Z' 
+      },
+      { 
+        id: 'user_3',
+        user_id: 'user_3', 
+        name: 'Maria João', 
+        avatar: 'MJ',
+        paid: true, 
+        is_winner: true,
+        joined_at: '2025-06-17T00:00:00Z' 
+      },
+      { 
+        id: 'user_4',
+        user_id: 'user_4', 
+        name: 'João Silva', 
+        avatar: 'JS',
+        paid: false, 
+        joined_at: '2025-06-18T00:00:00Z' 
+      },
+      { 
+        id: 'user_5',
+        user_id: 'user_5', 
+        name: 'Carlos Lima', 
+        avatar: 'CL',
+        paid: true, 
+        joined_at: '2025-06-19T00:00:00Z' 
+      },
+      { 
+        id: 'user_6',
+        user_id: 'user_6', 
+        name: 'Rita Costa', 
+        avatar: 'RC',
+        paid: true, 
+        joined_at: '2025-06-20T00:00:00Z' 
+      },
+      { 
+        id: 'user_7',
+        user_id: 'user_7', 
+        name: 'Paulo Dias', 
+        avatar: 'PD',
+        paid: true, 
+        joined_at: '2025-06-21T00:00:00Z' 
+      }
     ]
   },
   {
@@ -115,28 +257,172 @@ export const mockGroups: Group[] = [
     type: 'investment',
     status: 'active',
     payout_method: 'order',
+    
+    // Snake case
     contribution_amount: 500,
     contribution_frequency: 'monthly',
     max_members: 10,
     current_members: 8,
     current_cycle: 1,
     total_pool: 4000,
+    next_payment_date: '2025-09-20T00:00:00Z',
+    
+    // Legacy camelCase
+    contributionAmount: 500,
+    maxMembers: 10,
+    currentMembers: 8,
+    totalPool: 4000,
+    nextPaymentDate: '2025-09-20T00:00:00Z',
+    cycle: 1,
+    
+    // Additional admin properties
+    category: 'investment',
+    privacy: 'public',
+    frequency: 'mensal',
+    adminId: 'user_8',
+    groupType: 'order',
+    nextReceiver: { id: 'user_8', name: 'Luís Ferreira', position: 1 },
+    
     creator_id: 'user_8',
     created_at: '2025-08-20T00:00:00Z',
     start_date: '2025-08-20T00:00:00Z',
-    next_payment_date: '2025-09-20T00:00:00Z',
     is_private: false,
     requires_approval: false,
+    
     settings: {
       payment_window_hours: 48,
       auto_exclude_late_payments: false
     },
+    
+    history: [],
+    
     members: [
-      { user_id: 'user_1', name: 'Ana Santos', paid: true, position: 3, joined_at: '2025-08-20T00:00:00Z' },
-      { user_id: 'user_8', name: 'Luís Ferreira', paid: true, position: 1, is_admin: true, joined_at: '2025-08-20T00:00:00Z' },
-      { user_id: 'user_9', name: 'Sofia Miranda', paid: true, position: 2, joined_at: '2025-08-21T00:00:00Z' },
-      { user_id: 'user_10', name: 'Rui Tavares', paid: true, position: 4, joined_at: '2025-08-22T00:00:00Z' }
+      { 
+        id: 'user_1',
+        user_id: 'user_1', 
+        name: 'Ana Santos', 
+        avatar: 'AS',
+        paid: true, 
+        position: 3, 
+        joined_at: '2025-08-20T00:00:00Z' 
+      },
+      { 
+        id: 'user_8',
+        user_id: 'user_8', 
+        name: 'Luís Ferreira', 
+        avatar: 'LF',
+        paid: true, 
+        position: 1, 
+        is_admin: true,
+        isAdmin: true,
+        joined_at: '2025-08-20T00:00:00Z' 
+      },
+      { 
+        id: 'user_9',
+        user_id: 'user_9', 
+        name: 'Sofia Miranda', 
+        avatar: 'SM',
+        paid: true, 
+        position: 2, 
+        joined_at: '2025-08-21T00:00:00Z' 
+      },
+      { 
+        id: 'user_10',
+        user_id: 'user_10', 
+        name: 'Rui Tavares', 
+        avatar: 'RT',
+        paid: true, 
+        position: 4, 
+        joined_at: '2025-08-22T00:00:00Z' 
+      }
     ]
+  }
+];
+
+// Mock Admin Users Data
+export const mockAdminUsers: AdminUser[] = [
+  {
+    id: 'user_1',
+    email: 'ana.santos@email.pt',
+    full_name: 'Ana Santos',
+    phone: '+351934736823',
+    role: 'user',
+    avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b647?w=150&h=150&fit=crop&crop=face',
+    kyc_status: 'approved',
+    is_vip: true,
+    is_active: true,
+    wallet_balance: 1250.50,
+    trust_score: 98,
+    active_groups: 3,
+    completed_cycles: 12,
+    created_at: '2024-01-15T00:00:00Z',
+    
+    // Legacy properties
+    name: 'Ana Santos',
+    avatar: 'AS',
+    kycStatus: 'approved',
+    isVIP: true,
+    walletBalance: 1250.50,
+    activeGroups: 3,
+    trustScore: 98,
+    completedCycles: 12,
+    joinDate: '2024-01-15T00:00:00Z',
+    lastLogin: '2025-08-29T10:00:00Z',
+    status: 'active'
+  },
+  {
+    id: 'user_2',
+    email: 'pedro.neto@email.pt',
+    full_name: 'Pedro Neto',
+    phone: '+351912345679',
+    role: 'user',
+    kyc_status: 'pending',
+    is_vip: false,
+    is_active: true,
+    wallet_balance: 450.30,
+    trust_score: 85,
+    active_groups: 1,
+    completed_cycles: 5,
+    created_at: '2024-03-20T00:00:00Z',
+    
+    // Legacy properties
+    name: 'Pedro Neto',
+    avatar: 'PN',
+    kycStatus: 'pending',
+    isVIP: false,
+    walletBalance: 450.30,
+    activeGroups: 1,
+    trustScore: 85,
+    completedCycles: 5,
+    joinDate: '2024-03-20T00:00:00Z',
+    status: 'active'
+  },
+  {
+    id: 'user_3',
+    email: 'maria.joao@email.pt',
+    full_name: 'Maria João',
+    phone: '+351912345680',
+    role: 'user',
+    kyc_status: 'rejected',
+    is_vip: false,
+    is_active: false,
+    wallet_balance: 0,
+    trust_score: 30,
+    active_groups: 0,
+    completed_cycles: 0,
+    created_at: '2024-05-10T00:00:00Z',
+    
+    // Legacy properties
+    name: 'Maria João',
+    avatar: 'MJ',
+    kycStatus: 'rejected',
+    isVIP: false,
+    walletBalance: 0,
+    activeGroups: 0,
+    trustScore: 30,
+    completedCycles: 0,
+    joinDate: '2024-05-10T00:00:00Z',
+    status: 'banned'
   }
 ];
 
@@ -149,20 +435,38 @@ export const mockRecommendedGroups: Group[] = [
     type: 'savings',
     status: 'active', 
     payout_method: 'order',
+    
+    // Snake case
     contribution_amount: 200,
     contribution_frequency: 'monthly',
     max_members: 12,
     current_members: 8,
     current_cycle: 1,
     total_pool: 1600,
+    
+    // Legacy camelCase
+    contributionAmount: 200,
+    maxMembers: 12,
+    currentMembers: 8,
+    totalPool: 1600,
+    cycle: 1,
+    
+    // Additional admin properties
+    category: 'savings',
+    privacy: 'public',
+    frequency: 'mensal',
+    
     creator_id: 'user_rec_1',
     created_at: '2025-08-25T00:00:00Z',
     is_private: false,
     requires_approval: true,
+    
     settings: {
       payment_window_hours: 72,
       auto_exclude_late_payments: true
     },
+    
+    history: [],
     members: []
   }
 ];

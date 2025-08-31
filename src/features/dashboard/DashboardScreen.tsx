@@ -348,7 +348,7 @@ const GroupCard: React.FC<GroupCardProps> = React.memo(({ group, onSelect }) => 
               <h3 className="font-bold font-system text-foreground text-lg">
                 {group.name}
               </h3>
-              {group.groupType === 'lottery' && (
+              {group.payout_method === 'lottery' && (
                 <StatusBadge status="winner" size="xs">
                   <Sparkles className="w-3 h-3 mr-1" />
                   Sorteio

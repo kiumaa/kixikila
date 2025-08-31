@@ -7,7 +7,7 @@ import { Modal } from '@/components/design-system/Modal';
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
-import { formatCurrency } from '@/data/mockData';
+import { formatCurrency } from '@/lib/mockData';
 import { useWithdrawals } from '@/hooks/useWithdrawals';
 
 interface WithdrawModalProps {
