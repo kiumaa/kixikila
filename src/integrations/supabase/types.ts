@@ -56,6 +56,85 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_pin: {
+        Row: {
+          created_at: string | null
+          pin_hash: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          pin_hash: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          pin_hash?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auth_pin_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_sessions: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          device_name: string | null
+          expires_at: string
+          failed_pin_attempts: number | null
+          id: string
+          last_seen: string | null
+          lock_until: string | null
+          trusted: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          device_name?: string | null
+          expires_at: string
+          failed_pin_attempts?: number | null
+          id?: string
+          last_seen?: string | null
+          lock_until?: string | null
+          trusted?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          device_name?: string | null
+          expires_at?: string
+          failed_pin_attempts?: number | null
+          id?: string
+          last_seen?: string | null
+          lock_until?: string | null
+          trusted?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_configurations: {
         Row: {
           auto_retry_enabled: boolean | null
@@ -419,6 +498,50 @@ export type Database = {
             foreignKeyName: "groups_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kyc_status: {
+        Row: {
+          created_at: string | null
+          document_number: string | null
+          document_type: string | null
+          notes: string | null
+          reviewed_at: string | null
+          status: string | null
+          submitted_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_status_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },

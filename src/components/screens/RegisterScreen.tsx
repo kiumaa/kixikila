@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Mail, Phone, Check, Lock } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Check, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { InternationalPhoneInput } from '@/components/ui/international-phone-input';
+import PinSetupScreen from '@/features/auth/PinSetupScreen';
+import KycPopup from '@/components/modals/KycPopup';
 
 interface RegisterScreenProps {
   onBack: () => void;
@@ -15,14 +18,17 @@ interface RegisterScreenProps {
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSuccess }) => {
-  const [step, setStep] = useState<'form' | 'otp' | 'success'>('form');
+  const [step, setStep] = useState<'form' | 'otp' | 'pin' | 'success'>('form');
   const [formData, setFormData] = useState({
     fullName: '',
+    email: '',
     phone: '',
-    acceptTerms: false
+    acceptTerms: false,
+    rememberDevice: true
   });
   const [otpCode, setOtpCode] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
+  const [showKycPopup, setShowKycPopup] = useState(false);
   const { toast } = useToast();
   const { sendPhoneOtp, verifyPhoneOtp, isLoading, error, clearError } = useAuthStore();
 
@@ -50,7 +56,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
     if (!isFormValid) {
       toast({
         title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos",
+        description: "Por favor, preencha todos os campos obrigatórios",
         variant: "destructive",
       });
       return;
@@ -82,11 +88,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
 
     try {
       await verifyPhoneOtp(formData.phone, otpCode);
-      setStep('success');
       
-      setTimeout(() => {
-        onSuccess();
-      }, 2000);
+      toast({
+        title: "Telefone verificado!",
+        description: "Agora vamos definir o teu PIN de segurança.",
+        variant: "default",
+      });
+      
+      // Avançar para definir PIN
+      setStep('pin');
+
     } catch (error) {
       // Error is handled by the store and useEffect
     }
@@ -105,11 +116,47 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
     }
   };
 
+  const handlePinComplete = () => {
+    toast({
+      title: "Conta criada com sucesso!",
+      description: "Bem-vindo à KIXIKILA! A tua conta está pronta.",
+      variant: "default",
+    });
+
+    // Mostrar popup KYC após PIN definido
+    setStep('success');
+    setShowKycPopup(true);
+  };
+
+  const handleKycPopupClose = () => {
+    setShowKycPopup(false);
+    onSuccess(); // Redirecionar para dashboard
+  };
+
+  const handleStartKyc = () => {
+    setShowKycPopup(false);
+    onSuccess(); // Redirecionar para dashboard - KYC será feito na página de perfil
+  };
+
   // Validation helpers
   const isFormValid = formData.fullName.trim() !== '' && 
+    formData.email.trim() !== '' &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
     formData.phone.trim() !== '' && 
     formData.phone.length >= 10 && // Minimum international phone length
     formData.acceptTerms;
+
+  // PIN Setup Screen
+  if (step === 'pin') {
+    return (
+      <PinSetupScreen
+        onBack={() => setStep('otp')}
+        onComplete={handlePinComplete}
+        userPhone={formData.phone}
+        rememberDevice={formData.rememberDevice}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-subtle via-background to-accent flex items-center justify-center p-6">
@@ -161,6 +208,27 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
                 </div>
 
                 <div>
+                  <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                    Email
+                  </Label>
+                  <div className="relative mt-2">
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="ana.santos@email.pt"
+                      className="ios-input pl-12"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Para recuperação de conta se perderes o telefone
+                  </p>
+                </div>
+
+                <div>
                   <Label htmlFor="phone" className="text-sm font-medium text-foreground">
                     Número de Telemóvel
                   </Label>
@@ -177,12 +245,25 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
                 </div>
 
                 <div className="flex items-start gap-3 pt-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
+                    id="remember"
+                    checked={formData.rememberDevice}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, rememberDevice: !!checked })
+                    }
+                  />
+                  <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+                    Lembrar este dispositivo por 30 dias (acesso rápido com PIN)
+                  </Label>
+                </div>
+
+                <div className="flex items-start gap-3 pt-2">
+                  <Checkbox
                     id="terms"
                     checked={formData.acceptTerms}
-                    onChange={(e) => setFormData({ ...formData, acceptTerms: e.target.checked })}
-                    className="mt-1 w-4 h-4 text-primary border-border rounded focus:ring-primary"
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, acceptTerms: !!checked })
+                    }
                   />
                   <Label htmlFor="terms" className="text-sm text-muted-foreground cursor-pointer">
                     Li e aceito os{' '}
@@ -205,10 +286,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <LoadingSpinner size="sm" />
-                      <span>Criando conta...</span>
+                      <span>Enviando código...</span>
                     </div>
                   ) : (
-                    'Criar Conta'
+                    'Continuar'
                   )}
                 </Button>
 
@@ -287,7 +368,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
                       <span>Verificando...</span>
                     </div>
                   ) : (
-                    'Criar Conta'
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Verificar Código
+                    </>
                   )}
                 </Button>
 
@@ -326,6 +410,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
           )}
         </CardContent>
       </Card>
+
+      {/* KYC Popup */}
+      <KycPopup
+        isOpen={showKycPopup}
+        onClose={handleKycPopupClose}
+        onStartKyc={handleStartKyc}
+      />
     </div>
   );
 };
