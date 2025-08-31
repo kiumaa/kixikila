@@ -2,7 +2,6 @@
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { BottomNavigation } from '@/components/navigation/bottom-navigation'
 import { Share2, Gift, Users, Star } from 'lucide-react'
 
 export default function InviteScreen() {
@@ -108,8 +107,6 @@ export default function InviteScreen() {
           </div>
         </Card>
       </div>
-
-      <BottomNavigation />
     </div>
   )
 }

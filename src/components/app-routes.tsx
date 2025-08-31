@@ -5,11 +5,10 @@ import { useAuth } from '@/lib/auth-context'
 import { LoadingScreen } from '@/components/ui/loading-screen'
 import { OnboardingScreen } from '@/components/onboarding/onboarding-screen'
 import { AuthScreen } from '@/components/auth/auth-screen'
-import { DashboardScreen } from '@/components/dashboard/dashboard-screen'
+import Dashboard from '@/pages/dashboard'
 import WalletScreen from '@/components/wallet/wallet-screen'
 import InviteScreen from '@/components/invite/invite-screen'
 import ProfileScreen from '@/components/profile/profile-screen'
-import { BottomNavigation } from '@/components/navigation/bottom-navigation'
 
 export default function AppRoutes() {
   const { user, loading } = useAuth()
@@ -21,44 +20,16 @@ export default function AppRoutes() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <OnboardingScreen />} />
-      <Route path="/entrar" element={user ? <Navigate to="/dashboard" replace /> : <AuthScreen />} />
+      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <OnboardingScreen onComplete={() => {}} />} />
+      <Route path="/entrar" element={user ? <Navigate to="/dashboard" replace /> : <AuthScreen onBack={() => window.history.back()} />} />
       
       {/* Protected routes */}
       {user ? (
         <>
-          <Route path="/dashboard" element={
-            <div className="min-h-screen bg-background">
-              <main className="pb-20">
-                <DashboardScreen />
-              </main>
-              <BottomNavigation />
-            </div>
-          } />
-          <Route path="/wallet" element={
-            <div className="min-h-screen bg-background">
-              <main className="pb-20">
-                <WalletScreen />
-              </main>
-              <BottomNavigation />
-            </div>
-          } />
-          <Route path="/invite" element={
-            <div className="min-h-screen bg-background">
-              <main className="pb-20">
-                <InviteScreen />
-              </main>
-              <BottomNavigation />
-            </div>
-          } />
-          <Route path="/profile" element={
-            <div className="min-h-screen bg-background">
-              <main className="pb-20">
-                <ProfileScreen />
-              </main>
-              <BottomNavigation />
-            </div>
-          } />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/wallet" element={<WalletScreen />} />
+          <Route path="/invite" element={<InviteScreen />} />
+          <Route path="/profile" element={<ProfileScreen />} />
         </>
       ) : (
         <Route path="*" element={<Navigate to="/" replace />} />

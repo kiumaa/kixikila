@@ -3,5 +3,5 @@
 import { AuthScreen } from '@/components/auth/auth-screen'
 
 export default function LoginPage() {
-  return <AuthScreen />
+  return <AuthScreen onBack={() => window.history.back()} />
 }

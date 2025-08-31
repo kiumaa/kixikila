@@ -2,7 +2,6 @@
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { BottomNavigation } from '@/components/navigation/bottom-navigation'
 import { useAuth } from '@/lib/auth-context'
 import { 
   User, Shield, CreditCard, Bell, Lock, FileText, 
@@ -162,8 +161,6 @@ export default function ProfileScreen() {
           </div>
         </Card>
       </div>
-
-      <BottomNavigation />
     </div>
   )
 }

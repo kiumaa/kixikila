@@ -23,7 +23,7 @@ export default function ProfilePage() {
           <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary-hover rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-10 h-10 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold">{user?.user_metadata?.full_name || 'Utilizador'}</h1>
+          <h1 className="text-2xl font-bold">{user?.full_name || 'Utilizador'}</h1>
           <p className="text-muted-foreground">{user?.email}</p>
         </div>
 
