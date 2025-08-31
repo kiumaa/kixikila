@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/data/mockData';
+import { useWithdrawals } from '@/hooks/useWithdrawals';
 
 interface WithdrawModalProps {
   isOpen: boolean;
@@ -21,39 +22,52 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   currentBalance
 }) => {
   const [amount, setAmount] = useState('');
-  const [iban, setIban] = useState('PT50 0002 0123 1234 5678 9015 4');
+  const [iban, setIban] = useState('');
+  const [accountHolderName, setAccountHolderName] = useState('');
+  const [bankName, setBankName] = useState('');
   const [step, setStep] = useState<'amount' | 'processing' | 'success'>('amount');
   const { toast } = useToast();
+  const { createWithdrawal, loading } = useWithdrawals();
 
   const maxWithdraw = Math.min(currentBalance, 2000);
   const minWithdraw = 20;
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     if (!amount || parseFloat(amount) < minWithdraw || parseFloat(amount) > maxWithdraw) return;
+    if (!iban.trim() || !accountHolderName.trim()) return;
     
     setStep('processing');
     
-    // Simulate bank transfer processing
-    setTimeout(() => {
+    const success = await createWithdrawal({
+      amount: parseFloat(amount),
+      iban: iban.trim(),
+      accountHolderName: accountHolderName.trim(),
+      bankName: bankName.trim() || undefined
+    });
+
+    if (success) {
       setStep('success');
       
       setTimeout(() => {
         setStep('amount');
         setAmount('');
+        setIban('');
+        setAccountHolderName('');
+        setBankName('');
         onClose();
-        
-        toast({
-          title: "✅ Levantamento solicitado!",
-          description: `${formatCurrency(parseFloat(amount))} será transferido em 1-2 dias úteis`
-        });
       }, 3000);
-    }, 2000);
+    } else {
+      setStep('amount');
+    }
   };
 
   const handleClose = () => {
     if (step !== 'processing') {
       setStep('amount');
       setAmount('');
+      setIban('');
+      setAccountHolderName('');
+      setBankName('');
       onClose();
     }
   };
@@ -61,6 +75,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const isAmountValid = amount && 
     parseFloat(amount) >= minWithdraw && 
     parseFloat(amount) <= maxWithdraw;
+  
+  const isFormValid = isAmountValid && iban.trim() && accountHolderName.trim();
 
   return (
     <Modal
@@ -105,6 +121,20 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           </div>
 
           <div>
+            <Label htmlFor="accountHolder" className="text-sm font-medium text-foreground">
+              Nome do titular da conta
+            </Label>
+            <Input
+              id="accountHolder"
+              type="text"
+              value={accountHolderName}
+              onChange={(e) => setAccountHolderName(e.target.value)}
+              placeholder="Nome completo como no banco"
+              className="ios-input mt-2"
+            />
+          </div>
+
+          <div>
             <Label htmlFor="iban" className="text-sm font-medium text-foreground">
               Conta bancária (IBAN)
             </Label>
@@ -112,9 +142,23 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
               id="iban"
               type="text"
               value={iban}
-              onChange={(e) => setIban(e.target.value)}
+              onChange={(e) => setIban(e.target.value.toUpperCase())}
               placeholder="PT50 0000 0000 0000 0000 0000 0"
               className="ios-input mt-2 font-mono"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="bankName" className="text-sm font-medium text-foreground">
+              Nome do banco (opcional)
+            </Label>
+            <Input
+              id="bankName"
+              type="text"
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              placeholder="Ex: Banco Millennium, CGD, etc."
+              className="ios-input mt-2"
             />
           </div>
 
@@ -168,12 +212,16 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
           <Button
             onClick={handleWithdraw}
-            disabled={!isAmountValid || !iban.trim()}
+            disabled={!isFormValid || loading}
             className="w-full ios-button bg-warning hover:bg-warning/90 text-warning-foreground font-semibold"
             size="lg"
           >
-            <Banknote className="w-5 h-5 mr-2" />
-            Solicitar Levantamento
+            {loading ? (
+              <LoadingSpinner size="sm" className="mr-2" />
+            ) : (
+              <Banknote className="w-5 h-5 mr-2" />
+            )}
+            {loading ? 'A processar...' : 'Solicitar Levantamento'}
           </Button>
         </div>
       )}

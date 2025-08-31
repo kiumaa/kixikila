@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useTransactions, useTransactionStats } from '@/hooks/useTransactions';
+import { useWithdrawals } from '@/hooks/useWithdrawals';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { formatCurrency, formatDate } from '@/data/mockData';
 
@@ -40,6 +41,9 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
     stats, 
     loading: statsLoading 
   } = useTransactionStats();
+
+  // Get withdrawals
+  const { withdrawals } = useWithdrawals();
 
   const currentBalance = stats.totalDeposits - stats.totalWithdrawals;
   const hasMoreTransactions = pagination.offset + pagination.limit < pagination.total;
