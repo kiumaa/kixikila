@@ -79,7 +79,14 @@ export function AuthScreen() {
       if (data.isNewUser) {
         setCurrentStep('register')
       } else {
-        navigate('/dashboard')
+        // If we have a session URL, use it to create the session
+        if (data.sessionUrl) {
+          window.location.href = data.sessionUrl
+        } else {
+          // Fallback to dashboard
+          navigate('/dashboard')
+        }
+        toast.success('Login realizado com sucesso!')
       }
     } catch (error: any) {
       toast.error(error.message || 'Código inválido')
