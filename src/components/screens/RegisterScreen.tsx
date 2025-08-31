@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { InternationalPhoneInput } from '@/components/ui/international-phone-input';
 
 interface RegisterScreenProps {
   onBack: () => void;
@@ -105,16 +106,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
   };
 
   // Validation helpers
-  const validatePortuguesePhone = (phone: string): boolean => {
-    if (!phone || typeof phone !== 'string') return false;
-    // Portuguese phone format: +351 followed by 9 digits
-    const portuguesePhoneRegex = /^\+351[0-9]{9}$/;
-    return portuguesePhoneRegex.test(phone);
-  };
-
   const isFormValid = formData.fullName.trim() !== '' && 
     formData.phone.trim() !== '' && 
-    validatePortuguesePhone(formData.phone) &&
+    formData.phone.length >= 10 && // Minimum international phone length
     formData.acceptTerms;
 
   return (
@@ -170,39 +164,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
                   <Label htmlFor="phone" className="text-sm font-medium text-foreground">
                     Número de Telemóvel
                   </Label>
-                  <div className="relative mt-2">
-                    <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                    <Input
-                      id="phone"
-                      type="tel"
+                  <div className="mt-2">
+                    <InternationalPhoneInput
                       value={formData.phone}
-                      onChange={(e) => {
-                        let value = e.target.value;
-                        
-                        // Auto-format Portuguese phone numbers
-                        if (value && !value.startsWith('+')) {
-                          if (value.startsWith('9')) {
-                            value = '+351' + value;
-                          } else if (value.startsWith('351')) {
-                            value = '+' + value;
-                          }
-                        }
-                        
-                        setFormData({ ...formData, phone: value });
-                      }}
-                      placeholder="+351 912 345 678"
-                      className="ios-input pl-12"
-                      required
+                      onChange={(phone) => setFormData({ ...formData, phone: phone || '' })}
+                      defaultCountry="PT"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
                     Receberá um código SMS para verificar o número
                   </p>
-                  {formData.phone && !validatePortuguesePhone(formData.phone) && (
-                    <p className="text-xs text-destructive mt-1">
-                      Formato inválido. Use: +351 912 345 678
-                    </p>
-                  )}
                 </div>
 
                 <div className="flex items-start gap-3 pt-2">
