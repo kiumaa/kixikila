@@ -46,28 +46,41 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Verify OTP using user_id
-    const { data: otpData, error: otpError } = await supabase
-      .from('otp_codes')
-      .select('*')
-      .eq('user_id', userData.id)
-      .eq('code', code)
-      .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString())
-      .single();
+    // DEVELOPMENT MODE: Accept fixed code "123456" or verify from database
+    let otpData = null;
+    
+    if (code === "123456") {
+      // Development mode - accept fixed code
+      console.log(`🔐 DESENVOLVIMENTO - Código fixo aceite para ${phone}`);
+      otpData = { id: 'dev-mode', user_id: userData.id }; // Mock OTP data
+    } else {
+      // Normal verification from database
+      const { data: dbOtpData, error: otpError } = await supabase
+        .from('otp_codes')
+        .select('*')
+        .eq('user_id', userData.id)
+        .eq('code', code)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .single();
 
-    if (otpError || !otpData) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid or expired OTP' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (otpError || !dbOtpData) {
+        return new Response(
+          JSON.stringify({ error: 'Código inválido ou expirado. Use 123456 para desenvolvimento.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      otpData = dbOtpData;
     }
 
-    // Mark OTP as used
-    await supabase
-      .from('otp_codes')
-      .update({ status: 'used' })
-      .eq('id', otpData.id);
+    // Mark OTP as used (skip for development mode)
+    if (otpData.id !== 'dev-mode') {
+      await supabase
+        .from('otp_codes')
+        .update({ status: 'used' })
+        .eq('id', otpData.id);
+    }
 
     // Mark user as phone verified
     const { data: updatedUser, error: updateError } = await supabase

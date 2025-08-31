@@ -71,8 +71,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Generate 6-digit OTP
-    const otp_code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate OTP - Fixed code "123456" for development
+    const otp_code = "123456"; // Fixed development code
     const expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Store OTP in database
@@ -94,14 +94,17 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // In production, you would send SMS here using BulkSMS API
-    console.log(`OTP for ${phone}: ${otp_code}`);
+    // DEVELOPMENT MODE: SMS disabled, using fixed code
+    console.log(`🔐 DESENVOLVIMENTO - Código fixo para ${phone}: ${otp_code}`);
+    console.log(`📱 Use sempre o código: 123456`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'OTP sent successfully',
-        phone: phone.slice(0, 3) + '****' + phone.slice(-2) // Masked phone
+        message: '📱 DESENVOLVIMENTO: Use sempre o código 123456',
+        phone: phone.slice(0, 3) + '****' + phone.slice(-2), // Masked phone
+        developmentMode: true,
+        code: otp_code // Show code in development
       }),
       { 
         status: 200, 
