@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
-import { ArrowLeft, Users, Settings, Calendar, Euro, Crown, Share2, Play, History, Trophy, Clock, Check, X, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Users, Settings, Calendar, Euro, Crown, Share2, Play, History, Trophy, Clock, Check, X, AlertCircle, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { Confetti } from '@/components/ui/confetti'
+import { MemberManagement } from '@/components/groups/member-management'
+import { InviteModal } from '@/components/groups/invite-modal'
 
 interface GroupDetailsProps {
   groupId: string
@@ -49,6 +52,8 @@ export function GroupDetailsScreen({ groupId, onBack }: GroupDetailsProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isDrawing, setIsDrawing] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [lastWinner, setLastWinner] = useState<string | null>(null)
 
   useEffect(() => {
     if (groupId) {
@@ -113,6 +118,10 @@ export function GroupDetailsScreen({ groupId, onBack }: GroupDetailsProps) {
 
       if (error) throw error
 
+      // Show confetti animation
+      setShowConfetti(true)
+      setLastWinner(data.winner.name)
+      
       toast.success(`🎉 Sorteio realizado! ${data.winner.name} foi contemplado(a)!`)
       fetchGroupData() // Refresh data
       
@@ -322,52 +331,12 @@ export function GroupDetailsScreen({ groupId, onBack }: GroupDetailsProps) {
         )}
 
         {activeTab === 'members' && (
-          <div className="space-y-3">
-            {members.map((member) => (
-              <Card key={member.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <div className="w-full h-full bg-gradient-to-br from-primary to-primary-hover rounded-full flex items-center justify-center text-white font-semibold">
-                        {member.users.full_name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">{member.users.full_name}</span>
-                        {member.role === 'creator' && (
-                          <Badge variant="secondary">
-                            <Crown className="w-3 h-3 mr-1" />
-                            Criador
-                          </Badge>
-                        )}
-                        {member.role === 'admin' && (
-                          <Badge variant="secondary">Admin</Badge>
-                        )}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Contribuiu: {formatCurrency(member.total_contributed)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Badge variant={member.status === 'active' ? 'default' : 'secondary'}>
-                    {member.status === 'active' ? (
-                      <>
-                        <Check className="w-3 h-3 mr-1" />
-                        Ativo
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-3 h-3 mr-1" />
-                        Pendente
-                      </>
-                    )}
-                  </Badge>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <MemberManagement 
+            members={members}
+            groupId={groupId}
+            isAdmin={isUserAdmin()}
+            onMemberUpdate={fetchGroupData}
+          />
         )}
 
         {activeTab === 'history' && (
@@ -451,6 +420,22 @@ export function GroupDetailsScreen({ groupId, onBack }: GroupDetailsProps) {
           </Card>
         )}
       </div>
+
+      {/* Confetti Animation */}
+      <Confetti 
+        active={showConfetti} 
+        onComplete={() => setShowConfetti(false)} 
+      />
+
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <InviteModal
+          isOpen={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+          groupId={groupId}
+          groupName={group?.name || ''}
+        />
+      )}
     </div>
   )
 }

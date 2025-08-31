@@ -16,6 +16,7 @@ import { CreateGroupModal } from '@/components/modals/create-group-modal'
 import { GroupCard } from '@/components/dashboard/group-card'
 import { WalletSkeleton, GroupCardSkeleton, StatCardSkeleton } from '@/components/dashboard/skeleton-loaders'
 import { formatCurrency } from '@/lib/utils'
+import { GroupDetailsScreen } from '@/components/groups/group-details-screen'
 
 interface Group {
   id: string
@@ -41,6 +42,8 @@ export function DashboardPage() {
   const [userGroups, setUserGroups] = useState<Group[]>([])
   const [recommendedGroups, setRecommendedGroups] = useState<Group[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const [currentView, setCurrentView] = useState<'dashboard' | 'group-details'>('dashboard')
   const [userStats, setUserStats] = useState({
     wallet_balance: 1250.50,
     total_saved: 5420.80,
@@ -156,9 +159,33 @@ export function DashboardPage() {
   }, [])
 
   const handleViewGroupDetails = (groupId: string) => {
-    console.log('View group details:', groupId)
-    // Navigate to group details - mock for now
-    alert(`Navegar para detalhes do grupo ${groupId}`)
+    setSelectedGroupId(groupId)
+    setCurrentView('group-details')
+  }
+
+  const handleBackToDashboard = () => {
+    setSelectedGroupId(null)
+    setCurrentView('dashboard')
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <p className="text-muted-foreground">Utilizador não autenticado</p>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show group details screen
+  if (currentView === 'group-details' && selectedGroupId) {
+    return (
+      <GroupDetailsScreen 
+        groupId={selectedGroupId}
+        onBack={handleBackToDashboard}
+      />
+    )
   }
 
   return (
@@ -346,11 +373,11 @@ export function DashboardPage() {
               </>
             ) : userGroups.length > 0 ? (
               userGroups.map((group) => (
-                <GroupCard
-                  key={group.id}
-                  group={group}
-                  onViewDetails={handleViewGroupDetails}
-                />
+                  <GroupCard
+                    key={group.id}
+                    group={group}
+                    onViewDetails={handleViewGroupDetails}
+                  />
               ))
             ) : (
               <Card className="p-8 text-center">
