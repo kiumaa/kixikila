@@ -193,10 +193,11 @@ class SupabaseAuthService {
   }
 
   /**
-   * Verify phone OTP using our Enhanced Edge Function with Twilio
+   * Verify phone OTP using simplified Edge Function approach
    */
   async verifyPhoneOtp(otpData: VerifyPhoneOtpRequest): Promise<AuthServiceResponse<{ user: UserData; session: any }>> {
     try {
+      // Step 1: Verify OTP via Edge Function
       const { data, error } = await supabase.functions.invoke('verify-otp', {
         body: {
           phone: otpData.phone,
@@ -206,9 +207,10 @@ class SupabaseAuthService {
       });
 
       if (error) {
+        console.error('Edge Function error:', error);
         return {
           success: false,
-          message: error.message,
+          message: 'Erro na verificação. Tente novamente.',
         };
       }
 
@@ -219,58 +221,76 @@ class SupabaseAuthService {
         };
       }
 
-      // Extract data from Edge Function response
-      const { user: userData, session: sessionData, tempCredentials } = data.data || {};
-
-      if (userData && tempCredentials) {
-        // Use temporary credentials to authenticate with Supabase
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: tempCredentials.email,
-          password: tempCredentials.password,
-        });
-
-        if (authError || !authData.session) {
-          console.error('Failed to create session with temp credentials:', authError);
-          return {
-            success: false,
-            message: 'Erro ao criar sessão de login',
-          };
-        }
-
-        // Update the auth store manually since we have the session
+      // Step 2: Extract user data from verified response
+      const userData = data.data?.user;
+      if (!userData) {
         return {
-          success: true,
-          message: 'Login realizado com sucesso',
-          data: {
-            user: userData,
-            session: authData.session,
-          },
+          success: false,
+          message: 'Erro nos dados do utilizador',
         };
       }
 
-      // Fallback for existing users
-      if (userData && sessionData) {
+      // Step 3: Simple approach - use signInAnonymously for OTP-verified users
+      // This creates a temporary session that we can use for the application
+      const { data: anonSignIn, error: anonError } = await supabase.auth.signInAnonymously();
+      
+      if (anonError) {
+        console.error('Anonymous sign in error:', anonError);
         return {
-          success: true,
-          message: 'Login realizado com sucesso',
-          data: {
-            user: userData,
-            session: sessionData,
-          },
+          success: false,
+          message: 'Erro ao criar sessão. Tente novamente.',
         };
+      }
+
+      // Update the anonymous user's metadata with our user data
+      if (anonSignIn.session) {
+        // Store user ID in session metadata for later retrieval
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            kixikila_user_id: userData.id,
+            phone: userData.phone,
+            full_name: userData.full_name
+          }
+        });
+
+        if (updateError) {
+          console.warn('Could not update user metadata:', updateError);
+        }
       }
 
       return {
-        success: false,
-        message: 'Erro na autenticação - dados incompletos',
+        success: true,
+        message: data.data?.isNewUser ? 'Conta criada com sucesso!' : 'Login realizado com sucesso!',
+        data: {
+          user: this.formatCustomUserData(userData),
+          session: anonSignIn.session,
+        },
       };
     } catch (error: any) {
       console.error('Verify phone OTP error:', error);
       return {
         success: false,
-        message: error.message || 'Erro na verificação do OTP',
+        message: 'Erro na verificação do OTP. Tente novamente.',
       };
     }
+  }
+
+  /**
+   * Format custom user data to our UserData interface
+   */
+  private formatCustomUserData(userData: any): UserData {
+    return {
+      id: userData.id,
+      email: userData.email || '',
+      full_name: userData.full_name || 'Utilizador',
+      phone: userData.phone,
+      role: userData.role || 'user',
+      email_verified: userData.email_verified || false,
+      phone_verified: userData.phone_verified || true,
+      avatar_url: userData.avatar_url,
+      created_at: userData.created_at,
+      updated_at: userData.updated_at,
+    };
   }
 
   /**
