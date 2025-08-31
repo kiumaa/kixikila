@@ -246,27 +246,86 @@ class SupabaseAuthService {
         };
       }
 
-      // Step 3: Create custom session without Supabase auth
-      // Since Supabase auth signups are disabled, we'll create a local session
-      // using the user data from our custom users table
-      
-      console.log('Creating custom session for user:', userData.id);
-      
-      // Create a custom session object that mimics Supabase session structure
-      const customSession = this.createCustomSession(userData);
-      
-      // Store session data locally for persistence
-      localStorage.setItem('kixikila_session', JSON.stringify(customSession));
-      localStorage.setItem('kixikila_user', JSON.stringify(userData));
-      
-      console.log('Custom session created successfully');
+      // Step 3: Create a real Supabase user with temporary credentials
+      // Generate temporary credentials based on phone number
+      const tempEmail = `temp_${userData.phone.replace(/[^0-9]/g, '')}@kixikila.temp`;
+      const tempPassword = this.generateConsistentPassword(userData);
+
+      console.log('Creating Supabase user with temp email:', tempEmail);
+
+      // First, try to sign up the user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: tempEmail,
+        password: tempPassword,
+        options: {
+          data: {
+            kixikila_user_id: userData.id,
+            phone: userData.phone,
+            full_name: userData.full_name,
+            is_phone_verified: true,
+            temp_account: true
+          }
+        }
+      });
+
+      // If user already exists (email taken), try to sign in instead
+      if (signUpError?.message?.includes('already been registered')) {
+        console.log('User already exists, attempting sign in...');
+        
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: tempEmail,
+          password: tempPassword
+        });
+
+        if (signInError) {
+          console.error('Sign in error:', signInError);
+          return {
+            success: false,
+            message: 'Erro ao restaurar sessão. Tente novamente.',
+          };
+        }
+
+        // Update user metadata with latest data
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            kixikila_user_id: userData.id,
+            phone: userData.phone,
+            full_name: userData.full_name,
+            is_phone_verified: true,
+            temp_account: true
+          }
+        });
+
+        if (updateError) {
+          console.warn('Could not update user metadata:', updateError);
+        }
+
+        return {
+          success: true,
+          message: data.data?.isNewUser ? 'Conta criada com sucesso!' : 'Login realizado com sucesso!',
+          data: {
+            user: this.formatCustomUserData(userData),
+            session: signInData.session,
+          },
+        };
+      }
+
+      if (signUpError) {
+        console.error('Sign up error:', signUpError);
+        return {
+          success: false,
+          message: 'Erro ao criar conta. Tente novamente.',
+        };
+      }
+
+      console.log('Supabase user created successfully:', signUpData.user?.id);
 
       return {
         success: true,
         message: data.data?.isNewUser ? 'Conta criada com sucesso!' : 'Login realizado com sucesso!',
         data: {
           user: this.formatCustomUserData(userData),
-          session: customSession,
+          session: signUpData.session,
         },
       };
     } catch (error: any) {
@@ -291,32 +350,35 @@ class SupabaseAuthService {
   }
 
   /**
-   * Create a custom session that mimics Supabase session structure
-   * This allows our app to function without actual Supabase auth
+   * Generate a consistent temporary password based on user data
+   * This ensures the same password is generated for the same user
    */
-  private createCustomSession(userData: any): any {
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+  private generateConsistentPassword(userData: any): string {
+    // Create a consistent seed based on user data
+    const seed = `${userData.id}_${userData.phone}_kixikila_temp`;
     
-    return {
-      access_token: `custom_token_${userData.id}_${now.getTime()}`,
-      refresh_token: `custom_refresh_${userData.id}_${now.getTime()}`,
-      expires_in: 86400, // 24 hours
-      expires_at: Math.floor(expiresAt.getTime() / 1000),
-      token_type: 'bearer',
-      user: {
-        id: userData.id,
-        email: userData.email || `${userData.phone}@kixikila.temp`,
-        phone: userData.phone,
-        user_metadata: {
-          kixikila_user_id: userData.id,
-          phone: userData.phone,
-          full_name: userData.full_name,
-          is_phone_verified: true,
-          custom_auth: true
-        }
-      }
-    };
+    // Simple hash function to create consistent password
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      const char = seed.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    // Convert hash to positive number and create password
+    const positiveHash = Math.abs(hash);
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = 'Kix';
+    
+    for (let i = 0; i < 13; i++) {
+      const index = (positiveHash + i * 7) % chars.length;
+      password += chars.charAt(index);
+    }
+    
+    // Add some fixed special characters for security
+    password += '!@#';
+    
+    return password;
   }
 
    /**
@@ -460,38 +522,17 @@ class SupabaseAuthService {
 
   /**
    * Get current user
-   * Checks both Supabase auth and custom session
    */
   async getCurrentUser(): Promise<UserData | null> {
     try {
-      // First try Supabase auth
       const { data: { user }, error } = await supabase.auth.getUser();
       
-      if (!error && user) {
-        const userProfile = await this.getUserProfile(user.id);
-        return userProfile || this.formatUserData(user);
+      if (error || !user) {
+        return null;
       }
 
-      // If no Supabase user, check custom session
-      const customUser = localStorage.getItem('kixikila_user');
-      const customSession = localStorage.getItem('kixikila_session');
-      
-      if (customUser && customSession) {
-        const userData = JSON.parse(customUser);
-        const sessionData = JSON.parse(customSession);
-        
-        // Check if session is still valid
-        const now = Math.floor(Date.now() / 1000);
-        if (sessionData.expires_at > now) {
-          return this.formatCustomUserData(userData);
-        } else {
-          // Session expired, clear it
-          localStorage.removeItem('kixikila_user');
-          localStorage.removeItem('kixikila_session');
-        }
-      }
-
-      return null;
+      const userProfile = await this.getUserProfile(user.id);
+      return userProfile || this.formatUserData(user);
     } catch (error) {
       console.error('Get current user error:', error);
       return null;
@@ -500,26 +541,10 @@ class SupabaseAuthService {
 
   /**
    * Check if user is authenticated
-   * Checks both Supabase auth and custom session
    */
   async isAuthenticated(): Promise<boolean> {
-    try {
-      // First check Supabase auth
-      const session = await this.getCurrentSession();
-      if (session) return true;
-
-      // Check custom session
-      const customSession = localStorage.getItem('kixikila_session');
-      if (customSession) {
-        const sessionData = JSON.parse(customSession);
-        const now = Math.floor(Date.now() / 1000);
-        return sessionData.expires_at > now;
-      }
-
-      return false;
-    } catch {
-      return false;
-    }
+    const session = await this.getCurrentSession();
+    return !!session;
   }
 
   /**

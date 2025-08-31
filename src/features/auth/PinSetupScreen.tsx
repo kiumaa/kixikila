@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useCustomAuth } from '@/hooks/useCustomAuth';
 
 interface PinSetupScreenProps {
   onBack: () => void;
@@ -19,7 +18,6 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
   const [confirmPin, setConfirmPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { getAuthHeaders } = useCustomAuth();
 
   // Gerar device ID único
   const getDeviceId = () => {
@@ -98,10 +96,12 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
     setIsLoading(true);
 
     try {
-      // Get authentication headers (supports both Supabase and custom auth)
-      const authHeaders = getAuthHeaders();
+      // Obter o token de acesso do utilizador autenticado
+      const { data: { session } } = await supabase.auth.getSession();
       
-      console.log('Setting up PIN with custom auth headers');
+      if (!session?.access_token) {
+        throw new Error('Utilizador não está autenticado');
+      }
 
       // Chamar Edge Function para definir PIN
       const { data, error } = await supabase.functions.invoke('pin-management', {
@@ -111,7 +111,9 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
           deviceId: rememberDevice ? getDeviceId() : null,
           deviceName: `${navigator.userAgent.split(' ')[0]} - ${new Date().toLocaleDateString('pt-PT')}`
         },
-        headers: authHeaders
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
