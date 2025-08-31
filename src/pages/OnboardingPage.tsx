@@ -39,12 +39,14 @@ const OnboardingPage: React.FC = () => {
       // Refresh user profile
       await getProfile();
       
-      toast.success('Bem-vindo ao KIXIKILA!');
+      toast.success('Bem-vindo ao KIXIKILA! 🎉');
       
       // Navigate to next appropriate screen (KYC or dashboard)
       if (user.kyc_status === 'pending') {
+        toast.info('A seguir: Verificação de identidade');
         navigate('/kyc');
       } else {
+        toast.success('Conta configurada! A redireccionar...');
         navigate('/app/dashboard');
       }
     } catch (error) {

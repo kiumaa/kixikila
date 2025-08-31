@@ -14,7 +14,7 @@ const KycPage: React.FC = () => {
       // Refresh user profile to get updated KYC status
       await getProfile();
       
-      toast.success('Verificação KYC submetida com sucesso!');
+      toast.success('Verificação KYC concluída! 🎉');
       
       // Navigate to dashboard after KYC completion
       navigate('/app/dashboard');
