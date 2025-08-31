@@ -1,55 +1,71 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-PT">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KIXIKILA - Offline</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: #f8fafc;
-      color: #334155;
-      text-align: center;
-      padding: 2rem;
-    }
-    .offline-container {
-      max-width: 400px;
-    }
-    .offline-icon {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 2rem;
-      border-radius: 50%;
-      background: #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-    }
-    .retry-btn {
-      background: #0070f3;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 1rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KIXIKILA - Offline</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 400px;
+        }
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            font-size: 2rem;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        p {
+            opacity: 0.9;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .retry-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .retry-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+    </style>
 </head>
 <body>
-  <div class="offline-container">
-    <div class="offline-icon">📱</div>
-    <h1>Sem ligação à internet</h1>
-    <p>Não foi possível carregar o KIXIKILA. Verifique a sua ligação à internet e tente novamente.</p>
-    <button class="retry-btn" onclick="window.location.reload()">Tentar novamente</button>
-  </div>
+    <div class="container">
+        <div class="icon">📱</div>
+        <h1>Sem conexão</h1>
+        <p>Parece que está offline. Verifique a sua conexão à internet e tente novamente.</p>
+        <button class="retry-btn" onclick="window.location.reload()">
+            Tentar Novamente
+        </button>
+    </div>
 </body>
 </html>

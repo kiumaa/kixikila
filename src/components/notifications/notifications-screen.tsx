@@ -1,10 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Bell, CreditCard, Users, Trophy, Crown, Check, X } from 'lucide-react'
+import { AnimatedPage } from '@/components/ui/animated-page'
+import { PullToRefresh } from '@/components/ui/pull-to-refresh'
+import { feedbackForAction } from '@/lib/haptic-feedback'
+import { useState } from 'react'
 
 interface Notification {
   id: string
@@ -62,7 +65,13 @@ const mockNotifications: Notification[] = [
 export function NotificationsScreen() {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
 
+  const handleRefresh = async () => {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    feedbackForAction.success()
+  }
+
   const markAsRead = (id: string) => {
+    feedbackForAction.selection()
     setNotifications(prev => 
       prev.map(notif => 
         notif.id === id ? { ...notif, read: true } : notif
@@ -71,12 +80,14 @@ export function NotificationsScreen() {
   }
 
   const markAllAsRead = () => {
+    feedbackForAction.buttonPress()
     setNotifications(prev => 
       prev.map(notif => ({ ...notif, read: true }))
     )
   }
 
   const deleteNotification = (id: string) => {
+    feedbackForAction.selection()
     setNotifications(prev => prev.filter(notif => notif.id !== id))
   }
 
@@ -112,112 +123,101 @@ export function NotificationsScreen() {
   const unreadCount = notifications.filter(n => !n.read).length
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 px-6 pt-14 pb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <button
-            onClick={() => window.history.back()}
-            className="p-2 bg-card/20 backdrop-blur-sm rounded-xl hover:bg-card/30 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-primary-foreground" />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-primary-foreground">Notificações</h1>
-            {unreadCount > 0 && (
-              <p className="text-primary-foreground/80 text-sm">{unreadCount} não lida{unreadCount !== 1 ? 's' : ''}</p>
-            )}
-          </div>
+    <AnimatedPage 
+      title="Notificações" 
+      onBack={() => window.history.back()}
+      className="pb-20"
+    >
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="space-y-3 pt-4">
           {unreadCount > 0 && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={markAllAsRead}
-              className="bg-card/20 hover:bg-card/30 text-primary-foreground border-0"
-            >
-              Marcar todas
-            </Button>
+            <div className="mb-4 flex justify-end">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={markAllAsRead}
+              >
+                Marcar todas como lidas
+              </Button>
+            </div>
           )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="px-6 -mt-4 space-y-3">
-        {notifications.length === 0 ? (
-          <Card className="p-8 text-center">
-            <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-            <h3 className="font-semibold text-foreground mb-2">Sem notificações</h3>
-            <p className="text-sm text-muted-foreground">
-              Quando tiver notificações importantes, elas aparecerão aqui
-            </p>
-          </Card>
-        ) : (
-          notifications.map((notification) => (
-            <Card 
-              key={notification.id} 
-              className={`p-4 transition-all ${
-                notification.read ? 'bg-background' : 'bg-primary/5 border-primary/20'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  notification.type === 'payment' ? 'bg-blue-100' :
-                  notification.type === 'invite' ? 'bg-green-100' :
-                  notification.type === 'draw' ? 'bg-purple-100' :
-                  notification.type === 'vip' ? 'bg-yellow-100' :
-                  'bg-gray-100'
-                }`}>
-                  {getNotificationIcon(notification.type)}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className={`font-semibold text-sm ${
-                      notification.read ? 'text-foreground' : 'text-foreground'
-                    }`}>
-                      {notification.title}
-                    </h3>
-                    {!notification.read && (
-                      <Badge variant="secondary" className="bg-primary text-primary-foreground text-xs px-2 py-0.5">
-                        Nova
-                      </Badge>
-                    )}
+          
+          {notifications.length === 0 ? (
+            <Card className="p-8 text-center">
+              <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <h3 className="font-semibold text-foreground mb-2">Sem notificações</h3>
+              <p className="text-sm text-muted-foreground">
+                Quando tiver notificações importantes, elas aparecerão aqui
+              </p>
+            </Card>
+          ) : (
+            notifications.map((notification) => (
+              <Card 
+                key={notification.id} 
+                className={`p-4 transition-all ${
+                  notification.read ? 'bg-background' : 'bg-primary/5 border-primary/20'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    notification.type === 'payment' ? 'bg-blue-100' :
+                    notification.type === 'invite' ? 'bg-green-100' :
+                    notification.type === 'draw' ? 'bg-purple-100' :
+                    notification.type === 'vip' ? 'bg-yellow-100' :
+                    'bg-gray-100'
+                  }`}>
+                    {getNotificationIcon(notification.type)}
                   </div>
                   
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {notification.message}
-                  </p>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {formatTimestamp(notification.timestamp)}
-                    </span>
-                    
-                    <div className="flex gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h3 className={`font-semibold text-sm ${
+                        notification.read ? 'text-foreground' : 'text-foreground'
+                      }`}>
+                        {notification.title}
+                      </h3>
                       {!notification.read && (
-                        <button
-                          onClick={() => markAsRead(notification.id)}
-                          className="text-primary hover:text-primary/80 transition-colors"
-                          title="Marcar como lida"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
+                        <Badge variant="secondary" className="bg-primary text-primary-foreground text-xs px-2 py-0.5">
+                          Nova
+                        </Badge>
                       )}
-                      <button
-                        onClick={() => deleteNotification(notification.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                        title="Eliminar"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {notification.message}
+                    </p>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        {formatTimestamp(notification.timestamp)}
+                      </span>
+                      
+                      <div className="flex gap-2">
+                        {!notification.read && (
+                          <button
+                            onClick={() => markAsRead(notification.id)}
+                            className="text-primary hover:text-primary/80 transition-colors"
+                            title="Marcar como lida"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteNotification(notification.id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          title="Eliminar"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))
-        )}
-      </div>
-    </div>
+              </Card>
+            ))
+          )}
+        </div>
+      </PullToRefresh>
+    </AnimatedPage>
   )
 }
