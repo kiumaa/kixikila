@@ -36,7 +36,7 @@ export function DashboardPage() {
     total_earned: 3200.00,
     active_groups: 3,
     trust_score: 98,
-    is_vip: false
+    is_vip: user?.is_vip || false
   })
   const [isLoading, setIsLoading] = useState(false)
 
@@ -88,7 +88,7 @@ export function DashboardPage() {
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-2xl font-bold text-primary-foreground mb-1">
-              Olá, {user?.user_metadata?.full_name?.split(' ')[0] || 'Ana'} 👋
+              Olá, {user?.full_name?.split(' ')[0] || 'Ana'} 👋
             </h1>
             <p className="text-primary-foreground/80">
               {new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}

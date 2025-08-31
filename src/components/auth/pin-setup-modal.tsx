@@ -2,219 +2,204 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
+import { KeyRound, CheckCircle } from 'lucide-react'
+import { useAuth } from '@/lib/auth-context'
 import { toast } from 'sonner'
-import { supabase } from '@/integrations/supabase/client'
-import { X } from 'lucide-react'
 
 interface PinSetupModalProps {
   isOpen: boolean
   onClose: () => void
-  onSuccess: () => void
-  mode?: 'setup' | 'verify' | 'change'
-  title?: string
 }
 
-export function PinSetupModal({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  mode = 'setup',
-  title 
-}: PinSetupModalProps) {
+export function PinSetupModal({ isOpen, onClose }: PinSetupModalProps) {
+  const { setupPIN } = useAuth()
+  const [step, setStep] = useState<'setup' | 'confirm' | 'success'>('setup')
   const [pin, setPin] = useState('')
-  const [currentPin, setCurrentPin] = useState('')
-  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   if (!isOpen) return null
 
-  const handleSubmit = async () => {
-    if (mode === 'setup' && pin.length !== 6) {
-      toast.error('PIN deve ter exatamente 6 dígitos')
+  const handlePinInput = (value: string, index: number, isConfirm = false) => {
+    const currentPin = isConfirm ? confirmPin : pin
+    const newPin = currentPin.split('')
+    newPin[index] = value
+    const updatedPin = newPin.join('')
+    
+    if (isConfirm) {
+      setConfirmPin(updatedPin)
+    } else {
+      setPin(updatedPin)
+    }
+  }
+
+  const handleSetupSubmit = () => {
+    if (pin.length !== 4) {
+      toast.error('PIN deve ter 4 dígitos')
       return
     }
+    setStep('confirm')
+  }
 
-    if (mode === 'verify' && pin.length !== 6) {
-      toast.error('PIN deve ter exatamente 6 dígitos')
-      return
-    }
-
-    if (mode === 'change' && (currentPin.length !== 6 || newPin.length !== 6)) {
-      toast.error('PINs devem ter exatamente 6 dígitos')
+  const handleConfirmSubmit = async () => {
+    if (confirmPin !== pin) {
+      toast.error('PINs não coincidem')
+      setConfirmPin('')
       return
     }
 
     setIsLoading(true)
     
     try {
-      const { data: session } = await supabase.auth.getSession()
-      if (!session?.session?.access_token) {
-        toast.error('Sessão expirada')
-        return
-      }
-
-      let requestData
-      if (mode === 'setup') {
-        requestData = { action: 'set', pin }
-      } else if (mode === 'verify') {
-        requestData = { action: 'verify', pin }
+      const result = await setupPIN(pin)
+      if (result.success) {
+        setStep('success')
+        setTimeout(() => {
+          onClose()
+          toast.success('Conta criada com sucesso!')
+        }, 2000)
       } else {
-        requestData = { action: 'change', pin: currentPin, newPin }
-      }
-
-      const { data, error } = await supabase.functions.invoke('pin-management', {
-        body: requestData,
-        headers: {
-          Authorization: `Bearer ${session.session.access_token}`
-        }
-      })
-
-      if (error) {
-        console.error('PIN function error:', error)
-        toast.error('Erro ao processar PIN')
-        return
-      }
-
-      if (mode === 'verify' && !data.valid) {
-        toast.error('PIN incorreto')
-        return
-      }
-
-      if (data.success) {
-        toast.success(
-          mode === 'setup' ? 'PIN definido com sucesso!' :
-          mode === 'verify' ? 'PIN correto!' :
-          'PIN alterado com sucesso!'
-        )
-        onSuccess()
-        onClose()
-      } else {
-        toast.error(data.message || 'Erro desconhecido')
+        toast.error('Erro ao configurar PIN')
       }
     } catch (error) {
-      console.error('PIN error:', error)
-      toast.error('Erro ao processar PIN')
-    } finally {
-      setIsLoading(false)
+      toast.error('Erro de conexão')
     }
+    
+    setIsLoading(false)
   }
 
-  const resetForm = () => {
-    setPin('')
-    setCurrentPin('')
-    setNewPin('')
-  }
-
-  const handleClose = () => {
-    resetForm()
-    onClose()
+  const handleBack = () => {
+    if (step === 'confirm') {
+      setStep('setup')
+      setConfirmPin('')
+    }
   }
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>
-            {title || 
-             (mode === 'setup' ? 'Definir PIN de Segurança' :
-              mode === 'verify' ? 'Verificar PIN' :
-              'Alterar PIN')}
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClose}
-            className="h-8 w-8 p-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {mode === 'setup' && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Defina um PIN de 6 dígitos para proteger sua conta
+      <Card className="w-full max-w-md p-8 animate-scale-in">
+        {step === 'setup' && (
+          <>
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-primary to-purple-600 rounded-2xl flex items-center justify-center">
+                <KeyRound className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                Configurar PIN
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Crie um PIN de 4 dígitos para proteger a sua conta
               </p>
-              <Input
-                type="password"
-                placeholder="Digite seu PIN (6 dígitos)"
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
-                className="text-center text-lg tracking-widest"
-              />
-            </>
-          )}
+            </div>
 
-          {mode === 'verify' && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Digite seu PIN para continuar
-              </p>
-              <Input
-                type="password"
-                placeholder="Digite seu PIN (6 dígitos)"
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
-                className="text-center text-lg tracking-widest"
-              />
-            </>
-          )}
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-foreground mb-4 text-center">
+                Novo PIN de Segurança
+              </label>
+              <div className="flex gap-3 justify-center">
+                {[...Array(4)].map((_, i) => (
+                  <input
+                    key={i}
+                    type="password"
+                    maxLength={1}
+                    value={pin[i] || ''}
+                    onChange={(e) => {
+                      handlePinInput(e.target.value, i)
+                      if (e.target.value && i < 3) {
+                        const nextInput = e.target.parentElement?.children[i + 1] as HTMLInputElement
+                        if (nextInput) nextInput.focus()
+                      }
+                    }}
+                    className="w-14 h-14 text-center text-2xl font-bold border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                ))}
+              </div>
+            </div>
 
-          {mode === 'change' && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Digite seu PIN atual e o novo PIN
-              </p>
-              <Input
-                type="password"
-                placeholder="PIN atual (6 dígitos)"
-                value={currentPin}
-                onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
-                className="text-center text-lg tracking-widest"
-              />
-              <Input
-                type="password"
-                placeholder="Novo PIN (6 dígitos)"
-                value={newPin}
-                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
-                className="text-center text-lg tracking-widest"
-              />
-            </>
-          )}
-
-          <div className="flex gap-2 pt-4">
             <Button
-              variant="outline"
-              className="flex-1"
-              onClick={handleClose}
-              disabled={isLoading}
+              onClick={handleSetupSubmit}
+              disabled={pin.length !== 4}
+              size="lg"
+              className="w-full"
             >
-              Cancelar
+              Continuar
             </Button>
-            <Button
-              className="flex-1"
-              onClick={handleSubmit}
-              disabled={
-                isLoading || 
-                (mode === 'setup' && pin.length !== 6) ||
-                (mode === 'verify' && pin.length !== 6) ||
-                (mode === 'change' && (currentPin.length !== 6 || newPin.length !== 6))
-              }
-            >
-              {isLoading ? 'Processando...' : 
-               mode === 'setup' ? 'Definir PIN' :
-               mode === 'verify' ? 'Verificar' :
-               'Alterar PIN'}
-            </Button>
+          </>
+        )}
+
+        {step === 'confirm' && (
+          <>
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center">
+                <KeyRound className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                Confirmar PIN
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Introduza novamente o seu PIN para confirmar
+              </p>
+            </div>
+
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-foreground mb-4 text-center">
+                Confirme o seu PIN
+              </label>
+              <div className="flex gap-3 justify-center">
+                {[...Array(4)].map((_, i) => (
+                  <input
+                    key={i}
+                    type="password"
+                    maxLength={1}
+                    value={confirmPin[i] || ''}
+                    onChange={(e) => {
+                      handlePinInput(e.target.value, i, true)
+                      if (e.target.value && i < 3) {
+                        const nextInput = e.target.parentElement?.children[i + 1] as HTMLInputElement
+                        if (nextInput) nextInput.focus()
+                      }
+                    }}
+                    className="w-14 h-14 text-center text-2xl font-bold border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={handleBack}
+                size="lg"
+                className="flex-1"
+              >
+                Voltar
+              </Button>
+              <Button
+                onClick={handleConfirmSubmit}
+                disabled={confirmPin.length !== 4 || isLoading}
+                size="lg"
+                className="flex-1"
+              >
+                {isLoading ? 'Confirmando...' : 'Confirmar'}
+              </Button>
+            </div>
+          </>
+        )}
+
+        {step === 'success' && (
+          <div className="text-center py-8">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">
+              PIN Configurado!
+            </h2>
+            <p className="text-muted-foreground">
+              A sua conta foi criada com sucesso
+            </p>
           </div>
-        </CardContent>
+        )}
       </Card>
     </div>
   )

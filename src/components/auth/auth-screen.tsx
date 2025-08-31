@@ -1,221 +1,281 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, Phone, Lock, User, Mail } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { ArrowLeft, Phone, Lock, Smartphone, KeyRound } from 'lucide-react'
+import { useAuth } from '@/lib/auth-context'
 import { toast } from 'sonner'
+import { PinSetupModal } from './pin-setup-modal'
 
-export function AuthScreen() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const searchParams = new URLSearchParams(location.search)
-  const mode = searchParams.get('modo') || 'entrar'
-  
-  const [currentStep, setCurrentStep] = useState<'phone' | 'otp' | 'register'>('phone')
+interface AuthScreenProps {
+  onBack: () => void
+}
+
+export function AuthScreen({ onBack }: AuthScreenProps) {
+  const { signUp, signIn, verifyOTP, verifyPIN } = useAuth()
+  const [mode, setMode] = useState<'choice' | 'register' | 'login'>('choice')
+  const [step, setStep] = useState<'phone' | 'otp' | 'pin'>('phone')
   const [phone, setPhone] = useState('')
-  const [otpCode, setOtpCode] = useState('')
-  const [userData, setUserData] = useState({
-    fullName: '',
-    email: ''
-  })
+  const [fullName, setFullName] = useState('')
+  const [otp, setOtp] = useState('')
+  const [pin, setPin] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [resendTimer, setResendTimer] = useState(0)
+  const [showPinModal, setShowPinModal] = useState(false)
 
-  useEffect(() => {
-    if (mode === 'registar') {
-      setCurrentStep('register')
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '')
+    if (numbers.startsWith('351')) {
+      return numbers.slice(3)
     }
-  }, [mode])
-
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [resendTimer])
-
-  const handleSendOTP = async () => {
-    if (!phone || phone.length < 9) {
-      toast.error('Introduza um número de telemóvel válido')
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const { error } = await supabase.functions.invoke('send-otp-sms', {
-        body: { phone: `+351${phone}`, type: 'login' }
-      })
-      
-      if (error) throw error
-      
-      setCurrentStep('otp')
-      setResendTimer(60)
-      toast.success('Código enviado via SMS')
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao enviar código')
-    } finally {
-      setIsLoading(false)
-    }
+    return numbers.slice(0, 9)
   }
 
-  const handleVerifyOTP = async () => {
-    if (otpCode.length !== 6) {
-      toast.error('Introduza o código de 6 dígitos')
+  const handlePhoneSubmit = async () => {
+    if (phone.length < 9) {
+      toast.error('Número de telefone inválido')
       return
     }
 
     setIsLoading(true)
+    
     try {
-      const { data, error } = await supabase.functions.invoke('verify-otp', {
-        body: { phone: `+351${phone}`, code: otpCode, type: 'login' }
-      })
-      
-      if (error) throw error
-      
-      if (data.isNewUser) {
-        setCurrentStep('register')
-      } else {
-        // If we have a session URL, use it to create the session
-        if (data.sessionUrl) {
-          window.location.href = data.sessionUrl
+      if (mode === 'register') {
+        if (!fullName.trim()) {
+          toast.error('Nome completo é obrigatório')
+          setIsLoading(false)
+          return
+        }
+        
+        const result = await signUp(phone, fullName.trim())
+        if (result.success) {
+          setStep('otp')
+          toast.success('Código SMS enviado!')
         } else {
-          // Fallback to dashboard
-          navigate('/dashboard')
+          toast.error('Este número já está registado')
         }
-        toast.success('Login realizado com sucesso!')
+      } else {
+        const result = await signIn(phone)
+        if (result.success) {
+          if (result.requiresOTP) {
+            setStep('otp')
+            toast.success('Código SMS enviado!')
+          } else if (result.requiresPIN) {
+            setStep('pin')
+          }
+        } else {
+          toast.error('Número não encontrado')
+        }
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Código inválido')
-    } finally {
-      setIsLoading(false)
+    } catch (error) {
+      toast.error('Erro de conexão')
     }
+    
+    setIsLoading(false)
   }
 
-  const handleRegister = async () => {
-    if (!userData.fullName || !userData.email) {
-      toast.error('Preencha todos os campos')
+  const handleOTPSubmit = async () => {
+    if (otp.length !== 6) {
+      toast.error('Código deve ter 6 dígitos')
       return
     }
 
     setIsLoading(true)
+    
     try {
-      const { error } = await supabase.auth.signUp({
-        phone: `+351${phone}`,
-        password: otpCode, // Using OTP as temporary password
-        options: {
-          data: {
-            full_name: userData.fullName,
-            email: userData.email,
-            phone: `+351${phone}`
-          }
+      const result = await verifyOTP(phone, otp)
+      if (result.success) {
+        if (result.requiresPIN) {
+          setShowPinModal(true)
+        } else {
+          setStep('pin')
         }
-      })
-      
-      if (error) throw error
-      
-      navigate('/dashboard')
-      toast.success('Conta criada com sucesso!')
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao criar conta')
-    } finally {
-      setIsLoading(false)
+      } else {
+        toast.error('Código inválido')
+      }
+    } catch (error) {
+      toast.error('Erro ao verificar código')
+    }
+    
+    setIsLoading(false)
+  }
+
+  const handlePINSubmit = async () => {
+    if (pin.length !== 4) {
+      toast.error('PIN deve ter 4 dígitos')
+      return
+    }
+
+    setIsLoading(true)
+    
+    try {
+      const result = await verifyPIN(pin)
+      if (result.success) {
+        toast.success('Login efetuado com sucesso!')
+      } else {
+        toast.error('PIN incorreto')
+        setPin('')
+      }
+    } catch (error) {
+      toast.error('Erro ao verificar PIN')
+    }
+    
+    setIsLoading(false)
+  }
+
+  const resetForm = () => {
+    setPhone('')
+    setFullName('')
+    setOtp('')
+    setPin('')
+    setStep('phone')
+  }
+
+  const handleModeChange = (newMode: 'register' | 'login') => {
+    setMode(newMode)
+    resetForm()
+  }
+
+  const handleBack = () => {
+    if (step === 'phone' && mode !== 'choice') {
+      setMode('choice')
+      resetForm()
+    } else if (step !== 'phone') {
+      setStep('phone')
+      setOtp('')
+      setPin('')
+    } else {
+      onBack()
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-subtle via-background to-accent flex items-center justify-center p-6">
-      <Card className="w-full max-w-md transition-all duration-300">
-        <CardHeader>
+  if (mode === 'choice') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-purple-50 flex items-center justify-center p-6">
+        <Card className="w-full max-w-md p-8">
           <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors w-fit"
+            onClick={onBack}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Voltar
           </button>
 
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary to-primary-hover rounded-3xl flex items-center justify-center shadow-xl">
-              <Lock className="w-10 h-10 text-primary-foreground" />
+            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary to-purple-600 rounded-3xl flex items-center justify-center shadow-xl">
+              <Phone className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              {mode === 'registar' ? 'Criar Conta' : 'Bem-vindo'}
-            </h1>
-            <p className="text-muted-foreground">
-              {mode === 'registar' ? 'Junte-se à comunidade KIXIKILA' : 'Entre na sua conta KIXIKILA'}
-            </p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Bem-vindo</h1>
+            <p className="text-muted-foreground">Entre na sua conta KIXIKILA</p>
           </div>
-        </CardHeader>
 
-        <CardContent>
-          {currentStep === 'register' && (
-            <div className="space-y-4">
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                <Input
-                  placeholder="Nome completo"
-                  value={userData.fullName}
-                  onChange={(e) => setUserData({...userData, fullName: e.target.value})}
-                  className="pl-10"
-                />
-              </div>
+          <div className="space-y-3">
+            <Button
+              onClick={() => handleModeChange('register')}
+              size="lg"
+              className="w-full"
+            >
+              Criar Conta Nova
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => handleModeChange('login')}
+              size="lg"
+              className="w-full"
+            >
+              Já tenho conta
+            </Button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={userData.email}
-                  onChange={(e) => setUserData({...userData, email: e.target.value})}
-                  className="pl-10"
-                />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-purple-50 flex items-center justify-center p-6">
+      <Card className="w-full max-w-md p-8">
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar
+        </button>
+
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary to-purple-600 rounded-3xl flex items-center justify-center shadow-xl">
+            {step === 'phone' ? (
+              <Phone className="w-10 h-10 text-white" />
+            ) : step === 'otp' ? (
+              <Smartphone className="w-10 h-10 text-white" />
+            ) : (
+              <KeyRound className="w-10 h-10 text-white" />
+            )}
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            {mode === 'register' ? 'Criar Conta' : 'Entrar'}
+          </h1>
+          <p className="text-muted-foreground">
+            {step === 'phone' ? 'Introduza os seus dados' : 
+             step === 'otp' ? `Código enviado para +351 ${phone}` :
+             'Introduza o seu PIN de 4 dígitos'}
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {step === 'phone' && (
+            <>
+              {mode === 'register' && (
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Nome Completo
+                  </label>
+                  <input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Ana Santos"
+                    required
+                    className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Número de Telemóvel
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground font-medium">
+                    +351
+                  </span>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhone(e.target.value))}
+                    className="w-full pl-16 pr-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="912 345 678"
+                    maxLength={9}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Vamos enviar um código SMS para este número
+                </p>
               </div>
 
               <Button
+                onClick={handlePhoneSubmit}
+                disabled={phone.length < 9 || (mode === 'register' && !fullName.trim()) || isLoading}
+                size="lg"
                 className="w-full"
-                onClick={handleRegister}
-                disabled={isLoading || !userData.fullName || !userData.email}
               >
-                {isLoading ? 'A criar conta...' : 'Criar Conta'}
+                {isLoading ? 'Carregando...' : mode === 'register' ? 'Criar Conta' : 'Enviar Código SMS'}
               </Button>
-            </div>
+            </>
           )}
 
-          {currentStep === 'phone' && (
-            <div className="space-y-4">
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                <Input
-                  type="tel"
-                  placeholder="912 345 678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                  className="pl-10"
-                  maxLength={9}
-                />
-              </div>
-
-              <Button
-                className="w-full"
-                onClick={handleSendOTP}
-                disabled={isLoading || phone.length < 9}
-              >
-                {isLoading ? 'A enviar...' : 'Enviar Código SMS'}
-              </Button>
-            </div>
-          )}
-
-          {currentStep === 'otp' && (
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <p className="text-muted-foreground mb-2">Código enviado para</p>
-                <p className="font-semibold text-foreground">+351 {phone}</p>
-              </div>
-
+          {step === 'otp' && (
+            <>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-3">
                   Código de Verificação
@@ -226,48 +286,81 @@ export function AuthScreen() {
                       key={i}
                       type="text"
                       maxLength={1}
-                      value={otpCode[i] || ''}
+                      value={otp[i] || ''}
                       onChange={(e) => {
-                        const newOtp = otpCode.split('')
+                        const newOtp = otp.split('')
                         newOtp[i] = e.target.value
-                        setOtpCode(newOtp.join(''))
+                        setOtp(newOtp.join(''))
                         if (e.target.value && i < 5) {
                           const nextInput = e.target.parentElement?.children[i + 1] as HTMLInputElement
                           if (nextInput) nextInput.focus()
                         }
                       }}
-                      className="w-12 h-12 text-center text-xl font-bold border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
+                      className="w-12 h-12 text-center text-xl font-bold border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Use qualquer código de 6 dígitos (mock)
+                </p>
+              </div>
+
+              <Button
+                onClick={handleOTPSubmit}
+                disabled={otp.length !== 6 || isLoading}
+                size="lg"
+                className="w-full"
+              >
+                {isLoading ? 'Verificando...' : 'Verificar Código'}
+              </Button>
+            </>
+          )}
+
+          {step === 'pin' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-3">
+                  PIN de Segurança
+                </label>
+                <div className="flex gap-3 justify-center">
+                  {[...Array(4)].map((_, i) => (
+                    <input
+                      key={i}
+                      type="password"
+                      maxLength={1}
+                      value={pin[i] || ''}
+                      onChange={(e) => {
+                        const newPin = pin.split('')
+                        newPin[i] = e.target.value
+                        setPin(newPin.join(''))
+                        if (e.target.value && i < 3) {
+                          const nextInput = e.target.parentElement?.children[i + 1] as HTMLInputElement
+                          if (nextInput) nextInput.focus()
+                        }
+                      }}
+                      className="w-14 h-14 text-center text-2xl font-bold border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                   ))}
                 </div>
               </div>
 
               <Button
+                onClick={handlePINSubmit}
+                disabled={pin.length !== 4 || isLoading}
+                size="lg"
                 className="w-full"
-                onClick={handleVerifyOTP}
-                disabled={isLoading || otpCode.length !== 6}
               >
-                {isLoading ? 'A verificar...' : 'Verificar e Entrar'}
+                {isLoading ? 'Entrando...' : 'Entrar'}
               </Button>
-
-              <div className="text-center">
-                {resendTimer > 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Reenviar código em {resendTimer}s
-                  </p>
-                ) : (
-                  <button
-                    onClick={handleSendOTP}
-                    className="text-sm text-primary font-semibold hover:text-primary-hover transition-colors"
-                  >
-                    Reenviar código
-                  </button>
-                )}
-              </div>
-            </div>
+            </>
           )}
-        </CardContent>
+        </div>
       </Card>
+
+      <PinSetupModal
+        isOpen={showPinModal}
+        onClose={() => setShowPinModal(false)}
+      />
     </div>
   )
 }
