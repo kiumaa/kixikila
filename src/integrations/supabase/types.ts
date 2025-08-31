@@ -1346,6 +1346,10 @@ export type Database = {
           total_contributed: number
         }[]
       }
+      get_user_role: {
+        Args: { target_user_id: string }
+        Returns: string
+      }
       get_user_safe_data: {
         Args: { target_user_id?: string }
         Returns: {
@@ -1381,6 +1385,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_group_member: {
+        Args: { group_id: string; user_id: string }
+        Returns: boolean
+      }
       is_group_ready_for_draw: {
         Args: { target_group_id: string }
         Returns: boolean
@@ -1407,6 +1415,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_sensitive_access: {
+        Args: { access_type?: string; entity_id: string; entity_type: string }
+        Returns: undefined
+      }
       log_suspicious_access: {
         Args: { access_pattern: string; entity_type: string; metadata?: Json }
         Returns: undefined
@@ -1422,6 +1434,10 @@ export type Database = {
           user_id: string
           value: string
         }
+        Returns: string
+      }
+      mask_sensitive_amount: {
+        Args: { amount: number; owner_id: string; requesting_user_id?: string }
         Returns: string
       }
       production_health_check: {

@@ -26,9 +26,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { email, phone, full_name, master_key }: CreateAdminRequest = await req.json();
 
-    // Validate master key (in production, use proper validation)
-    const MASTER_KEY = Deno.env.get('MASTER_ADMIN_KEY') || 'kixikila-admin-2025';
+    // Validate master key - SECURITY: No hardcoded fallback
+    const MASTER_KEY = Deno.env.get('MASTER_ADMIN_KEY');
+    if (!MASTER_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Missing master key' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     if (master_key !== MASTER_KEY) {
+      // Log security attempt
+      console.warn(`Invalid admin creation attempt with key: ${master_key?.substring(0, 5)}...`);
       return new Response(
         JSON.stringify({ error: 'Invalid master key' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -305,6 +305,19 @@ const AdvancedSystemSettings: React.FC = () => {
     }
   };
 
+  const sanitizeInput = (input: string): string => {
+    // Security: Sanitize input to prevent XSS
+    return DOMPurify.sanitize(input, {
+      ALLOWED_TAGS: [],
+      ALLOWED_ATTR: [],
+      ALLOW_DATA_ATTR: false
+    }).trim();
+  };
+
+  const validateInput = (input: string, maxLength: number = 1000): boolean => {
+    return input && input.length <= maxLength && input.trim().length > 0;
+  };
+
   const updateSystemConfiguration = async (config_key: string, config_value: any) => {
     try {
       const { data, error } = await supabase.functions.invoke('manage-system-config', {
@@ -335,10 +348,36 @@ const AdvancedSystemSettings: React.FC = () => {
 
   const saveTemplate = async (template: Partial<MessageTemplate>) => {
     try {
+      // Security: Validate and sanitize inputs
+      if (!template.name || !validateInput(template.name, 100)) {
+        toast({
+          title: 'Erro de Validação',
+          description: 'Nome do template é obrigatório e deve ter no máximo 100 caracteres',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      if (!template.content || !validateInput(template.content, 5000)) {
+        toast({
+          title: 'Erro de Validação',
+          description: 'Conteúdo é obrigatório e deve ter no máximo 5000 caracteres',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const sanitizedTemplate = {
+        ...template,
+        name: sanitizeInput(template.name),
+        content: sanitizeInput(template.content),
+        subject: template.subject ? sanitizeInput(template.subject) : undefined
+      };
+
       const action = template.id ? 'update_template' : 'create_template';
       
       const { data, error } = await supabase.functions.invoke('manage-system-config', {
-        body: { action, ...template }
+        body: { action, ...sanitizedTemplate }
       });
       
       if (error) throw error;
