@@ -17,6 +17,7 @@ import { GroupCard } from '@/components/dashboard/group-card'
 import { WalletSkeleton, GroupCardSkeleton, StatCardSkeleton } from '@/components/dashboard/skeleton-loaders'
 import { formatCurrency } from '@/lib/utils'
 import { GroupDetailsScreen } from '@/components/groups/group-details-screen'
+import { useNavigate } from 'react-router-dom'
 
 interface Group {
   id: string
@@ -35,6 +36,7 @@ interface Group {
 
 export function DashboardPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showVIPUpgrade, setShowVIPUpgrade] = useState(false)
@@ -219,7 +221,10 @@ export function DashboardPage() {
         {isLoading ? (
           <WalletSkeleton />
         ) : (
-          <Card className="bg-white/10 backdrop-blur-md border-0 text-white">
+          <Card 
+            className="bg-white/10 backdrop-blur-md border-0 text-white cursor-pointer hover:bg-white/15 transition-all"
+            onClick={() => navigate('/wallet')}
+          >
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">

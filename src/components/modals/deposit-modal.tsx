@@ -12,9 +12,10 @@ interface DepositModalProps {
   isOpen: boolean
   onClose: () => void
   currentBalance: number
+  onDeposit?: (amount: number) => void
 }
 
-export function DepositModal({ isOpen, onClose, currentBalance }: DepositModalProps) {
+export function DepositModal({ isOpen, onClose, currentBalance, onDeposit }: DepositModalProps) {
   const [amount, setAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<'amount' | 'processing' | 'success'>('amount')
@@ -45,6 +46,12 @@ export function DepositModal({ isOpen, onClose, currentBalance }: DepositModalPr
       if (data.url) {
         window.open(data.url, '_blank')
         setStep('success')
+        
+        // Mock successful deposit for local state
+        if (onDeposit) {
+          onDeposit(parseFloat(amount))
+        }
+        
         setTimeout(() => {
           onClose()
           setStep('amount')

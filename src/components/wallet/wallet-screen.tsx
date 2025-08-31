@@ -7,8 +7,11 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Wallet, Eye, EyeOff, Upload, Download, ArrowDownLeft, ArrowUpRight, CreditCard, Gift, Filter } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
 import { DepositModal } from '@/components/modals/deposit-modal'
+import { WithdrawalModal } from '@/components/modals/withdrawal-modal'
+import { PaymentCycleModal } from '@/components/modals/payment-cycle-modal'
+import { WalletSkeleton } from '@/components/wallet/wallet-skeleton'
+import { formatCurrency } from '@/lib/utils'
 
 interface Transaction {
   id: string
@@ -26,65 +29,158 @@ export default function WalletScreen() {
   const navigate = useNavigate()
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
+  const [showWithdrawal, setShowWithdrawal] = useState(false)
+  const [showPaymentCycle, setShowPaymentCycle] = useState(false)
   const [filterType, setFilterType] = useState('all')
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [userStats, setUserStats] = useState({
-    wallet_balance: 0,
-    total_saved: 0,
-    total_earned: 0,
-    total_withdrawn: 0
+    wallet_balance: 1250.50,
+    total_saved: 5420.80,
+    total_earned: 3200.00,
+    total_withdrawn: 2100.00
   })
   const [isLoading, setIsLoading] = useState(true)
 
+  // Mock transactions data
+  const mockTransactions: Transaction[] = [
+    {
+      id: '1',
+      type: 'deposit',
+      amount: 500.00,
+      description: 'Depósito via Stripe',
+      status: 'completed',
+      created_at: '2025-08-20T10:00:00Z',
+      reference: 'DEP-2025-001',
+      payment_method: 'stripe'
+    },
+    {
+      id: '2',
+      type: 'payment',
+      amount: -100.00,
+      description: 'Pagamento - Família Santos',
+      status: 'completed',
+      created_at: '2025-08-15T14:30:00Z',
+      reference: 'PAY-2025-002'
+    },
+    {
+      id: '3',
+      type: 'withdrawal',
+      amount: -200.00,
+      description: 'Levantamento para conta bancária',
+      status: 'processing',
+      created_at: '2025-08-10T09:15:00Z',
+      reference: 'WTH-2025-003'
+    },
+    {
+      id: '4',
+      type: 'reward',
+      amount: 800.00,
+      description: 'Prémio recebido - Tech Founders',
+      status: 'completed',
+      created_at: '2025-08-05T16:45:00Z',
+      reference: 'RWD-2025-004'
+    },
+    {
+      id: '5',
+      type: 'payment',
+      amount: -500.00,
+      description: 'Pagamento - Tech Founders',
+      status: 'completed',
+      created_at: '2025-08-01T12:00:00Z',
+      reference: 'PAY-2025-005'
+    },
+    {
+      id: '6',
+      type: 'payment',
+      amount: -75.00,
+      description: 'Pagamento - Surf Crew',
+      status: 'completed',
+      created_at: '2025-07-25T11:30:00Z',
+      reference: 'PAY-2025-006'
+    },
+    {
+      id: '7',
+      type: 'reward',
+      amount: 450.00,
+      description: 'Prémio recebido - Surf Crew',
+      status: 'completed',
+      created_at: '2025-07-25T10:00:00Z',
+      reference: 'RWD-2025-007'
+    }
+  ]
+
   useEffect(() => {
-    if (user) {
-      fetchUserStats()
-      fetchTransactions()
-    }
-  }, [user])
-
-  const fetchUserStats = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('wallet_balance, total_saved, total_earned, total_withdrawn')
-        .eq('id', user?.id)
-        .single()
-
-      if (error) throw error
-      if (data) {
-        setUserStats(data)
-      }
-    } catch (error) {
-      console.error('Error fetching user stats:', error)
-    }
-  }
-
-  const fetchTransactions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      if (error) throw error
-      setTransactions(data || [])
-    } catch (error) {
-      console.error('Error fetching transactions:', error)
-    } finally {
+    // Mock loading delay
+    const timer = setTimeout(() => {
+      setTransactions(mockTransactions)
       setIsLoading(false)
+    }, 1500)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  const handleDeposit = (amount: number) => {
+    // Mock deposit - add to balance and create transaction
+    setUserStats(prev => ({
+      ...prev,
+      wallet_balance: prev.wallet_balance + amount
+    }))
+
+    const newTransaction: Transaction = {
+      id: Date.now().toString(),
+      type: 'deposit',
+      amount: amount,
+      description: 'Depósito via Stripe',
+      status: 'completed',
+      created_at: new Date().toISOString(),
+      reference: `DEP-${Date.now()}`,
+      payment_method: 'stripe'
     }
+
+    setTransactions(prev => [newTransaction, ...prev])
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2
-    }).format(Math.abs(amount))
+  const handleWithdrawal = (amount: number) => {
+    // Mock withdrawal - subtract from balance and create transaction
+    setUserStats(prev => ({
+      ...prev,
+      wallet_balance: prev.wallet_balance - amount,
+      total_withdrawn: prev.total_withdrawn + amount
+    }))
+
+    const newTransaction: Transaction = {
+      id: Date.now().toString(),
+      type: 'withdrawal',
+      amount: -amount,
+      description: 'Levantamento para conta bancária',
+      status: 'processing',
+      created_at: new Date().toISOString(),
+      reference: `WTH-${Date.now()}`
+    }
+
+    setTransactions(prev => [newTransaction, ...prev])
   }
+
+  const handlePaymentCycle = (amount: number, groupName: string) => {
+    // Mock payment - subtract from balance and create transaction
+    setUserStats(prev => ({
+      ...prev,
+      wallet_balance: prev.wallet_balance - amount
+    }))
+
+    const newTransaction: Transaction = {
+      id: Date.now().toString(),
+      type: 'payment',
+      amount: -amount,
+      description: `Pagamento - ${groupName}`,
+      status: 'completed',
+      created_at: new Date().toISOString(),
+      reference: `PAY-${Date.now()}`
+    }
+
+    setTransactions(prev => [newTransaction, ...prev])
+  }
+
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('pt-PT', {
@@ -127,11 +223,7 @@ export default function WalletScreen() {
     : transactions.filter(t => t.type === filterType)
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary/20 border-t-primary"></div>
-      </div>
-    )
+    return <WalletSkeleton />
   }
 
   return (
@@ -195,9 +287,19 @@ export default function WalletScreen() {
                 variant="secondary" 
                 size="sm"
                 className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                onClick={() => setShowWithdrawal(true)}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Levantar
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="sm"
+                className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                onClick={() => setShowPaymentCycle(true)}
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                Pagar Ciclo
               </Button>
             </div>
           </div>
@@ -289,11 +391,28 @@ export default function WalletScreen() {
         </Card>
       </div>
 
-      {/* Deposit Modal */}
+      {/* Modals */}
       <DepositModal
         isOpen={showDeposit}
         onClose={() => setShowDeposit(false)}
         currentBalance={userStats.wallet_balance}
+        onDeposit={handleDeposit}
+      />
+      
+      <WithdrawalModal
+        isOpen={showWithdrawal}
+        onClose={() => setShowWithdrawal(false)}
+        currentBalance={userStats.wallet_balance}
+        onWithdrawal={handleWithdrawal}
+      />
+      
+      <PaymentCycleModal
+        isOpen={showPaymentCycle}
+        onClose={() => setShowPaymentCycle(false)}
+        groupName="Família Santos"
+        contributionAmount={100}
+        currentBalance={userStats.wallet_balance}
+        onPayment={handlePaymentCycle}
       />
     </div>
   )
