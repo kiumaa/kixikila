@@ -9,6 +9,7 @@ import { DashboardScreen } from '@/components/dashboard/dashboard-screen'
 import WalletScreen from '@/components/wallet/wallet-screen'
 import InviteScreen from '@/components/invite/invite-screen'
 import ProfileScreen from '@/components/profile/profile-screen'
+import { BottomNavigation } from '@/components/navigation/bottom-navigation'
 
 export default function AppRoutes() {
   const { user, loading } = useAuth()
@@ -24,10 +25,44 @@ export default function AppRoutes() {
       <Route path="/entrar" element={user ? <Navigate to="/dashboard" replace /> : <AuthScreen />} />
       
       {/* Protected routes */}
-      <Route path="/dashboard" element={user ? <DashboardScreen /> : <Navigate to="/" replace />} />
-      <Route path="/wallet" element={user ? <WalletScreen /> : <Navigate to="/" replace />} />
-      <Route path="/invite" element={user ? <InviteScreen /> : <Navigate to="/" replace />} />
-      <Route path="/profile" element={user ? <ProfileScreen /> : <Navigate to="/" replace />} />
+      {user ? (
+        <>
+          <Route path="/dashboard" element={
+            <div className="min-h-screen bg-background">
+              <main className="pb-20">
+                <DashboardScreen />
+              </main>
+              <BottomNavigation />
+            </div>
+          } />
+          <Route path="/wallet" element={
+            <div className="min-h-screen bg-background">
+              <main className="pb-20">
+                <WalletScreen />
+              </main>
+              <BottomNavigation />
+            </div>
+          } />
+          <Route path="/invite" element={
+            <div className="min-h-screen bg-background">
+              <main className="pb-20">
+                <InviteScreen />
+              </main>
+              <BottomNavigation />
+            </div>
+          } />
+          <Route path="/profile" element={
+            <div className="min-h-screen bg-background">
+              <main className="pb-20">
+                <ProfileScreen />
+              </main>
+              <BottomNavigation />
+            </div>
+          } />
+        </>
+      ) : (
+        <Route path="*" element={<Navigate to="/" replace />} />
+      )}
       
       {/* Catch all */}
       <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} replace />} />
