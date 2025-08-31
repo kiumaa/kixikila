@@ -735,6 +735,100 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json | null
+          purpose: string | null
+          status: string
+          stripe_event_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json | null
+          purpose?: string | null
+          status?: string
+          stripe_event_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json | null
+          purpose?: string | null
+          status?: string
+          stripe_event_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_accounts: {
+        Row: {
+          account_holder_name: string | null
+          bank_name: string | null
+          created_at: string
+          iban: string | null
+          id: string
+          is_verified: boolean | null
+          stripe_connect_id: string | null
+          type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          account_holder_name?: string | null
+          bank_name?: string | null
+          created_at?: string
+          iban?: string | null
+          id?: string
+          is_verified?: boolean | null
+          stripe_connect_id?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          account_holder_name?: string | null
+          bank_name?: string | null
+          created_at?: string
+          iban?: string | null
+          id?: string
+          is_verified?: boolean | null
+          stripe_connect_id?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_configurations: {
         Row: {
           created_at: string
@@ -884,6 +978,44 @@ export type Database = {
             columns: ["default_template_otp"]
             isOneToOne: false
             referencedRelation: "message_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          status: string
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1143,6 +1275,79 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      withdrawals: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          failure_reason: string | null
+          id: string
+          metadata: Json | null
+          method: string
+          payout_account_id: string | null
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+          stripe_payout_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          method?: string
+          payout_account_id?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          stripe_payout_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          method?: string
+          payout_account_id?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          stripe_payout_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawals_payout_account_id_fkey"
+            columns: ["payout_account_id"]
+            isOneToOne: false
+            referencedRelation: "payout_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawals_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
