@@ -93,10 +93,16 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
   };
 
   const performPinSetup = async (pinValue: string) => {
-
     setIsLoading(true);
 
     try {
+      // Obter o token de acesso do utilizador autenticado
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('Utilizador não está autenticado');
+      }
+
       // Chamar Edge Function para definir PIN
       const { data, error } = await supabase.functions.invoke('pin-management', {
         body: {
@@ -104,6 +110,9 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
           pin: pinValue,
           deviceId: rememberDevice ? getDeviceId() : null,
           deviceName: `${navigator.userAgent.split(' ')[0]} - ${new Date().toLocaleDateString('pt-PT')}`
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 

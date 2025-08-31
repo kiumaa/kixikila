@@ -251,6 +251,13 @@ Deno.serve(async (req) => {
           throw new Error('Device ID é obrigatório');
         }
 
+        // Verificar se existe PIN configurado para o utilizador
+        const { data: userPinData, error: pinFetchError } = await supabase
+          .from('auth_pin')
+          .select('pin_hash')
+          .eq('user_id', userId)
+          .single();
+
         const { data: deviceData, error: deviceError } = await supabase
           .from('device_sessions')
           .select('trusted, expires_at, lock_until')
@@ -271,7 +278,7 @@ Deno.serve(async (req) => {
           JSON.stringify({ 
             success: true, 
             trusted: isTrusted,
-            hasPin: !!pinData 
+            hasPin: !!userPinData 
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
