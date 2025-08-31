@@ -59,13 +59,13 @@ const GroupsManagement: React.FC = () => {
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const handleDeleteGroup = (groupId: number, groupName: string) => {
+  const handleDeleteGroup = (groupId: string, groupName: string) => {
     if (confirm(`Tem certeza que deseja eliminar o grupo "${groupName}"? Esta ação não pode ser desfeita.`)) {
       deleteGroup(groupId);
     }
   };
 
-  const handleFreezeGroup = (groupId: number, groupName: string) => {
+  const handleFreezeGroup = (groupId: string, groupName: string) => {
     if (confirm(`Tem certeza que deseja congelar o grupo "${groupName}"?`)) {
       freezeGroup(groupId);
     }

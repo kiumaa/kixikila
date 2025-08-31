@@ -11,7 +11,7 @@ import { VIPUpgradeModal } from './VIPUpgradeModal';
 import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/store/useAppStore';
 import { useVIPStatus } from '@/hooks/useVIPStatus';
-import { formatCurrency } from '@/lib/mockData';
+import { formatCurrency, Group } from '@/lib/mockData';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -67,32 +67,61 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     // Simulate API call
     setTimeout(() => {
       // Add mock group to store
-      const newGroup = {
-        id: Date.now(),
+      const newGroup: Group = {
+        id: `grp_${Date.now()}`,
         name: formData.name,
         description: formData.description,
+        type: 'savings' as const,
+        status: 'active' as const,
+        payout_method: formData.groupType === 'lottery' ? 'lottery' : 'order' as any,
+        
+        // Snake case (Supabase standard)
+        contribution_amount: parseFloat(formData.contributionAmount),
+        contribution_frequency: 'monthly' as const,
+        max_members: parseInt(formData.maxMembers),
+        current_members: 1,
+        current_cycle: 1,
+        total_pool: parseFloat(formData.contributionAmount),
+        next_payment_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        
+        // Legacy camelCase (for compatibility)
         contributionAmount: parseFloat(formData.contributionAmount),
-        frequency: 'mensal' as const,
         maxMembers: parseInt(formData.maxMembers),
         currentMembers: 1,
-        nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        status: 'active' as const,
-        adminId: 1,
-        cycle: 1,
-        groupType: formData.groupType as 'lottery' | 'order',
         totalPool: parseFloat(formData.contributionAmount),
-        startDate: new Date().toISOString().split('T')[0],
+        nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        cycle: 1,
+        
+        // Additional properties
+        category: 'family',
         privacy: formData.privacy as 'public' | 'private',
-        category: 'family' as const,
+        frequency: 'mensal',
+        adminId: '1',
+        groupType: formData.groupType as 'lottery' | 'order',
+        
+        creator_id: '1', // Current user ID as string
+        created_at: new Date().toISOString(),
+        start_date: new Date().toISOString(),
+        is_private: formData.privacy === 'private',
+        requires_approval: formData.privacy !== 'public',
+        
+        settings: {
+          payment_window_hours: 72,
+          auto_exclude_late_payments: true
+        },
+        
+        history: [],
+        
         members: [{
-          id: 1,
+          user_id: '1',
           name: "Ana Santos",
           avatar: "AS",
           paid: false,
-          isWinner: false,
-          isAdmin: true
-        }],
-        history: []
+          is_winner: false,
+          is_admin: true,
+          isAdmin: true,
+          joined_at: new Date().toISOString()
+        }]
       };
 
       addGroup(newGroup);

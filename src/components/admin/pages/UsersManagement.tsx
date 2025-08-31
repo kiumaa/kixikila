@@ -59,14 +59,14 @@ const UsersManagement: React.FC = () => {
     return matchesSearch && matchesStatus && matchesPlan;
   });
 
-  const handleBanUser = (userId: number) => {
+  const handleBanUser = (userId: string) => {
     const reason = prompt('Motivo do banimento:');
     if (reason) {
       banUser(userId, reason);
     }
   };
 
-  const handleTogglePlan = (userId: number, currentIsVIP: boolean) => {
+  const handleTogglePlan = (userId: string, currentIsVIP: boolean) => {
     updateUserPlan(userId, currentIsVIP ? 'free' : 'vip');
   };
 

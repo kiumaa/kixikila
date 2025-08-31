@@ -20,6 +20,17 @@ export interface User {
   updated_at?: string;
   first_login?: boolean;
   wallet_balance?: number;
+  
+  // Legacy compatibility properties
+  avatar?: string;
+  kycStatus?: string;
+  trustScore?: number;
+  walletBalance?: number;
+  activeGroups?: number;
+  completedCycles?: number;
+  totalSaved?: number;
+  vipExpiry?: string;
+  joinDate?: string;
 }
 
 interface AuthState {

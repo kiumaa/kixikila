@@ -16,7 +16,7 @@ interface GroupDetailsScreenProps {
   onBack: () => void;
   onPay: () => void;
   onInvite: () => void;
-  currentUserId: number;
+  currentUserId: string;
 }
 
 export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = React.memo(({
@@ -38,11 +38,11 @@ export const GroupDetailsScreen: React.FC<GroupDetailsScreenProps> = React.memo(
 
   // Memoized calculations
   const { paidMembers, progress } = useMemoizedGroupProgress(group.members);
-  const isAdmin = useMemo(() => group.adminId === currentUserId, [group.adminId, currentUserId]);
+  const isAdmin = useMemo(() => group.adminId === String(currentUserId), [group.adminId, currentUserId]);
   const canDraw = useMemo(() => progress === 100 && group.groupType === 'lottery', [progress, group.groupType]);
 
   const handleDraw = useCallback(() => {
-    const unpaidMembers = group.members.filter(m => !m.paid && !m.isWinner);
+    const unpaidMembers = group.members.filter(m => !m.paid && !m.is_winner);
     if (unpaidMembers.length === 0) return;
     
     const winner = unpaidMembers[Math.floor(Math.random() * unpaidMembers.length)];
