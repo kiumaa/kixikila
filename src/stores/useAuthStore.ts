@@ -126,34 +126,42 @@ export const useAuthStore = create<AuthState>()(
 
       verifyPhoneOtp: async (phone: string, otp: string) => {
         set({ isLoading: true, error: null });
+        console.log('AuthStore: Starting verifyPhoneOtp for:', phone);
+        
         try {
           const response = await supabaseAuthService.verifyPhoneOtp({ phone, token: otp });
+          console.log('AuthStore: Verification response:', response);
           
           if (response.success && response.data) {
             const user = { ...response.data.user, name: response.data.user.full_name };
-        set({
-          isAuthenticated: true,
-          user,
-          isLoading: false,
-          error: null,
-        });
+            console.log('AuthStore: Login successful for user:', user.id);
+            
+            set({
+              isAuthenticated: true,
+              user,
+              isLoading: false,
+              error: null,
+            });
 
-        // Redirect based on user role  
-        setTimeout(() => {
-          if (user.role === 'admin') {
-            window.location.href = '/admin/dashboard';
-          } else {
-            window.location.href = '/app/dashboard';
-          }
-        }, 100);
+            // Redirect based on user role  
+            setTimeout(() => {
+              if (user.role === 'admin') {
+                window.location.href = '/admin/dashboard';
+              } else {
+                window.location.href = '/app/dashboard';
+              }
+            }, 100);
 
-        return { success: true, message: response.message };
+            return { success: true, message: response.message };
           } else {
+            console.error('AuthStore: Verification failed:', response.message);
             set({ error: response.message, isLoading: false });
             return { success: false, message: response.message };
           }
         } catch (error: any) {
           const errorMessage = error.message || 'Erro na verificação do OTP';
+          console.error('AuthStore: Verification error:', errorMessage);
+          
           set({
             isAuthenticated: false,
             user: null,

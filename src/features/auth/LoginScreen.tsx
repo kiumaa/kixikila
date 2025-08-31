@@ -28,6 +28,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [otpTimer, setOtpTimer] = useState(0);
   const { toast } = useToast();
   const { sendPhoneOtp, verifyPhoneOtp, isLoading, error, clearError } = useAuthStore();
+  const [isVerifying, setIsVerifying] = useState(false);
   
   // Rate limiting for OTP requests
   const otpRateLimit = useRateLimit('otp_send', {
@@ -111,6 +112,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const handleVerifyOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
+    // Prevent multiple simultaneous calls
+    if (isVerifying) {
+      console.log('Already verifying, ignoring call');
+      return;
+    }
+    
     if (!otp || otp.length !== 6) {
       toast({
         title: "Código incompleto",
@@ -132,23 +139,37 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       return;
     }
 
+    setIsVerifying(true);
+    console.log('Starting OTP verification for:', `+351${rawPhone}`, 'OTP:', otp);
+
     try {
       const fullPhone = `+351${rawPhone}`;
-      await verifyPhoneOtp(fullPhone, otp);
+      const result = await verifyPhoneOtp(fullPhone, otp);
       
-      // Reset rate limits on successful login
-      otpRateLimit.reset();
-      verifyRateLimit.reset();
+      console.log('Verification result:', result);
       
-      toast({
-        title: "Login realizado com sucesso! 🎉",
-        description: "Bem-vindo de volta ao KIXIKILA",
-      });
-      // Redirection is now handled by the auth store based on user role
+      if (result.success) {
+        // Reset rate limits on successful login
+        otpRateLimit.reset();
+        verifyRateLimit.reset();
+        
+        toast({
+          title: "Login realizado com sucesso! 🎉",
+          description: "Bem-vindo de volta ao KIXIKILA",
+        });
+        // Redirection is now handled by the auth store based on user role
+      } else {
+        // Record verification attempt only on failure
+        verifyRateLimit.recordAttempt();
+        console.error('Verification failed:', result.message);
+      }
     } catch (error) {
-      // Record verification attempt
+      console.error('Verification error:', error);
+      // Record verification attempt on error
       verifyRateLimit.recordAttempt();
       // Error is handled by the store and useEffect
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -199,10 +220,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
   const handleOtpComplete = (otpValue: string) => {
     setOtp(otpValue);
-    // Auto-verify when OTP is complete
-    setTimeout(() => {
-      handleVerifyOtp();
-    }, 500);
+    // Auto-verification removed to prevent loops
+    // User must manually click verify button
   };
 
   return (
@@ -234,6 +253,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 : `Código enviado para +351 ${formattedPhone}`
               }
             </p>
+            
+            {/* Development mode notice */}
+            {step === 'otp' && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  💡 <strong>Modo de desenvolvimento:</strong> Use o código <code className="font-mono bg-blue-100 px-1 rounded">123456</code> para testar
+                </p>
+              </div>
+            )}
             
             {/* Rate limit warnings */}
             {step === 'phone' && !otpRateLimit.checkLimit().allowed && (
@@ -339,9 +367,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 variant="default"
                 size="lg"
                 className="w-full ios-button"
-                disabled={isLoading || otp.length !== 6 || !verifyRateLimit.checkLimit().allowed}
+                disabled={isLoading || isVerifying || otp.length !== 6 || !verifyRateLimit.checkLimit().allowed}
               >
-                {isLoading ? (
+                {(isLoading || isVerifying) ? (
                   <LoadingSpinner size="sm" />
                 ) : (
                   <>
