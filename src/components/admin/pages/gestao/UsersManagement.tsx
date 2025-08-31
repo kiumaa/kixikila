@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatCurrency, formatDate } from '@/lib/mockData';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 const UsersManagement: React.FC = () => {
   const { toast } = useToast();

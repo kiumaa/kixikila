@@ -1,138 +1,105 @@
 import { useState, useEffect } from 'react';
-import { GroupService, type AdminGroup, type GroupAnalytics } from '@/services/groupService';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Group } from '@/lib/utils';
 
-export const useAdminGroups = (options: {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: string;
+export interface AdminGroup extends Group {
+  creator?: {
+    full_name: string;
+    email: string;
+  };
   category?: string;
-} = {}) => {
+  privacy?: 'private' | 'public' | 'invite_only';
+  // Legacy compatibility properties
+  contributionAmount?: number;
+  maxMembers?: number;
+  currentMembers?: number;
+  totalPool?: number;
+  nextPaymentDate?: string;
+  cycle?: number;
+}
+
+export const useAdminGroups = () => {
   const [groups, setGroups] = useState<AdminGroup[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        setIsLoading(true);
-        const { groups: groupData, totalCount: count } = await GroupService.getGroups(options);
-        setGroups(groupData);
-        setTotalCount(count);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch groups');
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os grupos",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchGroups = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
+      const { data, error: supabaseError } = await supabase
+        .from('groups')
+        .select(`
+          *,
+          creator:users!groups_creator_id_fkey (
+            full_name,
+            email
+          ),
+          group_members (
+            id,
+            user_id,
+            status,
+            role,
+            total_contributed,
+            current_balance,
+            joined_at,
+            users (
+              full_name,
+              avatar_url
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (supabaseError) throw supabaseError;
+
+      // Transform data to include member info and legacy compatibility
+      const transformedGroups: AdminGroup[] = (data || []).map(group => ({
+        ...group,
+        // Legacy compatibility properties
+        contributionAmount: group.contribution_amount,
+        maxMembers: group.max_members,
+        currentMembers: group.current_members,
+        totalPool: group.total_pool,
+        nextPaymentDate: group.next_payment_date,
+        cycle: group.current_cycle,
+        category: group.type,
+        privacy: group.is_private ? 'private' : 'public',
+        // Transform members data
+        members: (group.group_members || []).map((member: any) => ({
+          id: member.id,
+          user_id: member.user_id,
+          name: member.users?.full_name || 'Utilizador',
+          avatar: member.users?.full_name?.charAt(0) || 'U',
+          avatar_url: member.users?.avatar_url,
+          paid: member.current_balance > 0,
+          is_admin: member.role === 'admin' || member.role === 'creator',
+          joined_at: member.joined_at
+        }))
+      }));
+
+      setGroups(transformedGroups);
+    } catch (err: any) {
+      console.error('Error fetching admin groups:', err);
+      setError(err.message || 'Erro ao carregar grupos');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refetch = () => {
     fetchGroups();
-  }, [options.page, options.limit, options.search, options.status, options.category, toast]);
-
-  const updateGroupStatus = async (groupId: string, status: string, reason?: string) => {
-    try {
-      await GroupService.updateGroupStatus(groupId, status as any, reason);
-      
-      // Update local state
-      setGroups(prevGroups => 
-        prevGroups.map(group => 
-          group.id === groupId 
-            ? { ...group, status: status as any }
-            : group
-        )
-      );
-
-      toast({
-        title: "Sucesso",
-        description: "Estado do grupo atualizado com sucesso",
-      });
-    } catch (err) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o estado do grupo",
-        variant: "destructive",
-      });
-      throw err;
-    }
   };
-
-  const deleteGroup = async (groupId: string) => {
-    try {
-      await GroupService.deleteGroup(groupId);
-      
-      // Remove from local state
-      setGroups(prevGroups => prevGroups.filter(group => group.id !== groupId));
-      setTotalCount(prev => prev - 1);
-
-      toast({
-        title: "Sucesso",
-        description: "Grupo eliminado com sucesso",
-      });
-    } catch (err) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível eliminar o grupo",
-        variant: "destructive",
-      });
-      throw err;
-    }
-  };
-
-  return { 
-    groups, 
-    totalCount, 
-    isLoading, 
-    error, 
-    updateGroupStatus,
-    deleteGroup,
-    refetch: () => GroupService.getGroups(options).then(({ groups: groupData, totalCount: count }) => {
-      setGroups(groupData);
-      setTotalCount(count);
-    })
-  };
-};
-
-export const useGroupAnalytics = () => {
-  const [analytics, setAnalytics] = useState<GroupAnalytics>({
-    totalGroups: 0,
-    activeGroups: 0,
-    completedGroups: 0,
-    suspendedGroups: 0,
-    totalMembers: 0,
-    averageGroupSize: 0,
-    totalPoolValue: 0,
-    completionRate: 0
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        setIsLoading(true);
-        const data = await GroupService.getGroupAnalytics();
-        setAnalytics(data);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch group analytics');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAnalytics();
+    fetchGroups();
   }, []);
 
-  return { analytics, isLoading, error, refetch: () => setIsLoading(true) };
+  return {
+    groups,
+    isLoading,
+    error,
+    refetch
+  };
 };
-
-export default { useAdminGroups, useGroupAnalytics };

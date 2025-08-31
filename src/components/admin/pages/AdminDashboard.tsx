@@ -28,7 +28,7 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { formatCurrency, formatDateTime } from '@/lib/mockData';
+import { formatCurrency, formatDateTime } from '@/lib/utils';
 
 // Mock chart data
 const monthlyData = [

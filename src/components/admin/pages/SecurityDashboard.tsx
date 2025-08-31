@@ -4,7 +4,7 @@ import { Shield, AlertTriangle, Eye, Activity, Users, TrendingUp, RefreshCw } fr
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDateTime } from '@/lib/mockData';
+import { formatDateTime } from '@/lib/utils';
 import {
   LineChart,
   Line,

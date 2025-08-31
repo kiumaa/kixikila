@@ -1,9 +1,37 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { mockAdminUsers, mockGroups, mockTransactions, mockUser, type User, type Group, type Transaction, type AdminUser } from '@/lib/mockData';
 
-// Use AdminUser from mockData
-export type { AdminUser } from '@/lib/mockData';
+// Admin User Type (extended from Supabase User with legacy properties)
+export interface AdminUser {
+  id: string;
+  email?: string;
+  full_name: string;
+  phone?: string;
+  role?: string;
+  avatar_url?: string;
+  kyc_status?: string;
+  is_vip?: boolean;
+  is_active?: boolean;
+  wallet_balance?: number;
+  trust_score?: number;
+  active_groups?: number;
+  completed_cycles?: number;
+  created_at?: string;
+  updated_at?: string;
+  
+  // Legacy properties for admin components
+  name?: string;
+  avatar?: string;
+  kycStatus?: string;
+  isVIP?: boolean;
+  walletBalance?: number;
+  activeGroups?: number;
+  trustScore?: number;
+  completedCycles?: number;
+  joinDate?: string;
+  lastLogin?: string;
+  status?: 'active' | 'banned' | 'inactive';
+}
 export type AdminRole = 'admin';
 export type UserStatus = 'active' | 'banned' | 'inactive';
 
@@ -234,7 +262,7 @@ export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
       // Data
-      allUsers: mockAdminUsers,
+      allUsers: [], // Empty initial state - will be populated from real data
       planConfigs: initialPlanConfigs,
       promotions: [],
       brandingConfig: initialBrandingConfig,
@@ -249,14 +277,14 @@ export const useAdminStore = create<AdminState>()(
       },
       activityLogs: mockActivityLogs,
       adminStats: {
-        totalUsers: mockAdminUsers.length,
-        activeUsers: mockAdminUsers.filter(u => u.status === 'active').length,
-        bannedUsers: mockAdminUsers.filter(u => u.status === 'banned').length,
-        totalGroups: mockGroups.length,
-        totalRevenue: 2499.75,
-        freeUsers: mockAdminUsers.filter(u => !u.isVIP).length,
-        vipUsers: mockAdminUsers.filter(u => u.isVIP).length,
-        monthlyGrowth: 12.5
+        totalUsers: 0,
+        activeUsers: 0,
+        bannedUsers: 0,
+        totalGroups: 0,
+        totalRevenue: 0,
+        freeUsers: 0,
+        vipUsers: 0,
+        monthlyGrowth: 0
       },
       
       // User actions
@@ -351,45 +379,36 @@ export const useAdminStore = create<AdminState>()(
       
       // Group actions
       deleteGroup: (groupId: string) => {
-        const group = mockGroups.find(g => g.id === groupId);
-        if (group) {
-          get().addActivityLog({
-            action: 'Grupo eliminado',
-            adminId: 1,
-            adminName: 'Admin',
-            targetType: 'group',
-            targetId: 1,
-            details: `Grupo "${group.name}" foi eliminado`
-          });
-        }
+        get().addActivityLog({
+          action: 'Grupo eliminado',
+          adminId: 1,
+          adminName: 'Admin',
+          targetType: 'group',
+          targetId: 1,
+          details: `Grupo foi eliminado`
+        });
       },
       
       freezeGroup: (groupId: string) => {
-        const group = mockGroups.find(g => g.id === groupId);
-        if (group) {
-          get().addActivityLog({
-            action: 'Grupo congelado',
-            adminId: 1,
-            adminName: 'Admin',
-            targetType: 'group',
-            targetId: 1,
-            details: `Grupo "${group.name}" foi congelado`
-          });
-        }
+        get().addActivityLog({
+          action: 'Grupo congelado',
+          adminId: 1,
+          adminName: 'Admin',
+          targetType: 'group',
+          targetId: 1,
+          details: `Grupo foi congelado`
+        });
       },
       
       updateGroup: (groupId: string, data: Partial<Group>) => {
-        const group = mockGroups.find(g => g.id === groupId);
-        if (group) {
-          get().addActivityLog({
-            action: 'Grupo alterado',
-            adminId: 1,
-            adminName: 'Admin',
-            targetType: 'group',
-            targetId: 1,
-            details: `Grupo "${group.name}" foi alterado`
-          });
-        }
+        get().addActivityLog({
+          action: 'Grupo alterado',
+          adminId: 1,
+          adminName: 'Admin',
+          targetType: 'group',
+          targetId: 1,
+          details: `Grupo foi alterado`
+        });
       },
       
       // Plan actions

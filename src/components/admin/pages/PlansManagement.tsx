@@ -17,7 +17,7 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/mockData';
+import { formatCurrency } from '@/lib/utils';
 
 const PlansManagement: React.FC = () => {
   const { planConfigs, promotions, updatePlanConfig, createPromotion, togglePromotion } = useAdminStore();

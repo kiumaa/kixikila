@@ -35,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatCurrency, formatDate } from '@/lib/mockData';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 const UsersManagement: React.FC = () => {
   const { allUsers, banUser, unbanUser, updateUserPlan } = useAdminStore();
@@ -47,14 +47,14 @@ const UsersManagement: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const filteredUsers = allUsers.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.phone.includes(searchTerm);
+    const matchesSearch = (user.name || user.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (user.phone || '').includes(searchTerm);
     
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
     const matchesPlan = planFilter === 'all' || 
-                       (planFilter === 'vip' && user.isVIP) ||
-                       (planFilter === 'free' && !user.isVIP);
+                       (planFilter === 'vip' && (user.isVIP || user.is_vip)) ||
+                       (planFilter === 'free' && !(user.isVIP || user.is_vip));
     
     return matchesSearch && matchesStatus && matchesPlan;
   });
@@ -68,6 +68,10 @@ const UsersManagement: React.FC = () => {
 
   const handleTogglePlan = (userId: string, currentIsVIP: boolean) => {
     updateUserPlan(userId, currentIsVIP ? 'free' : 'vip');
+    toast({
+      title: "Plano atualizado",
+      description: `Utilizador ${currentIsVIP ? 'removido do' : 'promovido para'} plano VIP.`
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -168,16 +172,16 @@ const UsersManagement: React.FC = () => {
                     verified={user.kycStatus === 'verified'}
                   />
                   
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-gray-900">{user.name}</h4>
-                      {user.isVIP && (
-                        <Crown className="w-4 h-4 text-amber-500" />
-                      )}
-                      {user.role === 'admin' && (
-                        <Shield className="w-4 h-4 text-blue-500" />
-                      )}
-                    </div>
+                     <div className="space-y-1">
+                       <div className="flex items-center gap-2">
+                         <h4 className="font-semibold text-gray-900">{user.name || user.full_name}</h4>
+                         {(user.isVIP || user.is_vip) && (
+                           <Crown className="w-4 h-4 text-amber-500" />
+                         )}
+                         {user.role === 'admin' && (
+                           <Shield className="w-4 h-4 text-blue-500" />
+                         )}
+                       </div>
                     
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-1">
@@ -189,37 +193,37 @@ const UsersManagement: React.FC = () => {
                         <span>{user.phone}</span>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Badge className={getStatusColor(user.status)}>
-                        {user.status === 'active' ? 'Ativo' : 
-                         user.status === 'banned' ? 'Banido' : 'Inativo'}
-                      </Badge>
-                      
-                      <Badge className={getKYCStatusColor(user.kycStatus)}>
-                        KYC: {user.kycStatus === 'verified' ? 'Verificado' : 
-                              user.kycStatus === 'pending' ? 'Pendente' : 'Rejeitado'}
-                      </Badge>
-                      
-                      <Badge variant={user.isVIP ? "default" : "secondary"}>
-                        {user.isVIP ? 'VIP' : 'Free'}
-                      </Badge>
-                    </div>
+                       
+                       <div className="flex items-center gap-2">
+                         <Badge className={getStatusColor(user.status || 'active')}>
+                           {user.status === 'active' ? 'Ativo' : 
+                            user.status === 'banned' ? 'Banido' : 'Inativo'}
+                         </Badge>
+                         
+                         <Badge className={getKYCStatusColor(user.kycStatus || user.kyc_status || 'pending')}>
+                           KYC: {(user.kycStatus || user.kyc_status) === 'verified' ? 'Verificado' : 
+                                 (user.kycStatus || user.kyc_status) === 'pending' ? 'Pendente' : 'Rejeitado'}
+                         </Badge>
+                         
+                         <Badge variant={(user.isVIP || user.is_vip) ? "default" : "secondary"}>
+                           {(user.isVIP || user.is_vip) ? 'VIP' : 'Free'}
+                         </Badge>
+                       </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="text-right space-y-1">
-                    <div className="font-semibold text-gray-900">
-                      {formatCurrency(user.walletBalance)}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {user.activeGroups} grupos
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Desde {formatDate(user.joinDate)}
-                    </div>
-                  </div>
+                 <div className="flex items-center gap-4">
+                   <div className="text-right space-y-1">
+                     <div className="font-semibold text-gray-900">
+                       {formatCurrency(user.walletBalance || user.wallet_balance || 0)}
+                     </div>
+                     <div className="text-sm text-gray-500">
+                       {user.activeGroups || user.active_groups || 0} grupos
+                     </div>
+                     <div className="text-xs text-gray-400">
+                       Desde {formatDate(user.joinDate || user.created_at || new Date().toISOString())}
+                     </div>
+                   </div>
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -238,12 +242,12 @@ const UsersManagement: React.FC = () => {
                          Editar Dados
                        </DropdownMenuItem>
                       
-                      <DropdownMenuItem 
-                        onClick={() => handleTogglePlan(user.id, user.isVIP)}
-                      >
-                        <Crown className="w-4 h-4 mr-2" />
-                        {user.isVIP ? 'Remover VIP' : 'Tornar VIP'}
-                      </DropdownMenuItem>
+                       <DropdownMenuItem 
+                         onClick={() => handleTogglePlan(user.id, user.isVIP || user.is_vip || false)}
+                       >
+                         <Crown className="w-4 h-4 mr-2" />
+                         {(user.isVIP || user.is_vip) ? 'Remover VIP' : 'Tornar VIP'}
+                       </DropdownMenuItem>
                       
                       <DropdownMenuSeparator />
                       

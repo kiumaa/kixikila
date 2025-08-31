@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAppStore } from '@/stores/useAppStore';
 import { formatCurrency } from '@/lib/utils';
-import { Group } from '@/lib/mockData';
+import { Group } from '@/lib/utils';
 
 interface CreateGroupWizardProps {
   isOpen: boolean;

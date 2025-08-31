@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminStore } from '@/store/useAdminStore';
 import { Users, Calendar, Euro, Settings, Trash2, Pause, Play } from 'lucide-react';
-import { formatCurrency, formatDate, type Group } from '@/lib/mockData';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface EditGroupModalProps {
   group: Group | null;

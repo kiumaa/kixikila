@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { type Group, formatCurrency } from '@/lib/mockData';
+import { type Group, formatCurrency } from '@/lib/utils';
 
 interface InviteGroupModalProps {
   isOpen: boolean;

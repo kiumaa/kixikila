@@ -8,7 +8,7 @@ import { useTransactions, useTransactionStats } from '@/hooks/useTransactions';
 import { useWithdrawals } from '@/hooks/useWithdrawals';
 import { useUserData } from '@/hooks/useUserData';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { formatCurrency, formatDate } from '@/lib/mockData';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface WalletScreenProps {
   onBack: () => void;

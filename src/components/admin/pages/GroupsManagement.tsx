@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { mockGroups } from '@/lib/mockData';
+import { useAdminGroups } from '@/hooks/useAdminGroups';
 import { useAdminStore } from '@/store/useAdminStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/design-system/Avatar';
 import EditGroupModal from '@/components/admin/modals/EditGroupModal';
 import { useToast } from '@/hooks/use-toast';
-import { type Group } from '@/lib/mockData';
+import { type Group } from '@/lib/utils';
 import { 
   FileText, 
   Search, 
@@ -38,10 +38,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatCurrency, formatDate } from '@/lib/mockData';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 const GroupsManagement: React.FC = () => {
   const { deleteGroup, freezeGroup } = useAdminStore();
+  const { groups, isLoading, refetch } = useAdminGroups();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -49,7 +50,7 @@ const GroupsManagement: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const filteredGroups = mockGroups.filter(group => {
+  const filteredGroups = (groups || []).filter(group => {
     const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          group.description.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -62,12 +63,14 @@ const GroupsManagement: React.FC = () => {
   const handleDeleteGroup = (groupId: string, groupName: string) => {
     if (confirm(`Tem certeza que deseja eliminar o grupo "${groupName}"? Esta ação não pode ser desfeita.`)) {
       deleteGroup(groupId);
+      refetch();
     }
   };
 
   const handleFreezeGroup = (groupId: string, groupName: string) => {
     if (confirm(`Tem certeza que deseja congelar o grupo "${groupName}"?`)) {
       freezeGroup(groupId);
+      refetch();
     }
   };
 
@@ -125,7 +128,7 @@ const GroupsManagement: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestão de Grupos</h2>
           <p className="text-gray-600">
-            {filteredGroups.length} de {mockGroups.length} grupos
+            {isLoading ? 'A carregar...' : `${filteredGroups.length} de ${groups?.length || 0} grupos`}
           </p>
         </div>
         
@@ -185,8 +188,10 @@ const GroupsManagement: React.FC = () => {
 
       {/* Groups List */}
       <div className="grid gap-6">
-        {filteredGroups.map((group) => {
-          const progress = (group.members.filter(m => m.paid).length / group.members.length) * 100;
+        {isLoading ? (
+          <div className="text-center py-8">A carregar grupos...</div>
+        ) : filteredGroups.map((group) => {
+          const progress = ((group.members || []).filter(m => m.paid).length / (group.members || []).length) * 100;
           
           return (
             <Card key={group.id} className="hover:shadow-lg transition-shadow">
@@ -211,31 +216,31 @@ const GroupsManagement: React.FC = () => {
                     
                     <p className="text-gray-600 mb-4">{group.description}</p>
                     
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Euro className="w-4 h-4 text-green-600" />
-                        <span className="text-gray-600">Contribuição:</span>
-                        <span className="font-semibold">{formatCurrency(group.contributionAmount)}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-sm">
-                        <Users className="w-4 h-4 text-blue-600" />
-                        <span className="text-gray-600">Membros:</span>
-                        <span className="font-semibold">{group.currentMembers}/{group.maxMembers}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-purple-600" />
-                        <span className="text-gray-600">Próximo:</span>
-                        <span className="font-semibold">{formatDate(group.nextPaymentDate)}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="w-4 h-4 text-orange-600" />
-                        <span className="text-gray-600">Ciclo:</span>
-                        <span className="font-semibold">{group.cycle}º</span>
-                      </div>
-                    </div>
+                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                       <div className="flex items-center gap-2 text-sm">
+                         <Euro className="w-4 h-4 text-green-600" />
+                         <span className="text-gray-600">Contribuição:</span>
+                         <span className="font-semibold">{formatCurrency(group.contribution_amount)}</span>
+                       </div>
+                       
+                       <div className="flex items-center gap-2 text-sm">
+                         <Users className="w-4 h-4 text-blue-600" />
+                         <span className="text-gray-600">Membros:</span>
+                         <span className="font-semibold">{group.current_members}/{group.max_members}</span>
+                       </div>
+                       
+                       <div className="flex items-center gap-2 text-sm">
+                         <Calendar className="w-4 h-4 text-purple-600" />
+                         <span className="text-gray-600">Próximo:</span>
+                         <span className="font-semibold">{group.next_payment_date ? formatDate(group.next_payment_date) : 'N/A'}</span>
+                       </div>
+                       
+                       <div className="flex items-center gap-2 text-sm">
+                         <FileText className="w-4 h-4 text-orange-600" />
+                         <span className="text-gray-600">Ciclo:</span>
+                         <span className="font-semibold">{group.current_cycle}º</span>
+                       </div>
+                     </div>
 
                     {/* Progress Bar */}
                     <div className="mb-4">
@@ -255,31 +260,31 @@ const GroupsManagement: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Members */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex -space-x-2">
-                        {group.members.slice(0, 6).map((member) => (
-                          <Avatar 
-                            key={member.id}
-                            name={member.avatar} 
-                            size="sm"
-                            className="ring-2 ring-white"
-                            online={member.paid}
-                          />
-                        ))}
-                        {group.members.length > 6 && (
-                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600 ring-2 ring-white">
-                            +{group.members.length - 6}
-                          </div>
-                        )}
+                     {/* Members */}
+                     <div className="flex items-center justify-between">
+                       <div className="flex -space-x-2">
+                         {(group.members || []).slice(0, 6).map((member) => (
+                           <Avatar 
+                             key={member.id || member.user_id}
+                             name={member.avatar || member.name?.charAt(0) || 'U'} 
+                             size="sm"
+                             className="ring-2 ring-white"
+                             online={member.paid}
+                           />
+                         ))}
+                         {(group.members || []).length > 6 && (
+                           <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600 ring-2 ring-white">
+                             +{(group.members || []).length - 6}
+                           </div>
+                         )}
                       </div>
-                      
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900">
-                          {formatCurrency(group.totalPool)}
-                        </div>
-                        <div className="text-sm text-gray-500">Pool total</div>
-                      </div>
+                       
+                       <div className="text-right">
+                         <div className="text-lg font-bold text-gray-900">
+                           {formatCurrency(group.total_pool)}
+                         </div>
+                         <div className="text-sm text-gray-500">Pool total</div>
+                       </div>
                     </div>
                   </div>
 
@@ -321,10 +326,10 @@ const GroupsManagement: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-          );
-        })}
+            );
+          })}
 
-        {filteredGroups.length === 0 && (
+        {!isLoading && filteredGroups.length === 0 && (
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />

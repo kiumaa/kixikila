@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { Avatar } from '@/components/design-system/Avatar';
 import { SkeletonCard } from '@/components/design-system/SkeletonCard';
-import { formatCurrency, formatDate } from '@/lib/mockData';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 import { useAppStore } from '@/store/useAppStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useUserData } from '@/hooks/useUserData';
 import { useUserGroups } from '@/hooks/useGroupData';
+import { useVIPStatus } from '@/hooks/useVIPStatus';
 import { PlanLimitNotice } from '@/components/common/PlanLimitNotice';
 import { PWAInstallBanner } from '@/components/common/PWAInstallBanner';
 import { toast } from '@/hooks/use-toast';
@@ -41,12 +42,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
 }) => {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
-  const { userPlan, canCreateGroup, getGroupCount } = useAppStore();
+  const { } = useAppStore();
   const { user } = useAuthStore();
   const { userStats, isLoading: userLoading } = useUserData();
   const { groups, isLoading: groupsLoading } = useUserGroups();
+  const { isVIP, canCreateGroup } = useVIPStatus();
   
-  const isVIP = userPlan === 'vip' || user?.is_vip;
   const isLoading = userLoading || groupsLoading;
 
   // Filter groups based on active tab
@@ -277,18 +278,18 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
               <Button 
                 variant="default" 
                 size="sm"
-                onClick={() => {
-                  if (canCreateGroup()) {
-                    onOpenCreateGroup();
-                  } else {
-                    toast({
-                      title: "Limite Atingido",
-                      description: "Plano gratuito permite até 2 grupos. Torna-te VIP para criar mais.",
-                    });
-                  }
-                }}
-                disabled={!canCreateGroup()}
-                className={`ios-button ${!canCreateGroup() ? 'opacity-50' : ''}`}
+                 onClick={() => {
+                   if (canCreateGroup()) {
+                     onOpenCreateGroup();
+                   } else {
+                     toast({
+                       title: "Limite Atingido",
+                       description: "Plano gratuito permite até 2 grupos. Torna-te VIP para criar mais.",
+                     });
+                   }
+                 }}
+                 disabled={!canCreateGroup()}
+                 className={`ios-button ${!canCreateGroup() ? 'opacity-50' : ''}`}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Criar
