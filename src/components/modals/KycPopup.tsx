@@ -4,9 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useKycProcess } from '@/hooks/useKycProcess';
-import KycWizard from '@/components/kyc/KycWizard';
-import KycStatusScreen from '@/components/kyc/KycStatusScreen';
+import { supabase } from '@/integrations/supabase/client';
 
 interface KycPopupProps {
   isOpen: boolean;
@@ -16,56 +14,43 @@ interface KycPopupProps {
 
 const KycPopup = ({ isOpen, onClose, onStartKyc }: KycPopupProps) => {
   const [isSkipping, setIsSkipping] = useState(false);
-  const [showWizard, setShowWizard] = useState(false);
-  const [showStatus, setShowStatus] = useState(false);
   const { toast } = useToast();
-  const { kycData } = useKycProcess();
 
   const handleSkip = async () => {
     setIsSkipping(true);
-    
-    // Simulate skip action
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Tudo bem!",
-      description: "Podes fazer a verificação mais tarde no teu perfil.",
-      variant: "default",
-    });
 
-    setIsSkipping(false);
-    onClose();
+    try {
+      const { data, error } = await supabase.functions.invoke('kyc-management', {
+        body: {
+          action: 'skip'
+        }
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao marcar KYC');
+      }
+
+      toast({
+        title: "Tudo bem!",
+        description: data.message || "Podes fazer a verificação mais tarde no teu perfil.",
+        variant: "default",
+      });
+
+      onClose();
+
+    } catch (error: any) {
+      console.error('Erro ao skip KYC:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Ocorreu um erro. Tenta novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSkipping(false);
+    }
   };
-
-  const handleStartKyc = () => {
-    setShowWizard(true);
-    onStartKyc();
-  };
-
-  const handleWizardComplete = () => {
-    setShowWizard(false);
-    setShowStatus(true);
-  };
-
-  const handleStatusBack = () => {
-    setShowStatus(false);
-    onClose();
-  };
-
-  // Show KYC Wizard
-  if (showWizard) {
-    return <KycWizard onClose={onClose} onComplete={handleWizardComplete} />;
-  }
-
-  // Show Status Screen
-  if (showStatus) {
-    return <KycStatusScreen onBack={handleStatusBack} onRetry={() => setShowWizard(true)} />;
-  }
-
-  // Check if user has existing KYC data
-  if (kycData.status !== 'not_started') {
-    return <KycStatusScreen onBack={onClose} onRetry={() => setShowWizard(true)} />;
-  }
 
   const benefits = [
     {
@@ -143,7 +128,7 @@ const KycPopup = ({ isOpen, onClose, onStartKyc }: KycPopupProps) => {
           <div className="space-y-3">
             <Button
               className="w-full"
-              onClick={handleStartKyc}
+              onClick={onStartKyc}
               disabled={isSkipping}
             >
               <Shield className="w-4 h-4 mr-2" />

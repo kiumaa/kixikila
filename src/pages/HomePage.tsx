@@ -1,251 +1,198 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Wallet, Users, Settings, LogOut, Shield, Crown, FileText, AlertCircle } from 'lucide-react';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { Shield, Users, Wallet, ArrowRight, Sparkles, TrendingUp, Clock, Star, Crown, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useMockAuthStore } from '@/stores/useMockAuthStore';
-import { usePinManagement } from '@/hooks/usePinManagement';
-import { useToast } from '@/hooks/use-toast';
-import { useKycProcess } from '@/hooks/useKycProcess';
-import KycPopup from '@/components/modals/KycPopup';
+import RoleBasedRedirect from '@/components/auth/RoleBasedRedirect';
 
-const HomePage: React.FC = () => {
+const HomePage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user, logout } = useMockAuthStore();
-  const { hasPinConfigured, clearPin } = usePinManagement();
-  const { kycData } = useKycProcess();
-  const [showKycPopup, setShowKycPopup] = useState(false);
-
-  const handleLogout = () => {
-    if (user) {
-      clearPin(user.id);
-    }
-    logout();
-    toast({
-      title: "Sessão terminada",
-      description: "Até à próxima! 👋",
-    });
-    navigate('/auth/login');
-  };
-
-  if (!user) {
-    navigate('/auth/login');
-    return null;
+  const { isAuthenticated } = useAuthStore();
+  
+  // Redirect authenticated users based on their role
+  if (isAuthenticated) {
+    return <RoleBasedRedirect />;
   }
 
-  const isPinConfigured = hasPinConfigured(user.id);
-
-  const getKycStatusInfo = () => {
-    switch (kycData.status) {
-      case 'approved':
-        return { icon: Shield, text: 'Verificado', color: 'text-success', bgColor: 'bg-success/10' };
-      case 'pending':
-      case 'in_review':
-        return { icon: AlertCircle, text: 'Em Análise', color: 'text-warning', bgColor: 'bg-warning/10' };
-      case 'rejected':
-        return { icon: AlertCircle, text: 'Rejeitado', color: 'text-destructive', bgColor: 'bg-destructive/10' };
-      default:
-        return { icon: FileText, text: 'Pendente', color: 'text-muted-foreground', bgColor: 'bg-muted/10' };
-    }
-  };
-
-  const kycStatusInfo = getKycStatusInfo();
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-subtle via-background to-accent">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary-darker px-6 pt-14 pb-32">
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-primary-foreground mb-1">
-              Olá, {user.name || user.phone.slice(-4)} 👋
-            </h1>
-            <p className="text-primary-foreground/80">
-              Bem-vindo ao KIXIKILA
-            </p>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={handleLogout}
-            className="text-primary-foreground hover:bg-primary-foreground/20"
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Status Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-primary-foreground/10 backdrop-blur-sm border-0 text-primary-foreground">
-            <CardContent className="p-4 text-center">
-              <Shield className="w-8 h-8 mx-auto mb-2" />
-              <div className="text-xl font-bold">
-                {isPinConfigured ? 'Ativo' : 'Pendente'}
-              </div>
-              <div className="text-xs opacity-80">Segurança PIN</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-primary-foreground/10 backdrop-blur-sm border-0 text-primary-foreground">
-            <CardContent className="p-4 text-center">
-              <kycStatusInfo.icon className="w-8 h-8 mx-auto mb-2" />
-              <div className="text-xl font-bold">
-                {kycStatusInfo.text}
-              </div>
-              <div className="text-xs opacity-80">Estado KYC</div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="px-6 -mt-16 space-y-6">
-        {/* Account Status Card */}
-        <Card className="ios-card animate-fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Estado da Conta</span>
-              <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                ✨ Ativa
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">Telefone</p>
-                <p className="font-semibold text-sm">{user.phone}</p>
-              </div>
-              <div className="text-center p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">Membro desde</p>
-                <p className="font-semibold text-sm">
-                  {new Date(user.createdAt).toLocaleDateString('pt-PT')}
-                </p>
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10"></div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+          <div className="text-center">
+            <div className="mb-8">
+              <div className="inline-flex items-center justify-center bg-transparent from-primary to-secondary px-8 py-4 rounded-3xl shadow-2xl animate-fade-in">
+                <img 
+                  src="/src/assets/kixikila-logomain.png" 
+                  alt="KIXIKILA"
+                  className="h-12 w-auto"
+                />
               </div>
             </div>
             
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 p-3 bg-success/10 rounded-lg border border-success/20">
-                <Shield className="w-4 h-4 text-success" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-success">PIN Configurado</p>
-                  <p className="text-xs text-success/80">
-                    {isPinConfigured ? 'Acesso rápido ativo' : 'Configure seu PIN'}
-                  </p>
-                </div>
-              </div>
-
-              <div 
-                className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity ${kycStatusInfo.bgColor} border-current`}
-                onClick={() => setShowKycPopup(true)}
+            <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-8 animate-fade-in">
+              A forma mais{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+                inteligente
+              </span>
+              <br />
+              de poupar em grupo
+            </h1>
+            
+            <p className="text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed animate-fade-in">
+              Junte-se a grupos de poupança colaborativa e alcance os seus objetivos financeiros 
+              mais rapidamente com total segurança e transparência.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary-hover text-primary-foreground px-10 py-6 text-xl font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 animate-hover-scale"
+                onClick={() => navigate('/entrar?type=register')}
               >
-                <kycStatusInfo.icon className={`w-4 h-4 ${kycStatusInfo.color}`} />
-                <div className="flex-1">
-                  <p className={`text-sm font-medium ${kycStatusInfo.color}`}>
-                    Verificação de Identidade
-                  </p>
-                  <p className={`text-xs ${kycStatusInfo.color}/80`}>
-                    {kycData.status === 'approved' ? 'Conta verificada' :
-                     kycData.status === 'pending' || kycData.status === 'in_review' ? 'Análise em progresso' :
-                     kycData.status === 'rejected' ? 'Tenta novamente' :
-                     'Completa a tua verificação'}
-                  </p>
-                </div>
-                {kycData.status === 'not_started' && (
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                )}
-              </div>
+                <Zap className="mr-3 h-6 w-6" />
+                Começar Agora
+                <ArrowRight className="ml-3 h-6 w-6" />
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="px-10 py-6 text-xl font-semibold border-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all duration-300"
+                onClick={() => navigate('/entrar?type=login')}
+              >
+                Já tenho conta
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Features Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="ios-card hover-scale cursor-pointer" onClick={() => toast({ title: "Em breve!", description: "Funcionalidade em desenvolvimento" })}>
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Wallet className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">Carteira</h3>
-              <p className="text-xs text-muted-foreground">Gerir fundos</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="ios-card hover-scale cursor-pointer" onClick={() => toast({ title: "Em breve!", description: "Funcionalidade em desenvolvimento" })}>
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Users className="w-6 h-6 text-accent" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">Grupos</h3>
-              <p className="text-xs text-muted-foreground">Poupanças</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="ios-card hover-scale cursor-pointer" onClick={() => toast({ title: "Em breve!", description: "Funcionalidade em desenvolvimento" })}>
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-warning/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Settings className="w-6 h-6 text-warning" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">Definições</h3>
-              <p className="text-xs text-muted-foreground">Configurar</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="ios-card hover-scale cursor-pointer" onClick={() => navigate('/auth/app')}>
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Home className="w-6 h-6 text-success" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">App Demo</h3>
-              <p className="text-xs text-muted-foreground">Ver prototype</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Info Card */}
-        <Card className="ios-card bg-gradient-to-r from-primary-subtle to-accent-subtle border-primary/20">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-3">
-              <Shield className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-semibold text-primary mb-2">🎉 Fase 2 Completa!</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Parabéns! Completaste com sucesso:
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• ✅ Autenticação por SMS</li>
-                  <li>• ✅ PIN de 4 dígitos seguro</li>
-                  <li>• ✅ Sistema de verificação KYC</li>
-                  <li>• ✅ Acesso à plataforma</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Development Info */}
-        <div className="pb-8">
-          <Card className="ios-card bg-muted/30">
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-2">
-                🚀 KIXIKILA - Versão de Desenvolvimento
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Esta é uma versão de teste. Funcionalidades completas em breve.
-              </p>
-            </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
 
-      {/* KYC Popup */}
-      <KycPopup
-        isOpen={showKycPopup}
-        onClose={() => setShowKycPopup(false)}
-        onStartKyc={() => {}}
-      />
+      {/* Features Section */}
+      <div className="py-24 bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              Como Funciona o KIXIKILA
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Simples, seguro e transparente. Três passos para começar a poupar em grupo.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="text-center p-8 hover:shadow-xl transition-shadow">
+              <CardContent>
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Users className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">1. Junte-se a um Grupo</h3>
+                <p className="text-muted-foreground">
+                  Crie ou entre num grupo de poupança com amigos, família ou colegas. 
+                  Defina o valor mensal e objetivos.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center p-8 hover:shadow-xl transition-shadow">
+              <CardContent>
+                <div className="w-16 h-16 bg-secondary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Wallet className="w-8 h-8 text-secondary" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">2. Contribua Mensalmente</h3>
+                <p className="text-muted-foreground">
+                  Todos os membros contribuem com o valor acordado através da carteira digital segura.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center p-8 hover:shadow-xl transition-shadow">
+              <CardContent>
+                <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <TrendingUp className="w-8 h-8 text-accent" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-4">3. Receba o Montante</h3>
+                <p className="text-muted-foreground">
+                  Por sorteio ou ordem, cada membro recebe o montante total acumulado para realizar seus objetivos.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Benefits Section */}
+      <div className="py-24 bg-gradient-to-br from-primary/5 to-secondary/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              Porquê Escolher o KIXIKILA?
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              A plataforma mais segura e moderna para poupança colaborativa em Portugal.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-6 h-6 text-emerald-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">100% Seguro</h3>
+              <p className="text-sm text-muted-foreground">Tecnologia Stripe e verificação KYC</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Clock className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Rápido e Fácil</h3>
+              <p className="text-sm text-muted-foreground">Configure um grupo em minutos</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Transparente</h3>
+              <p className="text-sm text-muted-foreground">Todas as transações são auditáveis</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Star className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Planos VIP</h3>
+              <p className="text-sm text-muted-foreground">Recursos avançados disponíveis</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="py-24 bg-gradient-to-r from-primary to-secondary text-primary-foreground">
+        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl font-bold mb-6">
+            Pronto para Começar a Poupar?
+          </h2>
+          <p className="text-xl mb-10 opacity-90 max-w-2xl mx-auto">
+            Junte-se a milhares de portugueses que já descobriram uma forma mais inteligente de poupar.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <Button 
+              size="lg"
+              variant="secondary"
+              className="px-10 py-6 text-xl font-semibold bg-white text-primary hover:bg-gray-100"
+              onClick={() => navigate('/entrar?type=register')}
+            >
+              <Crown className="mr-3 h-6 w-6" />
+              Criar Conta Grátis
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

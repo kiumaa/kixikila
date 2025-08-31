@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
-import AuthRoutes from "./pages/AuthRoutes";
 import AppPage from "./pages/AppPage";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
@@ -29,11 +28,8 @@ const App = () => {
             {/* Homepage - Onboarding */}
             <Route path="/" element={<HomePage />} />
             
-            {/* Authentication Page - Login/Register (Original) */}
+            {/* Authentication Page - Login/Register */}
             <Route path="/entrar" element={<AuthPage />} />
-            
-            {/* New Mock Authentication Routes */}
-            <Route path="/auth/*" element={<AuthRoutes />} />
             
             {/* Main App - User Protected */}
             <Route 
