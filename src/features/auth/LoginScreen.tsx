@@ -8,6 +8,7 @@ import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useRateLimit } from '@/hooks/useRateLimit';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -151,6 +152,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         // Reset rate limits on successful login
         otpRateLimit.reset();
         verifyRateLimit.reset();
+        
+        // Verificar se tem PIN configurado ou se é dispositivo confiável
+        const deviceId = localStorage.getItem('kixikila_device_id');
+        const customSession = localStorage.getItem('kixikila_custom_session');
+        
+        if (deviceId && customSession) {
+          // Verificar se dispositivo é confiável
+          try {
+            const { data: pinData } = await supabase.functions.invoke('pin-management', {
+              body: { action: 'check_device', deviceId }
+            });
+            
+            if (pinData?.trusted) {
+              // Dispositivo confiável - redirecionar para PIN unlock
+              window.location.href = '/entrar?type=pin&phone=' + encodeURIComponent(fullPhone);
+              return;
+            }
+          } catch (error) {
+            console.log('Device check failed, proceeding with normal flow');
+          }
+        }
         
         toast({
           title: "Login realizado com sucesso! 🎉",

@@ -118,8 +118,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
 
   const handlePinComplete = () => {
     toast({
-      title: "Conta criada com sucesso!",
-      description: "Bem-vindo à KIXIKILA! A tua conta está pronta.",
+      title: "PIN definido com sucesso!",
+      description: "Agora vamos verificar a tua identidade para maior segurança.",
       variant: "default",
     });
 
@@ -135,7 +135,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack, onSucces
 
   const handleStartKyc = () => {
     setShowKycPopup(false);
-    onSuccess(); // Redirecionar para dashboard - KYC será feito na página de perfil
+    
+    toast({
+      title: "Conta criada com sucesso! 🎉",
+      description: "Bem-vindo ao KIXIKILA! Está tudo pronto para começares.",
+      variant: "default",
+    });
+    
+    onSuccess(); // Redirecionar para dashboard
   };
 
   // Validation helpers

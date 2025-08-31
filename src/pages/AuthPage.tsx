@@ -2,18 +2,24 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { LoginScreen, RegisterScreen } from '@/routes/LazyRoutes';
+import PinSetupScreen from '@/features/auth/PinSetupScreen';
+import PinUnlockScreen from '@/features/auth/PinUnlockScreen';
 import { Loader2 } from 'lucide-react';
 
 const AuthPage = () => {
   const { isAuthenticated } = useAuthStore();
   const [searchParams] = useSearchParams();
-  const [authType, setAuthType] = useState<'login' | 'register'>('login');
+  const [authType, setAuthType] = useState<'login' | 'register' | 'pin_setup' | 'pin_unlock'>('login');
 
   // Get auth type from URL params or default to login
   useEffect(() => {
     const type = searchParams.get('type');
     if (type === 'register') {
       setAuthType('register');
+    } else if (type === 'pin_setup') {
+      setAuthType('pin_setup');
+    } else if (type === 'pin') {
+      setAuthType('pin_unlock');
     } else {
       setAuthType('login'); 
     }
@@ -42,6 +48,19 @@ const AuthPage = () => {
     window.history.pushState({}, '', '/entrar?type=login');
   };
 
+  const handlePinSetupComplete = () => {
+    window.location.href = '/app';
+  };
+
+  const handlePinUnlockSuccess = () => {
+    window.location.href = '/app';
+  };
+
+  const handlePinFallbackToOtp = () => {
+    setAuthType('login');
+    window.history.pushState({}, '', '/entrar?type=login');
+  };
+
   return (
     <div className="max-w-md mx-auto bg-background min-h-screen">
       <Suspense 
@@ -62,12 +81,26 @@ const AuthPage = () => {
             onSuccess={handleSuccess}
             onRegister={handleRegister}
           />
-        ) : (
+        ) : authType === 'register' ? (
           <RegisterScreen
             onBack={handleBack}
             onSuccess={handleSuccess}
           />
-        )}
+        ) : authType === 'pin_setup' ? (
+          <PinSetupScreen
+            onBack={handleBack}
+            onComplete={handlePinSetupComplete}
+            userPhone={searchParams.get('phone') || ''}
+            rememberDevice={true}
+          />
+        ) : authType === 'pin_unlock' ? (
+          <PinUnlockScreen
+            onSuccess={handlePinUnlockSuccess}
+            onFallbackToOtp={handlePinFallbackToOtp}
+            userPhone={searchParams.get('phone') || ''}
+            userName={searchParams.get('name') || undefined}
+          />
+        ) : null}
       </Suspense>
     </div>
   );
