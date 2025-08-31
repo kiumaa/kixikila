@@ -17,6 +17,7 @@ import AdminProtectedRoute from "./components/auth/AdminProtectedRoute";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RequireKyc from "./components/auth/RequireKyc";
 import SmartRedirect from "./components/auth/SmartRedirect";
+import AuthInitializer from "./components/auth/AuthInitializer";
 
 const queryClient = new QueryClient();
 
@@ -24,9 +25,10 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+        <AuthInitializer>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             {/* Homepage - Onboarding for new users, redirect for authenticated */}
             <Route 
@@ -122,6 +124,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </AuthInitializer>
       </TooltipProvider>
     </QueryClientProvider>
   );
