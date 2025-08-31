@@ -1,18 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Wallet, Users, Settings, LogOut, Shield, Crown } from 'lucide-react';
+import { Home, Wallet, Users, Settings, LogOut, Shield, Crown, FileText, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useMockAuthStore } from '@/stores/useMockAuthStore';
 import { usePinManagement } from '@/hooks/usePinManagement';
 import { useToast } from '@/hooks/use-toast';
+import { useKycProcess } from '@/hooks/useKycProcess';
+import KycPopup from '@/components/modals/KycPopup';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, logout } = useMockAuthStore();
   const { hasPinConfigured, clearPin } = usePinManagement();
+  const { kycData } = useKycProcess();
+  const [showKycPopup, setShowKycPopup] = useState(false);
 
   const handleLogout = () => {
     if (user) {
@@ -32,6 +36,22 @@ const HomePage: React.FC = () => {
   }
 
   const isPinConfigured = hasPinConfigured(user.id);
+
+  const getKycStatusInfo = () => {
+    switch (kycData.status) {
+      case 'approved':
+        return { icon: Shield, text: 'Verificado', color: 'text-success', bgColor: 'bg-success/10' };
+      case 'pending':
+      case 'in_review':
+        return { icon: AlertCircle, text: 'Em Análise', color: 'text-warning', bgColor: 'bg-warning/10' };
+      case 'rejected':
+        return { icon: AlertCircle, text: 'Rejeitado', color: 'text-destructive', bgColor: 'bg-destructive/10' };
+      default:
+        return { icon: FileText, text: 'Pendente', color: 'text-muted-foreground', bgColor: 'bg-muted/10' };
+    }
+  };
+
+  const kycStatusInfo = getKycStatusInfo();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-subtle via-background to-accent">
@@ -70,9 +90,11 @@ const HomePage: React.FC = () => {
           
           <Card className="bg-primary-foreground/10 backdrop-blur-sm border-0 text-primary-foreground">
             <CardContent className="p-4 text-center">
-              <Crown className="w-8 h-8 mx-auto mb-2" />
-              <div className="text-xl font-bold">Beta</div>
-              <div className="text-xs opacity-80">Versão Teste</div>
+              <kycStatusInfo.icon className="w-8 h-8 mx-auto mb-2" />
+              <div className="text-xl font-bold">
+                {kycStatusInfo.text}
+              </div>
+              <div className="text-xs opacity-80">Estado KYC</div>
             </CardContent>
           </Card>
         </div>
@@ -104,13 +126,36 @@ const HomePage: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-2 p-3 bg-success/10 rounded-lg border border-success/20">
-              <Shield className="w-4 h-4 text-success" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-success">PIN Configurado</p>
-                <p className="text-xs text-success/80">
-                  {isPinConfigured ? 'Acesso rápido ativo' : 'Configure seu PIN'}
-                </p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-success/10 rounded-lg border border-success/20">
+                <Shield className="w-4 h-4 text-success" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-success">PIN Configurado</p>
+                  <p className="text-xs text-success/80">
+                    {isPinConfigured ? 'Acesso rápido ativo' : 'Configure seu PIN'}
+                  </p>
+                </div>
+              </div>
+
+              <div 
+                className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity ${kycStatusInfo.bgColor} border-current`}
+                onClick={() => setShowKycPopup(true)}
+              >
+                <kycStatusInfo.icon className={`w-4 h-4 ${kycStatusInfo.color}`} />
+                <div className="flex-1">
+                  <p className={`text-sm font-medium ${kycStatusInfo.color}`}>
+                    Verificação de Identidade
+                  </p>
+                  <p className={`text-xs ${kycStatusInfo.color}/80`}>
+                    {kycData.status === 'approved' ? 'Conta verificada' :
+                     kycData.status === 'pending' || kycData.status === 'in_review' ? 'Análise em progresso' :
+                     kycData.status === 'rejected' ? 'Tenta novamente' :
+                     'Completa a tua verificação'}
+                  </p>
+                </div>
+                {kycData.status === 'not_started' && (
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                )}
               </div>
             </div>
           </CardContent>
@@ -194,6 +239,13 @@ const HomePage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* KYC Popup */}
+      <KycPopup
+        isOpen={showKycPopup}
+        onClose={() => setShowKycPopup(false)}
+        onStartKyc={() => {}}
+      />
     </div>
   );
 };

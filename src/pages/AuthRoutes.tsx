@@ -6,6 +6,8 @@ import SetPinPage from './auth/SetPinPage';
 import HomePage from './HomePage';
 import MockAppPage from './MockAppPage';
 import MockProtectedRoute from '@/components/auth/MockProtectedRoute';
+import KycWizard from '@/components/kyc/KycWizard';
+import KycStatusScreen from '@/components/kyc/KycStatusScreen';
 
 const AuthRoutes: React.FC = () => {
   return (
@@ -34,6 +36,24 @@ const AuthRoutes: React.FC = () => {
         element={
           <MockProtectedRoute>
             <MockAppPage />
+          </MockProtectedRoute>
+        } 
+      />
+      
+      {/* KYC Routes - Protected */}
+      <Route 
+        path="kyc/verify" 
+        element={
+          <MockProtectedRoute>
+            <KycWizard onClose={() => window.history.back()} onComplete={() => window.location.href = '/auth/kyc/status'} />
+          </MockProtectedRoute>
+        } 
+      />
+      <Route 
+        path="kyc/status" 
+        element={
+          <MockProtectedRoute>
+            <KycStatusScreen onBack={() => window.history.back()} />
           </MockProtectedRoute>
         } 
       />
