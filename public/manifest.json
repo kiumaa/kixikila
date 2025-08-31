@@ -5,7 +5,7 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0070f3",
+  "theme_color": "#6366f1",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "pt-PT",
@@ -31,17 +31,24 @@
   ],
   "shortcuts": [
     {
-      "name": "Ver Grupos",
-      "short_name": "Grupos",
-      "description": "Ver os seus grupos de poupança",
-      "url": "/app?tab=groups",
+      "name": "Dashboard",
+      "short_name": "Home",
+      "description": "Ver o painel principal",
+      "url": "/dashboard",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Carteira",
       "short_name": "Carteira",
       "description": "Gerir a sua carteira digital",
-      "url": "/app/wallet",
+      "url": "/wallet",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Criar Grupo",
+      "short_name": "Criar",
+      "description": "Criar novo grupo de poupança",
+      "url": "/dashboard?action=create",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
@@ -60,5 +67,15 @@
       "form_factor": "narrow",
       "label": "Vista móvel do KIXIKILA"
     }
-  ]
+  ],
+  "prefer_related_applications": false,
+  "share_target": {
+    "action": "/invite",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

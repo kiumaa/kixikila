@@ -1,7 +1,7 @@
 'use client'
 
-import { DashboardScreen } from '@/components/dashboard/dashboard-screen'
+import { DashboardPage } from '@/pages/dashboard'
 
-export default function DashboardPage() {
-  return <DashboardScreen />
+export default function Dashboard() {
+  return <DashboardPage />
 }

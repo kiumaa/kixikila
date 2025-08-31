@@ -1,11 +1,13 @@
 const CACHE_NAME = 'kixikila-v1.1.0';
 const urlsToCache = [
   '/',
-  '/app',
-  '/app/wallet',
-  '/app/groups',
-  '/app/profile',
-  '/offline.html'
+  '/dashboard',
+  '/wallet',
+  '/invite',
+  '/profile',
+  '/offline.html',
+  '/static/js/bundle.js',
+  '/static/css/main.css'
 ];
 
 // Install event

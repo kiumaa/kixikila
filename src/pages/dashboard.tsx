@@ -5,15 +5,11 @@ import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar } from '@/components/ui/avatar'
-import { Wallet, Plus, Users, TrendingUp, Crown, Bell, Eye, EyeOff, Upload, Download, History, Calendar, Euro, Clock, Check } from 'lucide-react'
+import { Wallet, Users, TrendingUp, Crown, Bell, Eye, EyeOff, Upload, Download, History, Calendar, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { toast } from 'sonner'
 import { DepositModal } from '@/components/modals/deposit-modal'
 import { VIPUpgradeModal } from '@/components/modals/vip-upgrade-modal'
-import { CreateGroupModal } from '@/components/modals/create-group-modal'
-import { GroupDetailsScreen } from '@/components/groups/group-details-screen'
-import { JoinGroupScreen } from '@/components/groups/join-group-screen'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface Group {
   id: string
@@ -28,107 +24,54 @@ interface Group {
   next_payout_date: string
 }
 
-export function DashboardScreen() {
+export function DashboardPage() {
   const { user } = useAuth()
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showVIPUpgrade, setShowVIPUpgrade] = useState(false)
-  const [showCreateGroup, setShowCreateGroup] = useState(false)
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
-  const [showJoinGroup, setShowJoinGroup] = useState(false)
   const [userGroups, setUserGroups] = useState<Group[]>([])
   const [userStats, setUserStats] = useState({
-    wallet_balance: 0,
-    total_saved: 0,
-    total_earned: 0,
-    active_groups: 0,
-    trust_score: 50,
+    wallet_balance: 1250.50,
+    total_saved: 5420.80,
+    total_earned: 3200.00,
+    active_groups: 3,
+    trust_score: 98,
     is_vip: false
   })
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Mock data for demonstration
+  const mockGroups: Group[] = [
+    {
+      id: '1',
+      name: 'Família Santos',
+      description: 'Poupança familiar para férias de verão',
+      contribution_amount: 100,
+      max_members: 8,
+      current_members: 7,
+      group_type: 'lottery',
+      status: 'active',
+      total_pool: 700,
+      next_payout_date: '2025-09-15'
+    },
+    {
+      id: '2',
+      name: 'Tech Founders',
+      description: 'Investimento em startups e projetos tech',
+      contribution_amount: 500,
+      max_members: 10,
+      current_members: 8,
+      group_type: 'order',
+      status: 'active',
+      total_pool: 4000,
+      next_payout_date: '2025-09-20'
+    }
+  ]
 
   useEffect(() => {
-    if (user) {
-      fetchUserData()
-      fetchUserGroups()
-    }
-  }, [user])
-
-  const fetchUserData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('wallet_balance, total_saved, total_earned, active_groups, trust_score, is_vip')
-        .eq('id', user?.id)
-        .single()
-
-      if (error) throw error
-      if (data) {
-        setUserStats(data)
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error)
-    }
-  }
-
-  const fetchUserGroups = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('groups')
-        .select(`
-          id,
-          name,
-          description,
-          contribution_amount,
-          max_members,
-          current_members,
-          group_type,
-          status,
-          total_pool,
-          next_payout_date
-        `)
-        .eq('creator_id', user?.id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setUserGroups(data || [])
-    } catch (error) {
-      console.error('Error fetching groups:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Show join group screen
-  if (showJoinGroup) {
-    return <JoinGroupScreen onBack={() => setShowJoinGroup(false)} />
-  }
-
-  // Show group details if a group is selected
-  if (selectedGroupId) {
-    return (
-      <GroupDetailsScreen 
-        groupId={selectedGroupId} 
-        onBack={() => setSelectedGroupId(null)} 
-      />
-    )
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2
-    }).format(amount)
-  }
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-PT', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
+    // Set mock data
+    setUserGroups(mockGroups)
+  }, [])
 
   if (isLoading) {
     return (
@@ -145,7 +88,7 @@ export function DashboardScreen() {
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-2xl font-bold text-primary-foreground mb-1">
-              Olá, {user?.user_metadata?.full_name?.split(' ')[0] || 'Utilizador'} 👋
+              Olá, {user?.user_metadata?.full_name?.split(' ')[0] || 'Ana'} 👋
             </h1>
             <p className="text-primary-foreground/80">
               {new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -257,88 +200,66 @@ export function DashboardScreen() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-foreground">Os Meus Grupos</h2>
-            <div className="flex gap-2">
-              <Button 
-                variant="secondary" 
-                size="sm"
-                onClick={() => setShowJoinGroup(true)}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Procurar
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => setShowCreateGroup(true)}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Criar
-              </Button>
-            </div>
+            <Button 
+              variant="secondary" 
+              size="sm"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Procurar
+            </Button>
           </div>
 
           {/* Groups List */}
           <div className="space-y-4">
-            {userGroups.length > 0 ? (
-              userGroups.map((group) => (
-                <Card 
-                  key={group.id} 
-                  className="p-5 hover:shadow-lg transition-all cursor-pointer"
-                  onClick={() => setSelectedGroupId(group.id)}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-bold text-foreground text-lg">{group.name}</h3>
-                        {group.group_type === 'lottery' && (
-                          <Badge variant="secondary">
-                            Sorteio
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">{group.description}</p>
-                      
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="font-semibold text-primary">
-                          {formatCurrency(group.contribution_amount)}/mês
-                        </span>
-                        <span className="text-muted-foreground">
-                          {group.current_members}/{group.max_members} membros
-                        </span>
-                      </div>
+            {userGroups.map((group) => (
+              <Card 
+                key={group.id} 
+                className="p-5 hover:shadow-lg transition-all cursor-pointer"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-bold text-foreground text-lg">{group.name}</h3>
+                      {group.group_type === 'lottery' && (
+                        <Badge variant="secondary">
+                          Sorteio
+                        </Badge>
+                      )}
                     </div>
+                    <p className="text-sm text-muted-foreground mb-3">{group.description}</p>
                     
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-foreground">
-                        {formatCurrency(group.total_pool)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">valor total</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary">
-                      {group.status === 'active' ? 'Ativo' : 'Rascunho'}
-                    </Badge>
-                    
-                    <div className="flex items-center gap-2 text-xs">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="font-semibold text-primary">
+                        {formatCurrency(group.contribution_amount)}/mês
+                      </span>
                       <span className="text-muted-foreground">
-                        Próximo: {group.next_payout_date ? formatDate(group.next_payout_date) : 'N/A'}
+                        {group.current_members}/{group.max_members} membros
                       </span>
                     </div>
                   </div>
-                </Card>
-              ))
-            ) : (
-              <Card className="p-8 text-center">
-                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground mb-4">Ainda não criou nenhum grupo</p>
-                <Button onClick={() => setShowCreateGroup(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeiro Grupo
-                </Button>
+                  
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-foreground">
+                      {formatCurrency(group.total_pool)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">valor total</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary">
+                    {group.status === 'active' ? 'Ativo' : 'Rascunho'}
+                  </Badge>
+                  
+                  <div className="flex items-center gap-2 text-xs">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">
+                      Próximo: {formatDate(group.next_payout_date)}
+                    </span>
+                  </div>
+                </div>
               </Card>
-            )}
+            ))}
           </div>
         </div>
       </div>
@@ -352,10 +273,6 @@ export function DashboardScreen() {
       <VIPUpgradeModal
         isOpen={showVIPUpgrade}
         onClose={() => setShowVIPUpgrade(false)}
-      />
-      <CreateGroupModal
-        isOpen={showCreateGroup}
-        onClose={() => setShowCreateGroup(false)}
       />
     </div>
   )
