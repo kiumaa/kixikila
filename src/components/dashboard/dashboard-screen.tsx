@@ -12,6 +12,9 @@ import { toast } from 'sonner'
 import { DepositModal } from '@/components/modals/deposit-modal'
 import { VIPUpgradeModal } from '@/components/modals/vip-upgrade-modal'
 import { CreateGroupModal } from '@/components/modals/create-group-modal'
+import { GroupDetailsScreen } from '@/components/groups/group-details-screen'
+import { JoinGroupScreen } from '@/components/groups/join-group-screen'
+import { GroupDetailsScreen } from '@/components/groups/group-details-screen'
 
 interface Group {
   id: string
@@ -32,6 +35,8 @@ export function DashboardScreen() {
   const [showDeposit, setShowDeposit] = useState(false)
   const [showVIPUpgrade, setShowVIPUpgrade] = useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const [showJoinGroup, setShowJoinGroup] = useState(false)
   const [userGroups, setUserGroups] = useState<Group[]>([])
   const [userStats, setUserStats] = useState({
     wallet_balance: 0,
@@ -92,7 +97,19 @@ export function DashboardScreen() {
       console.error('Error fetching groups:', error)
     } finally {
       setIsLoading(false)
-    }
+  // Show join group screen
+  if (showJoinGroup) {
+    return <JoinGroupScreen onBack={() => setShowJoinGroup(false)} />
+  }
+
+  // Show group details if a group is selected
+  if (selectedGroupId) {
+    return (
+      <GroupDetailsScreen 
+        groupId={selectedGroupId} 
+        onBack={() => setSelectedGroupId(null)} 
+      />
+    )
   }
 
   const formatCurrency = (amount: number) => {
@@ -242,6 +259,7 @@ export function DashboardScreen() {
               <Button 
                 variant="secondary" 
                 size="sm"
+                onClick={() => setShowJoinGroup(true)}
               >
                 <Users className="w-4 h-4 mr-2" />
                 Procurar
@@ -260,7 +278,11 @@ export function DashboardScreen() {
           <div className="space-y-4">
             {userGroups.length > 0 ? (
               userGroups.map((group) => (
-                <Card key={group.id} className="p-5 hover:shadow-lg transition-all cursor-pointer">
+                <Card 
+                  key={group.id} 
+                  className="p-5 hover:shadow-lg transition-all cursor-pointer"
+                  onClick={() => setSelectedGroupId(group.id)}
+                >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
