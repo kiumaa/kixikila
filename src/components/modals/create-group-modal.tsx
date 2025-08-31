@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { X, ArrowRight, ArrowLeft, Users, Settings, FileText, Send } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { supabase } from '@/integrations/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { toast } from 'sonner'
 
@@ -62,9 +62,9 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
       setIsSubmitting(true)
 
       // Create the group
-      const { data: group, error: groupError } = await supabase
+      const { data: group, error: groupError } = await (supabase as any)
         .from('groups')
-        .insert([{
+        .insert({
           name: groupData.name,
           description: groupData.description,
           contribution_amount: parseFloat(groupData.contributionAmount),
@@ -75,7 +75,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
           creator_id: user.id,
           status: 'draft',
           contribution_frequency: groupData.frequency
-        }])
+        })
         .select()
         .single()
 
@@ -83,7 +83,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
       if (!group) throw new Error('Falha ao criar grupo')
 
       // Add creator as first member
-      const { error: memberError } = await supabase
+      const { error: memberError } = await (supabase as any)
         .from('group_members')
         .insert({
           group_id: group.id,
