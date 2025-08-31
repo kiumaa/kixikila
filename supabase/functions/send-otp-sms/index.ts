@@ -71,8 +71,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Generate OTP - Fixed code "123456" for development
-    const otp_code = "123456"; // Fixed development code
+    // Generate random 6-digit OTP
+    const otp_code = Math.floor(100000 + Math.random() * 900000).toString();
     const expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Store OTP in database
@@ -94,17 +94,25 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // DEVELOPMENT MODE: SMS disabled, using fixed code
-    console.log(`🔐 DESENVOLVIMENTO - Código fixo para ${phone}: ${otp_code}`);
-    console.log(`📱 Use sempre o código: 123456`);
+    // Send SMS via BulkSMS API
+    const smsResult = await sendSMS(phone, `Seu código KIXIKILA: ${otp_code}. Válido por 10 minutos.`);
+    
+    if (!smsResult.success) {
+      console.error('SMS sending failed:', smsResult.error);
+      return new Response(
+        JSON.stringify({ error: 'Failed to send SMS' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`📱 SMS enviado para ${phone}: ${smsResult.messageId}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: '📱 DESENVOLVIMENTO: Use sempre o código 123456',
+        message: 'Código SMS enviado com sucesso',
         phone: phone.slice(0, 3) + '****' + phone.slice(-2), // Masked phone
-        developmentMode: true,
-        code: otp_code // Show code in development
+        messageId: smsResult.messageId
       }),
       { 
         status: 200, 
@@ -120,5 +128,54 @@ const handler = async (req: Request): Promise<Response> => {
     );
   }
 };
+
+// Function to send SMS via BulkSMS API
+async function sendSMS(phone: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const tokenId = Deno.env.get('BULKSMS_TOKEN_ID');
+    const tokenSecret = Deno.env.get('BULKSMS_TOKEN_SECRET');
+
+    if (!tokenId || !tokenSecret) {
+      return { success: false, error: 'BulkSMS credentials not configured' };
+    }
+
+    // Format phone number for international format
+    const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
+    
+    const smsData = {
+      to: formattedPhone,
+      body: message,
+      from: "KIXIKILA"
+    };
+
+    const authHeader = 'Basic ' + btoa(`${tokenId}:${tokenSecret}`);
+
+    const response = await fetch('https://api.bulksms.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader
+      },
+      body: JSON.stringify(smsData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('BulkSMS API error:', response.status, errorText);
+      return { success: false, error: `BulkSMS API error: ${response.status}` };
+    }
+
+    const result = await response.json();
+    console.log('BulkSMS response:', result);
+    
+    return { 
+      success: true, 
+      messageId: result[0]?.id || 'unknown'
+    };
+  } catch (error) {
+    console.error('SMS sending error:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 serve(handler);

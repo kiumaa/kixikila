@@ -15,8 +15,8 @@ interface SendMessageRequest {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const bulkSmsUsername = Deno.env.get('BULKSMS_USERNAME');
-const bulkSmsPassword = Deno.env.get('BULKSMS_PASSWORD');
+const bulkSmsTokenId = Deno.env.get('BULKSMS_TOKEN_ID');
+const bulkSmsTokenSecret = Deno.env.get('BULKSMS_TOKEN_SECRET');
 const resendApiKey = Deno.env.get('RESEND_API_KEY');
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -109,20 +109,32 @@ const handler = async (req: Request): Promise<Response> => {
 
 // Send SMS via BulkSMS
 async function sendSMS(phoneNumber: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  if (!bulkSmsUsername || !bulkSmsPassword) {
+  if (!bulkSmsTokenId || !bulkSmsTokenSecret) {
     return { success: false, error: 'BulkSMS credentials not configured' };
   }
 
   try {
-    // Clean and format phone number
+    // Clean and format phone number for international format
     const cleanPhone = phoneNumber.replace(/\D/g, '');
-    const formattedPhone = cleanPhone.startsWith('244') ? cleanPhone : `244${cleanPhone}`;
+    let formattedPhone = cleanPhone;
+    
+    // Add country code if not present
+    if (!cleanPhone.startsWith('244')) {
+      formattedPhone = `244${cleanPhone}`;
+    }
+    
+    // Add + prefix for international format
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = `+${formattedPhone}`;
+    }
+
+    const authHeader = 'Basic ' + btoa(`${bulkSmsTokenId}:${bulkSmsTokenSecret}`);
 
     const response = await fetch('https://api.bulksms.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(`${bulkSmsUsername}:${bulkSmsPassword}`)}`
+        'Authorization': authHeader
       },
       body: JSON.stringify({
         to: formattedPhone,
@@ -132,15 +144,18 @@ async function sendSMS(phoneNumber: string, message: string): Promise<{ success:
       })
     });
 
-    const responseData = await response.json();
-
     if (!response.ok) {
-      throw new Error(`BulkSMS API error: ${responseData.detail || responseData.message || 'Unknown error'}`);
+      const errorText = await response.text();
+      console.error('BulkSMS API error:', response.status, errorText);
+      throw new Error(`BulkSMS API error: ${response.status}`);
     }
+
+    const responseData = await response.json();
+    console.log('BulkSMS response:', responseData);
 
     return { 
       success: true, 
-      messageId: responseData.id 
+      messageId: responseData[0]?.id || responseData.id || 'unknown'
     };
 
   } catch (error: any) {
