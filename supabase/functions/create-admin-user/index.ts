@@ -1,109 +1,119 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface CreateAdminRequest {
+  email: string;
+  phone: string;
+  full_name: string;
+  master_key?: string;
 }
 
-Deno.serve(async (req) => {
+const handler = async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get required environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'admin@kixikila.pt'
-    const adminPassword = Deno.env.get('ADMIN_PASSWORD')
-    
-    // Validate required environment variables
-    if (!supabaseUrl) {
-      throw new Error('SUPABASE_URL environment variable is required')
-    }
-    
-    if (!supabaseServiceKey) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required')
-    }
-    
-    if (!adminPassword) {
-      throw new Error('ADMIN_PASSWORD environment variable is required')
-    }
-    
-    // Validate admin credentials using database function
-    const tempClient = createClient(supabaseUrl, supabaseServiceKey)
-    const { data: validation, error: validationError } = await tempClient
-      .rpc('validate_admin_credentials', {
-        email: adminEmail,
-        password: adminPassword
-      })
-      
-    if (validationError || !validation?.valid) {
-      const errors = validation?.errors || ['Invalid credentials']
-      throw new Error(`Credential validation failed: ${errors.join(', ')}`)
-    }
-    
-    // Criar cliente Supabase com service role para criar usuários
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    // Criar usuário admin no sistema de autenticação
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: adminEmail,
-      password: adminPassword,
-      email_confirm: true,
-      user_metadata: {
-        full_name: 'Administrador Kixikila'
-      }
-    })
+    const { email, phone, full_name, master_key }: CreateAdminRequest = await req.json();
 
-    if (authError) {
-      console.error('Erro ao criar usuário auth:', authError)
+    // Validate master key (in production, use proper validation)
+    const MASTER_KEY = Deno.env.get('MASTER_ADMIN_KEY') || 'kixikila-admin-2025';
+    if (master_key !== MASTER_KEY) {
       return new Response(
-        JSON.stringify({ error: authError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+        JSON.stringify({ error: 'Invalid master key' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Aguardar um pouco para a trigger handle_new_user() criar a entrada na tabela users
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    if (!email || !phone || !full_name) {
+      return new Response(
+        JSON.stringify({ error: 'Email, phone, and full name are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Atualizar o role do usuário para admin
-    const { error: updateError } = await supabaseAdmin
+    // Check if admin already exists
+    const { data: existingAdmin } = await supabase
       .from('users')
-      .update({ 
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existingAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Admin user already exists' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create admin user
+    const { data: adminUser, error: createError } = await supabase
+      .from('users')
+      .insert({
+        email,
+        phone,
+        full_name,
         role: 'admin',
         is_active: true,
-        email_verified: true
+        phone_verified: true,
+        email_verified: true,
+        created_at: new Date().toISOString()
       })
-      .eq('id', authUser.user.id)
+      .select()
+      .single();
 
-    if (updateError) {
-      console.error('Erro ao atualizar role:', updateError)
+    if (createError) {
+      console.error('Admin creation error:', createError);
       return new Response(
-        JSON.stringify({ error: updateError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+        JSON.stringify({ error: 'Failed to create admin user' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    // Log admin creation
+    await supabase
+      .from('audit_logs')
+      .insert({
+        user_id: adminUser.id,
+        entity_type: 'admin_creation',
+        entity_id: adminUser.id,
+        action: 'create_admin',
+        metadata: { email, phone, full_name }
+      });
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        message: 'Usuário admin criado com sucesso',
-        user_id: authUser.user.id
+        success: true,
+        admin: {
+          id: adminUser.id,
+          email: adminUser.email,
+          full_name: adminUser.full_name,
+          role: adminUser.role
+        }
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+      { 
+        status: 201, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
 
   } catch (error) {
-    console.error('Erro geral:', error)
+    console.error('Create admin error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
-})
+};
+
+serve(handler);
