@@ -246,40 +246,86 @@ class SupabaseAuthService {
         };
       }
 
-      // Step 3: Simple approach - use signInAnonymously for OTP-verified users
-      // This creates a temporary session that we can use for the application
-      const { data: anonSignIn, error: anonError } = await supabase.auth.signInAnonymously();
-      
-      if (anonError) {
-        console.error('Anonymous sign in error:', anonError);
-        return {
-          success: false,
-          message: 'Erro ao criar sessão. Tente novamente.',
-        };
-      }
+      // Step 3: Create a real Supabase user with temporary credentials
+      // Generate temporary credentials based on phone number
+      const tempEmail = `temp_${userData.phone.replace(/[^0-9]/g, '')}@kixikila.temp`;
+      const tempPassword = this.generateConsistentPassword(userData);
 
-      // Update the anonymous user's metadata with our user data
-      if (anonSignIn.session) {
-        // Store user ID in session metadata for later retrieval
+      console.log('Creating Supabase user with temp email:', tempEmail);
+
+      // First, try to sign up the user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: tempEmail,
+        password: tempPassword,
+        options: {
+          data: {
+            kixikila_user_id: userData.id,
+            phone: userData.phone,
+            full_name: userData.full_name,
+            is_phone_verified: true,
+            temp_account: true
+          }
+        }
+      });
+
+      // If user already exists (email taken), try to sign in instead
+      if (signUpError?.message?.includes('already been registered')) {
+        console.log('User already exists, attempting sign in...');
+        
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: tempEmail,
+          password: tempPassword
+        });
+
+        if (signInError) {
+          console.error('Sign in error:', signInError);
+          return {
+            success: false,
+            message: 'Erro ao restaurar sessão. Tente novamente.',
+          };
+        }
+
+        // Update user metadata with latest data
         const { error: updateError } = await supabase.auth.updateUser({
           data: {
             kixikila_user_id: userData.id,
             phone: userData.phone,
-            full_name: userData.full_name
+            full_name: userData.full_name,
+            is_phone_verified: true,
+            temp_account: true
           }
         });
 
         if (updateError) {
           console.warn('Could not update user metadata:', updateError);
         }
+
+        return {
+          success: true,
+          message: data.data?.isNewUser ? 'Conta criada com sucesso!' : 'Login realizado com sucesso!',
+          data: {
+            user: this.formatCustomUserData(userData),
+            session: signInData.session,
+          },
+        };
       }
+
+      if (signUpError) {
+        console.error('Sign up error:', signUpError);
+        return {
+          success: false,
+          message: 'Erro ao criar conta. Tente novamente.',
+        };
+      }
+
+      console.log('Supabase user created successfully:', signUpData.user?.id);
 
       return {
         success: true,
         message: data.data?.isNewUser ? 'Conta criada com sucesso!' : 'Login realizado com sucesso!',
         data: {
           user: this.formatCustomUserData(userData),
-          session: anonSignIn.session,
+          session: signUpData.session,
         },
       };
     } catch (error: any) {
@@ -301,6 +347,38 @@ class SupabaseAuthService {
         message: errorMessage,
       };
     }
+  }
+
+  /**
+   * Generate a consistent temporary password based on user data
+   * This ensures the same password is generated for the same user
+   */
+  private generateConsistentPassword(userData: any): string {
+    // Create a consistent seed based on user data
+    const seed = `${userData.id}_${userData.phone}_kixikila_temp`;
+    
+    // Simple hash function to create consistent password
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      const char = seed.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    // Convert hash to positive number and create password
+    const positiveHash = Math.abs(hash);
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = 'Kix';
+    
+    for (let i = 0; i < 13; i++) {
+      const index = (positiveHash + i * 7) % chars.length;
+      password += chars.charAt(index);
+    }
+    
+    // Add some fixed special characters for security
+    password += '!@#';
+    
+    return password;
   }
 
    /**
