@@ -11,21 +11,31 @@ interface SendOtpRequest {
   type: 'phone_verification' | 'login';
 }
 
-// Send OTP using Twilio Verify API
+// Send OTP using Twilio Verify API with enhanced error handling  
 const sendTwilioOtp = async (phone: string): Promise<{ success: boolean; sid?: string; error?: string }> => {
   const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
   const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
   const verifyServiceSid = Deno.env.get('TWILIO_VERIFY_SERVICE_SID');
   
+  console.log('🔐 Checking Twilio credentials:', {
+    accountSid: accountSid ? 'configured' : '❌ MISSING',
+    authToken: authToken ? 'configured' : '❌ MISSING',  
+    verifyServiceSid: verifyServiceSid ? 'configured' : '❌ MISSING'
+  });
+  
   if (!accountSid || !authToken || !verifyServiceSid) {
-    console.error('Twilio credentials not configured');
-    return { success: false, error: 'Twilio credentials not configured' };
+    console.error('❌ Twilio credentials not properly configured');
+    return { 
+      success: false, 
+      error: 'Serviço de SMS temporariamente indisponível. Contacte o suporte técnico.' 
+    };
   }
 
   try {
     // Accept international phone numbers (must start with +)
     const formattedPhone = phone.startsWith('+') ? phone : `+351${phone}`;
     console.log('📱 Sending OTP to international number:', formattedPhone);
+    console.log('🔧 Using Twilio service:', verifyServiceSid);
     
     const response = await fetch(
       `https://verify.twilio.com/v2/Services/${verifyServiceSid}/Verifications`,
@@ -43,17 +53,53 @@ const sendTwilioOtp = async (phone: string): Promise<{ success: boolean; sid?: s
     );
 
     const result = await response.json();
-    console.log('Twilio Verify response:', result);
+    console.log('📋 Twilio response status:', response.status);
+    console.log('📋 Twilio response body:', JSON.stringify(result, null, 2));
     
     if (response.ok && result.status === 'pending') {
+      console.log('✅ OTP sent successfully, SID:', result.sid);
       return { success: true, sid: result.sid };
     } else {
-      console.error('Twilio error:', result);
-      return { success: false, error: result.message || 'Failed to send OTP' };
+      console.error('❌ Twilio API error:', result);
+      
+      // Handle specific Twilio errors
+      if (result.code === 20404 || result.message?.includes('not found')) {
+        console.error('🚨 Twilio service not found - check TWILIO_VERIFY_SERVICE_SID:', verifyServiceSid);
+        return { 
+          success: false, 
+          error: 'Serviço de verificação não encontrado. Contacte o suporte técnico.' 
+        };
+      } else if (result.code === 20003 || result.code === 20401) {
+        console.error('🚨 Twilio authentication failed - check credentials');
+        return { 
+          success: false, 
+          error: 'Credenciais inválidas. Contacte o suporte técnico.' 
+        };
+      } else if (result.code === 60200) {
+        return { 
+          success: false, 
+          error: 'Demasiadas tentativas. Aguarde alguns minutos antes de tentar novamente.' 
+        };
+      } else if (result.code === 21211) {
+        return { 
+          success: false, 
+          error: 'Número de telefone inválido. Verifique o formato e tente novamente.' 
+        };
+      } else {
+        const errorMsg = result.message || result.error_message || 'Erro desconhecido';
+        console.error('🔍 Unhandled Twilio error:', { code: result.code, message: errorMsg });
+        return { 
+          success: false, 
+          error: `Erro ao enviar SMS: ${errorMsg}` 
+        };
+      }
     }
   } catch (error) {
-    console.error('Error sending Twilio OTP:', error);
-    return { success: false, error: 'Network error sending OTP' };
+    console.error('💥 Network/fetch error sending Twilio OTP:', error);
+    return { 
+      success: false, 
+      error: 'Erro de rede. Verifique sua conexão e tente novamente.' 
+    };
   }
 };
 
