@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/design-system/Avatar';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { ThemeToggle } from '@/components/design-system/ThemeToggle';
-import { mockUser, formatCurrency, formatDate } from '@/lib/mockData';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useUserData } from '@/hooks/useUserData';
+import { formatCurrency, formatDate } from '@/lib/mockData';
 import { useAppStore } from '@/store/useAppStore';
 
 interface ProfileScreenProps {
@@ -36,6 +38,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onOpenSupport,
   onOpenVIPManagement
 }) => {
+  const { user } = useAuthStore();
+  const { userStats, isLoading } = useUserData();
   const { userPlan } = useAppStore();
   const isVIP = userPlan === 'vip';
   const menuItems = [
@@ -50,7 +54,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       label: 'Verificação KYC', 
       onClick: onOpenKYC,
       description: 'Verificação de identidade',
-      badge: mockUser.kycStatus === 'verified' ? 'Verificado' : 'Pendente'
+      badge: user?.kyc_status === 'approved' ? 'Verificado' : 'Pendente'
     },
     { 
       icon: CreditCard, 
@@ -111,16 +115,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {/* Profile Card */}
         <div className="text-center">
           <Avatar 
-            name={mockUser.avatar} 
+            name={user?.avatar_url ? '' : (user?.full_name?.[0] || 'U')} 
             size="xxl" 
             className="mx-auto mb-4 hover:scale-105 transition-transform" 
-            verified={mockUser.kycStatus === 'verified'} 
+            image={user?.avatar_url}
+            verified={user?.kyc_status === 'approved'} 
           />
           <h2 className="text-2xl font-bold font-system text-primary-foreground mb-1">
-            {mockUser.name}
+            {user?.full_name || 'Utilizador'}
           </h2>
           <p className="text-primary-foreground/80 mb-4 font-system">
-            {mockUser.email}
+            {user?.email || ''}
           </p>
           
           <div className="flex justify-center gap-2">
@@ -137,7 +142,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </>
               )}
             </StatusBadge>
-            {mockUser.kycStatus === 'verified' && (
+            {user?.kyc_status === 'approved' && (
               <StatusBadge status="paid">
                 <Shield className="w-3 h-3 mr-1" />
                 Verificado
@@ -161,7 +166,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   Trust Score
                 </div>
                 <div className="text-xl font-bold font-system text-primary">
-                  {mockUser.trustScore}%
+                  {isLoading ? '••' : `${userStats?.trust_score || 50}%`}
                 </div>
               </div>
               <div className="bg-surface rounded-lg p-3 text-center">
@@ -169,7 +174,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   Grupos Ativos
                 </div>
                 <div className="text-xl font-bold font-system text-foreground">
-                  {mockUser.activeGroups}
+                  {isLoading ? '••' : userStats?.active_groups || 0}
                 </div>
               </div>
               <div className="bg-surface rounded-lg p-3 text-center">
@@ -177,7 +182,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   Ciclos Completos
                 </div>
                 <div className="text-xl font-bold font-system text-foreground">
-                  {mockUser.completedCycles}
+                  {isLoading ? '••' : userStats?.completed_cycles || 0}
                 </div>
               </div>
               <div className="bg-surface rounded-lg p-3 text-center">
@@ -185,7 +190,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   Total Poupado
                 </div>
                 <div className="text-xl font-bold font-system text-success">
-                  {formatCurrency(mockUser.totalSaved)}
+                  {isLoading ? '••••' : formatCurrency(userStats?.total_saved || 0)}
                 </div>
               </div>
             </div>
@@ -206,7 +211,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                       Plano VIP
                     </h3>
                     <p className="text-xs text-warning/70 font-system">
-                      Válido até {formatDate(mockUser.vipExpiry!)}
+                      Válido até {user?.vip_expiry_date ? formatDate(user.vip_expiry_date) : 'N/A'}
                     </p>
                   </div>
                 </div>

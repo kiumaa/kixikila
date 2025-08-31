@@ -51,8 +51,6 @@ const DashboardWrapper = ({
       onOpenJoinGroup={() => setShowJoinGroup(true)}
       onSelectGroup={(group) => navigate(`/app/group/${group.id}`)}
       onNavigateToVIP={() => navigate('/app/vip-management')}
-      notifications={mockNotifications}
-      isLoading={false}
     />
   );
 };

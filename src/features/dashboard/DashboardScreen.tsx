@@ -8,9 +8,12 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/design-system/StatusBadge';
 import { Avatar } from '@/components/design-system/Avatar';
 import { SkeletonCard } from '@/components/design-system/SkeletonCard';
-import { mockUser, mockGroups, formatCurrency, formatDate, type Group } from '@/lib/mockData';
-import { useMemoizedFilteredGroups, useMemoizedGroupProgress } from '@/lib/performance';
+import { formatCurrency, formatDate } from '@/lib/mockData';
+
 import { useAppStore } from '@/store/useAppStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useUserData } from '@/hooks/useUserData';
+import { useUserGroups } from '@/hooks/useGroupData';
 import { PlanLimitNotice } from '@/components/common/PlanLimitNotice';
 import { PWAInstallBanner } from '@/components/common/PWAInstallBanner';
 import { toast } from '@/hooks/use-toast';
@@ -22,10 +25,8 @@ interface DashboardScreenProps {
   onOpenWithdraw: () => void;
   onOpenCreateGroup: () => void;
   onOpenJoinGroup: () => void;
-  onSelectGroup: (group: Group) => void;
+  onSelectGroup: (group: any) => void;
   onNavigateToVIP: () => void;
-  notifications: any[];
-  isLoading?: boolean;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
@@ -36,23 +37,33 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
   onOpenCreateGroup,
   onOpenJoinGroup,
   onSelectGroup,
-  onNavigateToVIP,
-  notifications,
-  isLoading = false
+  onNavigateToVIP
 }) => {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const { userPlan, canCreateGroup, getGroupCount } = useAppStore();
-  const isVIP = userPlan === 'vip';
-  const groupCount = getGroupCount();
+  const { user } = useAuthStore();
+  const { userStats, isLoading: userLoading } = useUserData();
+  const { groups, isLoading: groupsLoading } = useUserGroups();
+  
+  const isVIP = userPlan === 'vip' || user?.is_vip;
+  const isLoading = userLoading || groupsLoading;
 
-  // Memoized calculations
-  const unreadNotifications = useMemo(() => 
-    notifications.filter(n => !n.read).length, 
-    [notifications]
-  );
-
-  const filteredGroups = useMemoizedFilteredGroups(mockGroups, activeTab);
+  // Filter groups based on active tab
+  const filteredGroups = useMemo(() => {
+    if (!groups) return [];
+    
+    switch (activeTab) {
+      case 'active':
+        return groups.filter(group => group.status === 'active');
+      case 'pending':
+        return groups.filter(group => group.status === 'draft');
+      case 'completed':
+        return groups.filter(group => group.status === 'completed');
+      default:
+        return groups;
+    }
+  }, [groups, activeTab]);
 
   // Memoized handlers
   const toggleBalanceVisibility = useCallback(() => {
@@ -108,7 +119,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-2xl font-bold font-system text-primary-foreground mb-1">
-              Olá, {mockUser.name.split(' ')[0]}
+              Olá, {user?.full_name?.split(' ')[0] || user?.name?.split(' ')[0] || 'Utilizador'}
             </h1>
             <p className="text-primary-foreground/80">
               {new Date().toLocaleDateString('pt-PT', { 
@@ -125,11 +136,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
               aria-label="Notificações"
             >
               <Bell className="w-5 h-5 text-primary-foreground" />
-              {unreadNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-bounce-in">
-                  {unreadNotifications}
-                </span>
-              )}
+              {/* Notification badge will be handled by parent component */}
             </button>
           </div>
         </div>
@@ -154,7 +161,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
             </div>
             
             <div className="text-4xl font-bold font-system mb-6">
-              {balanceVisible ? formatCurrency(mockUser.walletBalance) : '••••••'}
+              {balanceVisible ? formatCurrency(userStats.wallet_balance) : '••••••'}
             </div>
             
             <div className="flex gap-3 justify-center">
@@ -198,7 +205,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
             <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
               <CardContent className="p-0">
                 <div className="text-2xl font-bold font-system text-foreground">
-                  {groupCount}
+                  {userStats.active_groups}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
                   Grupos Ativos
@@ -214,7 +221,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
             <Card className="ios-card p-4 text-center hover:shadow-md hover:scale-105 transition-all duration-base cursor-pointer">
               <CardContent className="p-0">
                 <div className="text-2xl font-bold font-system text-primary">
-                  {mockUser.trustScore}%
+                  {userStats.trust_score}%
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Trust Score</div>
               </CardContent>
@@ -320,19 +327,24 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = React.memo(({
 
 // Memoized Group Card Component
 interface GroupCardProps {
-  group: Group;
-  onSelect: (group: Group) => void;
+  group: any;
+  onSelect: (group: any) => void;
 }
 
 const GroupCard: React.FC<GroupCardProps> = React.memo(({ group, onSelect }) => {
-  const { paidMembers, totalMembers, progress } = useMemoizedGroupProgress(group.members);
+  // Calculate progress from real group data
+  const progress = useMemo(() => {
+    if (!group.members || group.members.length === 0) return 0;
+    const paidMembers = group.members.filter((m: any) => m.paid).length;
+    return (paidMembers / group.members.length) * 100;
+  }, [group.members]);
 
   const handleClick = useCallback(() => {
     onSelect(group);
   }, [group, onSelect]);
 
   const memberAvatars = useMemo(() => 
-    group.members.slice(0, 5), 
+    (group.members || []).slice(0, 5), 
     [group.members]
   );
 
@@ -348,7 +360,7 @@ const GroupCard: React.FC<GroupCardProps> = React.memo(({ group, onSelect }) => 
               <h3 className="font-bold font-system text-foreground text-lg">
                 {group.name}
               </h3>
-              {group.payout_method === 'lottery' && (
+              {group.group_type === 'lottery' && (
                 <StatusBadge status="winner" size="xs">
                   <Sparkles className="w-3 h-3 mr-1" />
                   Sorteio
@@ -364,17 +376,17 @@ const GroupCard: React.FC<GroupCardProps> = React.memo(({ group, onSelect }) => 
             
             <div className="flex items-center gap-4 text-sm">
               <span className="font-semibold font-system text-primary">
-                {formatCurrency(group.contributionAmount)}/mês
+                {formatCurrency(group.contribution_amount)}/{group.frequency || 'mês'}
               </span>
               <span className="text-muted-foreground">
-                {group.currentMembers}/{group.maxMembers} membros
+                {group.current_members}/{group.max_members} membros
               </span>
             </div>
           </div>
           
           <div className="text-right">
             <div className="text-2xl font-bold font-system text-foreground">
-              {formatCurrency(group.totalPool)}
+              {formatCurrency(group.total_pool)}
             </div>
             <div className="text-xs text-muted-foreground">valor total</div>
           </div>
@@ -400,18 +412,18 @@ const GroupCard: React.FC<GroupCardProps> = React.memo(({ group, onSelect }) => 
         
         <div className="flex items-center justify-between">
           <div className="flex -space-x-2">
-            {memberAvatars.map((member) => (
+            {memberAvatars.map((member: any) => (
               <Avatar 
-                key={member.id} 
-                name={member.avatar} 
+                key={member.id || member.user_id} 
+                name={member.avatar || member.name?.charAt(0) || 'U'} 
                 size="sm" 
                 online={member.paid}
                 className="ring-2 ring-background hover:scale-110 transition-transform"
               />
             ))}
-            {group.members.length > 5 && (
+            {(group.members || []).length > 5 && (
               <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-xs font-semibold font-system text-muted-foreground ring-2 ring-background">
-                +{group.members.length - 5}
+                +{(group.members || []).length - 5}
               </div>
             )}
           </div>
@@ -419,7 +431,7 @@ const GroupCard: React.FC<GroupCardProps> = React.memo(({ group, onSelect }) => 
           <div className="flex items-center gap-2 text-xs">
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span className="text-muted-foreground font-system">
-              Próximo: {formatDate(group.nextPaymentDate)}
+              Próximo: {group.next_payment_date ? formatDate(group.next_payment_date) : 'N/A'}
             </span>
           </div>
         </div>

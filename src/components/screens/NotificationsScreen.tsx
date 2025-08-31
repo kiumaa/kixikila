@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications } from '@/hooks/useUserData';
 import { formatDate } from '@/lib/mockData';
 interface NotificationsScreenProps {
   onBack: () => void;
@@ -17,20 +17,19 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
 
   const {
     notifications,
-    unreadCount,
     isLoading,
-    isError,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    loadMore,
-    setFilters,
-    pagination
-  } = useNotifications({
-    limit: 15,
-    unreadOnly: showUnreadOnly,
-    category: filterCategory === 'all' ? undefined : filterCategory
+    error,
+    markAsRead
+  } = useNotifications();
+
+  // Filter notifications based on current filters
+  const filteredNotifications = notifications.filter(notification => {
+    if (showUnreadOnly && notification.read) return false;
+    if (filterCategory !== 'all' && notification.type !== filterCategory) return false;
+    return true;
   });
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -64,19 +63,22 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
 
   const handleFilterChange = (category: string) => {
     setFilterCategory(category);
-    setFilters({
-      category: category === 'all' ? undefined : category,
-      unreadOnly: showUnreadOnly
-    });
   };
 
   const handleUnreadToggle = () => {
-    const newUnreadOnly = !showUnreadOnly;
-    setShowUnreadOnly(newUnreadOnly);
-    setFilters({
-      category: filterCategory === 'all' ? undefined : filterCategory,
-      unreadOnly: newUnreadOnly
-    });
+    setShowUnreadOnly(!showUnreadOnly);
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await Promise.all(
+        notifications
+          .filter(n => !n.read)
+          .map(n => markAsRead(n.id))
+      );
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
   };
   return (
     <div className="min-h-screen bg-surface pb-24 animate-fade-in">
@@ -161,7 +163,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
       )}
 
       {/* Error State */}
-      {isError && (
+      {error && (
         <div className="px-6 py-8 text-center">
           <Bell className="w-8 h-8 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">Erro ao carregar notificações</p>
@@ -170,9 +172,9 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
 
       {/* Notifications List */}
       <div className="px-6 space-y-3 my-4">
-        {notifications.length > 0 ? (
+        {filteredNotifications.length > 0 ? (
           <>
-            {notifications.map(notification => (
+            {filteredNotifications.map(notification => (
               <Card 
                 key={notification.id} 
                 className={`ios-card cursor-pointer transition-all ${
@@ -183,7 +185,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-1">
-                      {getNotificationIcon(notification.category || notification.type)}
+                      {getNotificationIcon(notification.type)}
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -209,34 +211,6 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
                             </Badge>
                           </div>
                         </div>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {!notification.read && (
-                              <DropdownMenuItem onClick={() => markAsRead(notification.id)}>
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                Marcar como lida
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem 
-                              onClick={() => deleteNotification(notification.id)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
                     </div>
                     
@@ -247,29 +221,8 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
                 </CardContent>
               </Card>
             ))}
-
-            {/* Load More Button */}
-            {pagination.page < pagination.pages && (
-              <div className="text-center py-4">
-                <Button
-                  onClick={loadMore}
-                  variant="outline"
-                  disabled={isLoading}
-                  className="ios-button"
-                >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      A carregar...
-                    </>
-                  ) : (
-                    'Carregar mais'
-                  )}
-                </Button>
-              </div>
-            )}
           </>
-        ) : !isLoading && !isError ? (
+        ) : !isLoading && !error ? (
           <Card className="ios-card">
             <CardContent className="p-8 text-center space-y-4">
               <Bell className="w-12 h-12 text-muted mx-auto" />
