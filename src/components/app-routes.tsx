@@ -9,6 +9,7 @@ import Dashboard from '@/pages/dashboard'
 import WalletScreen from '@/components/wallet/wallet-screen'
 import InviteScreen from '@/components/invite/invite-screen'
 import ProfileScreen from '@/components/profile/profile-screen'
+import { NotificationsScreen } from '@/components/notifications/notifications-screen'
 
 export default function AppRoutes() {
   const { user, loading } = useAuth()
@@ -30,6 +31,7 @@ export default function AppRoutes() {
           <Route path="/wallet" element={<WalletScreen />} />
           <Route path="/invite" element={<InviteScreen />} />
           <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/notifications" element={<NotificationsScreen />} />
         </>
       ) : (
         <Route path="*" element={<Navigate to="/" replace />} />

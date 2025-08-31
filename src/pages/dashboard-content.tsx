@@ -46,6 +46,7 @@ export function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [currentView, setCurrentView] = useState<'dashboard' | 'group-details'>('dashboard')
+  const [unreadNotifications] = useState(3)
   const [userStats, setUserStats] = useState({
     wallet_balance: 1250.50,
     total_saved: 5420.80,
@@ -208,12 +209,26 @@ export function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button className="relative p-2.5 bg-white/20 backdrop-blur-sm rounded-xl hover:bg-white/30 transition-colors">
+            <button
+              onClick={() => navigate('/notifications')}
+              className="relative p-2.5 bg-white/20 backdrop-blur-sm rounded-xl hover:bg-white/30 transition-colors"
+            >
               <Bell className="w-5 h-5 text-white" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                3
-              </span>
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {unreadNotifications}
+                </span>
+              )}
             </button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-white/20 hover:bg-white/30 text-white border-0"
+              onClick={() => setShowVIPUpgrade(true)}
+            >
+              <Crown className="w-4 h-4 mr-2" />
+              VIP
+            </Button>
           </div>
         </div>
 
@@ -327,7 +342,10 @@ export function DashboardPage() {
               <span className="text-sm font-medium text-foreground">Depositar</span>
             </button>
 
-            <button className="flex flex-col items-center gap-2 p-4 hover:bg-muted/50 rounded-xl transition-colors">
+            <button
+              onClick={() => navigate('/invite')}
+              className="flex flex-col items-center gap-2 p-4 hover:bg-muted/50 rounded-xl transition-colors"
+            >
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                 <UserPlus className="w-6 h-6 text-blue-600" />
               </div>
