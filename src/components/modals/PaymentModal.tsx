@@ -6,53 +6,55 @@ import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useStripeIntegration } from '@/hooks/useStripeIntegration';
-import { type Group, formatCurrency } from '@/data/mockData';
+import { transactionService } from '@/services/transactionService';
+import type { Group } from '@/services/groupService';
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   group: Group;
   currentBalance: number;
+  onPaymentSuccess?: () => void;
 }
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('pt-PT', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2
+  }).format(amount);
+};
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
   group,
-  currentBalance
+  currentBalance,
+  onPaymentSuccess
 }) => {
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'card'>('wallet');
   const [step, setStep] = useState<'method' | 'processing' | 'success'>('method');
   const { toast } = useToast();
   const { createPayment, loading } = useStripeIntegration();
 
-  const hasEnoughBalance = currentBalance >= group.contributionAmount;
+  const hasEnoughBalance = currentBalance >= group.contribution_amount;
   
   const handlePayment = async () => {
     setStep('processing');
     
     try {
       if (paymentMethod === 'wallet') {
-        // Simulate wallet payment (would be handled by backend)
-        setTimeout(() => {
-          setStep('success');
-          
-          setTimeout(() => {
-            setStep('method');
-            onClose();
-            
-            toast({
-              title: "✅ Pagamento realizado!",
-              description: `Contribuição de ${formatCurrency(group.contributionAmount)} para ${group.name}`
-            });
-          }, 2000);
-        }, 2500);
-      } else {
-        // Use Stripe for card payments
-        await createPayment({
-          amount: group.contributionAmount,
-          group_id: group.id.toString(),
-          description: `Contribuição para ${group.name} - Ciclo ${group.cycle}`
+        // Create wallet payment transaction
+        await transactionService.createTransaction({
+          type: 'contribution',
+          amount: -group.contribution_amount,
+          description: `Contribuição para ${group.name}`,
+          group_id: group.id,
+          payment_method: 'stripe',
+          metadata: {
+            group_name: group.name,
+            payment_type: 'monthly_contribution'
+          }
         });
         
         setStep('success');
@@ -60,10 +62,31 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         setTimeout(() => {
           setStep('method');
           onClose();
+          onPaymentSuccess?.();
           
           toast({
             title: "✅ Pagamento realizado!",
-            description: `Contribuição de ${formatCurrency(group.contributionAmount)} para ${group.name}`
+            description: `Contribuição de ${formatCurrency(group.contribution_amount)} para ${group.name}`
+          });
+        }, 2000);
+      } else {
+        // Use Stripe for card payments
+        await createPayment({
+          amount: group.contribution_amount,
+          group_id: group.id,
+          description: `Contribuição para ${group.name}`
+        });
+        
+        setStep('success');
+        
+        setTimeout(() => {
+          setStep('method');
+          onClose();
+          onPaymentSuccess?.();
+          
+          toast({
+            title: "✅ Pagamento realizado!",
+            description: `Contribuição de ${formatCurrency(group.contribution_amount)} para ${group.name}`
           });
         }, 2000);
       }
@@ -100,12 +123,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <h3 className="font-semibold font-system text-foreground mb-2">
                 {group.name}
               </h3>
-              <div className="text-3xl font-bold font-system text-primary mb-2">
-                {formatCurrency(group.contributionAmount)}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Contribuição mensal • Ciclo {group.cycle}
-              </p>
+                <div className="text-3xl font-bold font-system text-primary mb-2">
+                  {formatCurrency(group.contribution_amount)}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Contribuição {group.frequency}
+                </p>
             </CardContent>
           </Card>
 
@@ -155,7 +178,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         Saldo insuficiente
                       </p>
                       <p className="text-destructive/80 text-xs">
-                        Precisa de {formatCurrency(group.contributionAmount - currentBalance)} a mais. 
+                        Precisa de {formatCurrency(group.contribution_amount - currentBalance)} a mais. 
                         Deposite fundos primeiro.
                       </p>
                     </div>
@@ -205,7 +228,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   Saldo após pagamento
                 </div>
                 <div className="text-xl font-bold font-system text-success">
-                  {formatCurrency(currentBalance - group.contributionAmount)}
+                  {formatCurrency(currentBalance - group.contribution_amount)}
                 </div>
               </CardContent>
             </Card>
