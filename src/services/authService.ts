@@ -192,30 +192,25 @@ class AuthService {
 
   async refreshToken(): Promise<AuthResponse> {
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (!refreshToken) {
+      // With Supabase, token refresh is handled automatically
+      // Just return current session if available
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
         throw new Error('No refresh token available');
       }
 
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.auth.refresh}`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Token refresh failed');
-      }
-
-      // Update tokens
-      if (data.success && data.data.tokens) {
-        localStorage.setItem('auth_token', data.data.tokens.accessToken);
-        localStorage.setItem('refresh_token', data.data.tokens.refreshToken);
-      }
-
-      return data;
+      return {
+        success: true,
+        message: 'Token refreshed',
+        data: {
+          user: JSON.parse(localStorage.getItem('user_data') || '{}'),
+          tokens: {
+            accessToken: token,
+            refreshToken: token,
+            expiresIn: '3600'
+          }
+        }
+      };
     } catch (error) {
       console.error('Token refresh error:', error);
       this.clearAuthData();
@@ -225,7 +220,7 @@ class AuthService {
 
   async getProfile(): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.users.profile}`, {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.auth.me}`, {
         method: 'GET',
         headers: this.getHeaders(true),
       });

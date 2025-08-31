@@ -17,7 +17,7 @@ const API_URLS = {
 };
 
 // Get current API base URL - Always use current domain for integrated backend
-export const API_BASE_URL = API_URLS.development;
+export const API_BASE_URL = window.location.origin + '/api';
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -25,21 +25,16 @@ export const API_ENDPOINTS = {
   auth: {
     register: '/auth/register',
     login: '/auth/login',
-    logout: '/auth/logout',
-    refresh: '/auth/refresh',
-    verify: '/auth/verify',
-    resendOtp: '/auth/resend-otp',
-    forgotPassword: '/auth/forgot-password',
-    resetPassword: '/auth/reset-password'
+    logout: '/auth/logout', 
+    me: '/auth/me',
+    verify: '/auth/verify-otp',
+    resendOtp: '/auth/resend-otp'
   },
 
   // Users
   users: {
     profile: '/users/profile',
-    updateProfile: '/users/profile',
-    deleteAccount: '/users/account',
-    preferences: '/users/preferences',
-    avatar: '/users/avatar'
+    updateProfile: '/users/profile'
   },
 
   // Financial Groups
@@ -88,12 +83,13 @@ export const API_ENDPOINTS = {
 
   // Admin
   admin: {
-    dashboard: '/admin/dashboard',
     users: '/admin/users',
     groups: '/admin/groups',
-    transactions: '/admin/transactions',
-    analytics: '/admin/analytics',
-    settings: '/admin/settings'
+    transactions: '/admin/transactions', 
+    stats: '/admin/stats',
+    emailConfig: '/admin/email-config',
+    stripeConfig: '/admin/stripe-config',
+    bulkSMSConfig: '/admin/bulksms-config'
   },
 
   // Health Check
