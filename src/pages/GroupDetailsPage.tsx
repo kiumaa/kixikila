@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { GroupDetailsScreen } from '@/features/groups/GroupDetailsScreen';
+import { GroupDetailsScreen } from '@/components/screens/GroupDetailsScreen';
 import { GroupService } from '@/services/groupService';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { LoadingScreen } from '@/components/screens/LoadingScreen';
@@ -105,11 +105,10 @@ const GroupDetailsPage: React.FC = () => {
     <>
       <GroupDetailsScreen
         group={group}
-        userId={user.id}
+        currentUserId={user.id}
         onBack={handleBack}
         onPay={handlePay}
         onInvite={handleInvite}
-        onDrawWinner={handleDrawWinner}
       />
       
       {/* Payment Modal */}
