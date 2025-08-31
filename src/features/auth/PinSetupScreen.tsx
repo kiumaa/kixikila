@@ -96,14 +96,29 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
     setIsLoading(true);
 
     try {
-      // Obter o token de acesso do utilizador autenticado
-      const { data: { session } } = await supabase.auth.getSession();
+      // Get custom session or Supabase session
+      const customSession = localStorage.getItem('kixikila_custom_session');
+      const customUserId = localStorage.getItem('kixikila_user_id');
       
-      if (!session?.access_token) {
-        throw new Error('Utilizador não está autenticado');
+      let headers: Record<string, string> = {};
+      
+      if (customSession && customUserId) {
+        // Use custom authentication headers
+        headers['x-kixikila-user-id'] = customUserId;
+        console.log('Using custom authentication for PIN setup');
+      } else {
+        // Fallback to Supabase auth if available
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.access_token) {
+          throw new Error('Utilizador não está autenticado');
+        }
+        
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+        console.log('Using Supabase authentication for PIN setup');
       }
 
-      // Chamar Edge Function para definir PIN
+      // Call Edge Function to set PIN
       const { data, error } = await supabase.functions.invoke('pin-management', {
         body: {
           action: 'set',
@@ -111,9 +126,7 @@ const PinSetupScreen = ({ onBack, onComplete, userPhone, rememberDevice = true }
           deviceId: rememberDevice ? getDeviceId() : null,
           deviceName: `${navigator.userAgent.split(' ')[0]} - ${new Date().toLocaleDateString('pt-PT')}`
         },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+        headers
       });
 
       if (error) throw error;

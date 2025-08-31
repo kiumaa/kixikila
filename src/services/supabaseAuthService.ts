@@ -58,98 +58,23 @@ export interface UserData {
 
 class SupabaseAuthService {
   /**
-   * Register a new user with email and password
+   * Register a new user - DISABLED (use phone verification instead)
    */
   async register(userData: RegisterRequest): Promise<AuthServiceResponse<{ user: UserData; session: any }>> {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          data: {
-            full_name: userData.full_name,
-            phone: userData.phone,
-          },
-        },
-      });
-
-      if (error) {
-        return {
-          success: false,
-          message: error.message,
-        };
-      }
-
-      // Create user profile in our custom users table
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            email: userData.email,
-            full_name: userData.full_name,
-            phone: userData.phone,
-            email_verified: false,
-            phone_verified: false,
-          });
-
-        if (profileError) {
-          console.error('Error creating user profile:', profileError);
-        }
-      }
-
-      return {
-        success: true,
-        message: 'Usuário registrado com sucesso. Verifique seu email.',
-        data: {
-          user: this.formatUserData(data.user),
-          session: data.session,
-        },
-      };
-    } catch (error: any) {
-      console.error('Register error:', error);
-      return {
-        success: false,
-        message: error.message || 'Erro no registro',
-      };
-    }
+    return {
+      success: false,
+      message: 'Registo por email desativado. Use o número de telemóvel para criar conta.',
+    };
   }
 
   /**
-   * Login with email and password
+   * Login with email and password - DISABLED (use phone verification instead)
    */
   async login(credentials: LoginRequest): Promise<AuthServiceResponse<{ user: UserData; session: any }>> {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password,
-      });
-
-      if (error) {
-        return {
-          success: false,
-          message: error.message,
-        };
-      }
-
-      // Get user profile from our custom users table
-      const userProfile = await this.getUserProfile(data.user?.id);
-
-      return {
-        success: true,
-        message: 'Login realizado com sucesso',
-        data: {
-          user: userProfile || this.formatUserData(data.user),
-          session: data.session,
-        },
-      };
-    } catch (error: any) {
-      console.error('Login error:', error);
-      return {
-        success: false,
-        message: error.message || 'Erro no login',
-      };
-    }
+    return {
+      success: false,
+      message: 'Login por email desativado. Use o número de telemóvel para entrar.',
+    };
   }
 
   /**
@@ -193,13 +118,13 @@ class SupabaseAuthService {
   }
 
   /**
-   * Verify phone OTP using simplified Edge Function approach
+   * Verify phone OTP using custom system only (no Supabase auth)
    */
   async verifyPhoneOtp(otpData: VerifyPhoneOtpRequest): Promise<AuthServiceResponse<{ user: UserData; session: any }>> {
     try {
       console.log('SupabaseAuthService: Verifying OTP for phone:', otpData.phone);
       
-      // Step 1: Verify OTP via Edge Function with enhanced error handling
+      // Step 1: Verify OTP via Edge Function (this handles everything)
       const { data, error } = await supabase.functions.invoke('verify-otp', {
         body: {
           phone: otpData.phone,
@@ -246,86 +171,38 @@ class SupabaseAuthService {
         };
       }
 
-      // Step 3: Create a real Supabase user with temporary credentials
-      // Generate temporary credentials based on phone number
-      const tempEmail = `temp_${userData.phone.replace(/[^0-9]/g, '')}@kixikila.temp`;
-      const tempPassword = this.generateConsistentPassword(userData);
-
-      console.log('Creating Supabase user with temp email:', tempEmail);
-
-      // First, try to sign up the user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: tempEmail,
-        password: tempPassword,
-        options: {
-          data: {
-            kixikila_user_id: userData.id,
-            phone: userData.phone,
+      // Step 3: Create custom local session (NO Supabase auth)
+      console.log('Creating custom local session for user:', userData.id);
+      
+      const customSession = {
+        access_token: `custom_session_${userData.id}_${Date.now()}`,
+        refresh_token: `custom_refresh_${userData.id}_${Date.now()}`,
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        token_type: 'bearer',
+        user: {
+          id: userData.id,
+          email: userData.email,
+          phone: userData.phone,
+          user_metadata: {
             full_name: userData.full_name,
-            is_phone_verified: true,
-            temp_account: true
+            phone: userData.phone,
+            kixikila_user_id: userData.id,
+            is_phone_verified: true
           }
         }
-      });
+      };
 
-      // If user already exists (email taken), try to sign in instead
-      if (signUpError?.message?.includes('already been registered')) {
-        console.log('User already exists, attempting sign in...');
-        
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: tempEmail,
-          password: tempPassword
-        });
-
-        if (signInError) {
-          console.error('Sign in error:', signInError);
-          return {
-            success: false,
-            message: 'Erro ao restaurar sessão. Tente novamente.',
-          };
-        }
-
-        // Update user metadata with latest data
-        const { error: updateError } = await supabase.auth.updateUser({
-          data: {
-            kixikila_user_id: userData.id,
-            phone: userData.phone,
-            full_name: userData.full_name,
-            is_phone_verified: true,
-            temp_account: true
-          }
-        });
-
-        if (updateError) {
-          console.warn('Could not update user metadata:', updateError);
-        }
-
-        return {
-          success: true,
-          message: data.data?.isNewUser ? 'Conta criada com sucesso!' : 'Login realizado com sucesso!',
-          data: {
-            user: this.formatCustomUserData(userData),
-            session: signInData.session,
-          },
-        };
-      }
-
-      if (signUpError) {
-        console.error('Sign up error:', signUpError);
-        return {
-          success: false,
-          message: 'Erro ao criar conta. Tente novamente.',
-        };
-      }
-
-      console.log('Supabase user created successfully:', signUpData.user?.id);
+      // Store custom session for PIN management
+      localStorage.setItem('kixikila_custom_session', JSON.stringify(customSession));
+      localStorage.setItem('kixikila_user_id', userData.id);
 
       return {
         success: true,
         message: data.data?.isNewUser ? 'Conta criada com sucesso!' : 'Login realizado com sucesso!',
         data: {
           user: this.formatCustomUserData(userData),
-          session: signUpData.session,
+          session: customSession,
         },
       };
     } catch (error: any) {
@@ -349,38 +226,6 @@ class SupabaseAuthService {
     }
   }
 
-  /**
-   * Generate a consistent temporary password based on user data
-   * This ensures the same password is generated for the same user
-   */
-  private generateConsistentPassword(userData: any): string {
-    // Create a consistent seed based on user data
-    const seed = `${userData.id}_${userData.phone}_kixikila_temp`;
-    
-    // Simple hash function to create consistent password
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      const char = seed.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    
-    // Convert hash to positive number and create password
-    const positiveHash = Math.abs(hash);
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let password = 'Kix';
-    
-    for (let i = 0; i < 13; i++) {
-      const index = (positiveHash + i * 7) % chars.length;
-      password += chars.charAt(index);
-    }
-    
-    // Add some fixed special characters for security
-    password += '!@#';
-    
-    return password;
-  }
-
    /**
     * Format custom user data to our UserData interface (phone-only system)
     */
@@ -400,33 +245,13 @@ class SupabaseAuthService {
    }
 
   /**
-   * Send OTP to email
+   * Send OTP to email - DISABLED (use phone verification instead)
    */
   async sendEmailOtp(email: string): Promise<AuthServiceResponse> {
-    try {
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-      });
-
-      if (error) {
-        return {
-          success: false,
-          message: error.message,
-        };
-      }
-
-      return {
-        success: true,
-        message: 'OTP enviado para o seu email',
-        data,
-      };
-    } catch (error: any) {
-      console.error('Send email OTP error:', error);
-      return {
-        success: false,
-        message: error.message || 'Erro ao enviar OTP',
-      };
-    }
+    return {
+      success: false,
+      message: 'Verificação por email desativada. Use o número de telemóvel.',
+    };
   }
 
   /**
@@ -437,41 +262,13 @@ class SupabaseAuthService {
   }
 
   /**
-   * Verify email OTP
+   * Verify email OTP - DISABLED (use phone verification instead)
    */
   async verifyEmailOtp(otpData: VerifyOtpRequest): Promise<AuthServiceResponse<{ user: UserData; session: any }>> {
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: otpData.email!,
-        token: otpData.token,
-        type: 'email',
-      });
-
-      if (error) {
-        return {
-          success: false,
-          message: error.message,
-        };
-      }
-
-      // Get user profile
-      const userProfile = await this.getUserProfile(data.user?.id);
-
-      return {
-        success: true,
-        message: 'Email verificado com sucesso',
-        data: {
-          user: userProfile || this.formatUserData(data.user),
-          session: data.session,
-        },
-      };
-    } catch (error: any) {
-      console.error('Verify email OTP error:', error);
-      return {
-        success: false,
-        message: error.message || 'Erro na verificação do OTP',
-      };
-    }
+    return {
+      success: false,
+      message: 'Verificação por email desativada. Use o número de telemóvel.',
+    };
   }
 
   /**
@@ -479,13 +276,16 @@ class SupabaseAuthService {
    */
   async logout(): Promise<AuthServiceResponse> {
     try {
+      // Clear custom session data
+      localStorage.removeItem('kixikila_custom_session');
+      localStorage.removeItem('kixikila_user_id');
+      
+      // Also try to sign out from Supabase auth if there's a session
       const { error } = await supabase.auth.signOut();
 
+      // Don't fail if Supabase signout fails - custom system doesn't depend on it
       if (error) {
-        return {
-          success: false,
-          message: error.message,
-        };
+        console.warn('Supabase signout error (non-critical):', error);
       }
 
       return {
@@ -494,9 +294,14 @@ class SupabaseAuthService {
       };
     } catch (error: any) {
       console.error('Logout error:', error);
+      
+      // Even if there's an error, clear local storage
+      localStorage.removeItem('kixikila_custom_session');
+      localStorage.removeItem('kixikila_user_id');
+      
       return {
-        success: false,
-        message: error.message || 'Erro no logout',
+        success: true,
+        message: 'Logout realizado com sucesso',
       };
     }
   }
@@ -603,34 +408,13 @@ class SupabaseAuthService {
   }
 
   /**
-   * Resend OTP
+   * Resend OTP - DISABLED (use phone verification instead)
    */
   async resendOtp(data: { email: string; type: string }): Promise<AuthServiceResponse> {
-    try {
-      const { data: result, error } = await supabase.auth.resend({
-        type: 'signup',
-        email: data.email,
-      });
-
-      if (error) {
-        return {
-          success: false,
-          message: error.message,
-        };
-      }
-
-      return {
-        success: true,
-        message: 'OTP reenviado com sucesso',
-        data: result,
-      };
-    } catch (error: any) {
-      console.error('Resend OTP error:', error);
-      return {
-        success: false,
-        message: error.message || 'Erro ao reenviar OTP',
-      };
-    }
+    return {
+      success: false,
+      message: 'Reenvio por email desativado. Use o número de telemóvel.',
+    };
   }
 
   /**

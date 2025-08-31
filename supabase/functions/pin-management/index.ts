@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-kixikila-user-id',
 };
 
 // Hash PIN usando Web Crypto API (similar ao Argon2)
@@ -51,22 +51,52 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Support both custom and Supabase authentication
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Authorization header missing');
-    }
-
-    // Verificar se o utilizador está autenticado
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const customUserId = req.headers.get('x-kixikila-user-id');
     
-    if (authError || !user) {
-      throw new Error('Invalid authentication token');
+    let userId: string;
+    
+    if (customUserId) {
+      // Custom authentication system
+      console.log('Using custom authentication system for user:', customUserId);
+      
+      // Verify user exists in our users table
+      const { data: customUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', customUserId)
+        .single();
+      
+      if (userError || !customUser) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid custom user ID' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      userId = customUserId;
+    } else if (authHeader) {
+      // Supabase authentication system
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid or expired token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      userId = user.user_metadata?.kixikila_user_id || user.id;
+    } else {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required (Authorization header or x-kixikila-user-id)' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const { action, pin, deviceId, deviceName } = await req.json();
-    const userId = user.id;
-    const salt = userId; // Usar userId como salt único
 
     console.log(`🔐 PIN Management - Action: ${action}, User: ${userId}`);
 
@@ -76,14 +106,18 @@ Deno.serve(async (req) => {
           throw new Error('PIN deve ter exatamente 4 dígitos');
         }
 
-        const pinHash = await hashPin(pin, salt);
+        // Hash the PIN with a random salt
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+        const pinHash = await hashPin(pin, saltHex);
         
-        // Inserir ou atualizar PIN
+        // Insert or update PIN
         const { error: pinError } = await supabase
           .from('auth_pin')
           .upsert({
             user_id: userId,
-            pin_hash: pinHash
+            pin_hash: `${saltHex}:${pinHash}`,
+            updated_at: new Date().toISOString()
           });
 
         if (pinError) {
@@ -152,8 +186,9 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Verificar PIN
-        const isValid = await verifyPin(pin, pinData.pin_hash, salt);
+        // Extract salt and hash from stored data
+        const [salt, storedHash] = pinData.pin_hash.split(':');
+        const isValid = await verifyPin(pin, storedHash, salt);
 
         if (!isValid) {
           // Incrementar tentativas falhadas
