@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Users, Shield, Wallet, Sparkles } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useNavigate } from 'react-router-dom'
 
 export function OnboardingScreen() {
   const [step, setStep] = useState(0)
-  const router = useRouter()
+  const navigate = useNavigate()
 
   const features = [
     {
@@ -79,7 +79,7 @@ export function OnboardingScreen() {
             <Button
               size="lg"
               className="w-full"
-              onClick={() => router.push('/entrar?modo=registar')}
+              onClick={() => navigate('/entrar?modo=registar')}
             >
               Criar Conta
             </Button>
@@ -87,7 +87,7 @@ export function OnboardingScreen() {
               variant="secondary"
               size="lg"
               className="w-full"
-              onClick={() => router.push('/entrar?modo=entrar')}
+              onClick={() => navigate('/entrar?modo=entrar')}
             >
               Já tenho conta
             </Button>

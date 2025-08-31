@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, Upload, Download, Eye, EyeOff } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigate } from 'react-router-dom'
 
 export default function WalletPage() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const [balanceVisible, setBalanceVisible] = useState(true)
 
   return (
@@ -16,7 +16,7 @@ export default function WalletPage() {
       <div className="bg-gradient-to-r from-primary to-primary-hover px-6 pt-14 pb-8">
         <div className="flex items-center gap-4 mb-6">
           <button
-            onClick={() => router.back()}
+            onClick={() => navigate(-1)}
             className="p-2 bg-primary-foreground/20 backdrop-blur-sm rounded-xl hover:bg-primary-foreground/30 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-primary-foreground" />

@@ -1,20 +1,20 @@
 'use client'
 
 import { useAuth } from '@/lib/auth-context'
-import { useRouter } from 'next/navigation'
+import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { LoadingScreen } from '@/components/ui/loading-screen'
 import { OnboardingScreen } from '@/components/onboarding/onboarding-screen'
 
 export default function HomePage() {
   const { user, loading } = useAuth()
-  const router = useRouter()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/dashboard')
+      navigate('/dashboard')
     }
-  }, [user, loading, router])
+  }, [user, loading, navigate])
 
   if (loading) {
     return <LoadingScreen />

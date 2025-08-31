@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { X, ArrowRight, ArrowLeft, Users, Settings, FileText, Send } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { supabase } from '@/integrations/supabase/client'
+import { useAuth } from '@/lib/auth-context'
+import { toast } from 'sonner'
 
 interface CreateGroupModalProps {
   isOpen: boolean
@@ -12,7 +15,9 @@ interface CreateGroupModalProps {
 }
 
 export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [groupData, setGroupData] = useState({
     name: '',
     description: '',
@@ -30,18 +35,87 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
     { number: 1, title: 'Informações Básicas', icon: FileText },
     { number: 2, title: 'Configurações', icon: Settings },
     { number: 3, title: 'Regras', icon: Users },
-    { number: 4, title: 'Convites', icon: Send }
+    { number: 4, title: 'Finalizar', icon: Send }
   ]
 
   const handleNext = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1)
+    } else if (currentStep === 4) {
+      handleCreateGroup()
     }
   }
 
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
+    }
+  }
+
+  const handleCreateGroup = async () => {
+    if (!user) {
+      toast.error('Utilizador não autenticado')
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+
+      // Create the group
+      const { data: group, error: groupError } = await supabase
+        .from('groups')
+        .insert([{
+          name: groupData.name,
+          description: groupData.description,
+          contribution_amount: parseFloat(groupData.contributionAmount),
+          max_members: parseInt(groupData.maxMembers),
+          group_type: groupData.groupType === 'lottery' ? 'lottery' : 'savings',
+          is_private: groupData.isPrivate,
+          requires_approval: groupData.requiresApproval,
+          creator_id: user.id,
+          status: 'draft',
+          contribution_frequency: groupData.frequency
+        }])
+        .select()
+        .single()
+
+      if (groupError) throw groupError
+      if (!group) throw new Error('Falha ao criar grupo')
+
+      // Add creator as first member
+      const { error: memberError } = await supabase
+        .from('group_members')
+        .insert({
+          group_id: group.id,
+          user_id: user.id,
+          role: 'creator',
+          status: 'active',
+          joined_at: new Date().toISOString()
+        })
+
+      if (memberError) throw memberError
+
+      toast.success('Grupo criado com sucesso!')
+      
+      // Reset form and close modal
+      setGroupData({
+        name: '',
+        description: '',
+        contributionAmount: '',
+        maxMembers: '8',
+        frequency: 'monthly',
+        groupType: 'lottery',
+        isPrivate: true,
+        requiresApproval: true
+      })
+      setCurrentStep(1)
+      onClose()
+
+    } catch (error: any) {
+      console.error('Error creating group:', error)
+      toast.error('Erro ao criar grupo: ' + (error.message || 'Erro desconhecido'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -66,12 +140,16 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
                 placeholder="Valor mensal (€)"
                 value={groupData.contributionAmount}
                 onChange={(e) => setGroupData({...groupData, contributionAmount: e.target.value})}
+                min="1"
+                step="0.01"
               />
               <Input
                 type="number"
                 placeholder="Máx. membros"
                 value={groupData.maxMembers}
                 onChange={(e) => setGroupData({...groupData, maxMembers: e.target.value})}
+                min="2"
+                max="20"
               />
             </div>
           </div>
@@ -151,13 +229,14 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
               </ul>
             </div>
             
-            <div className="bg-primary-subtle rounded-lg p-4">
+            <div className="bg-primary/10 rounded-lg p-4">
               <h4 className="font-medium text-primary mb-2">Resumo</h4>
               <div className="text-sm space-y-1">
                 <div><strong>Nome:</strong> {groupData.name || 'Não definido'}</div>
                 <div><strong>Valor:</strong> €{groupData.contributionAmount || '0'}/mês</div>
                 <div><strong>Membros:</strong> {groupData.maxMembers}</div>
                 <div><strong>Tipo:</strong> {groupData.groupType === 'lottery' ? 'Sorteio' : 'Ordem'}</div>
+                <div><strong>Privacidade:</strong> {groupData.isPrivate ? 'Privado' : 'Público'}</div>
               </div>
             </div>
           </div>
@@ -167,34 +246,54 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
         return (
           <div className="space-y-4">
             <div className="text-center">
-              <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Send className="w-8 h-8 text-success" />
+              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Send className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Grupo Criado!</h3>
+              <h3 className="text-lg font-semibold mb-2">Pronto para Criar!</h3>
               <p className="text-muted-foreground text-sm mb-6">
-                Agora pode convidar membros para o seu grupo
+                Confirme os dados e crie o seu grupo
               </p>
             </div>
             
-            <Input
-              placeholder="Email ou telefone do membro"
-            />
-            
-            <Button variant="secondary" className="w-full">
-              <Send className="w-4 h-4 mr-2" />
-              Enviar Convite
-            </Button>
-            
-            <div className="text-center">
-              <Button variant="ghost" size="sm">
-                Partilhar Link de Convite
-              </Button>
+            <div className="bg-muted/50 rounded-lg p-4">
+              <div className="text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Nome:</span>
+                  <span className="font-medium">{groupData.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Contribuição:</span>
+                  <span className="font-medium">€{groupData.contributionAmount}/mês</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Máx. Membros:</span>
+                  <span className="font-medium">{groupData.maxMembers}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tipo:</span>
+                  <span className="font-medium">{groupData.groupType === 'lottery' ? 'Sorteio' : 'Ordem'}</span>
+                </div>
+              </div>
             </div>
           </div>
         )
       
       default:
         return null
+    }
+  }
+
+  const isStepValid = () => {
+    switch (currentStep) {
+      case 1:
+        return groupData.name.trim() && groupData.contributionAmount && parseFloat(groupData.contributionAmount) > 0
+      case 2:
+      case 3:
+        return true
+      case 4:
+        return true
+      default:
+        return false
     }
   }
 
@@ -255,11 +354,11 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
             )}
             
             <Button
-              onClick={currentStep === 4 ? onClose : handleNext}
+              onClick={currentStep === 4 ? handleNext : handleNext}
               className="flex-1"
-              disabled={currentStep === 1 && (!groupData.name || !groupData.contributionAmount)}
+              disabled={!isStepValid() || isSubmitting}
             >
-              {currentStep === 4 ? 'Concluir' : 'Continuar'}
+              {currentStep === 4 ? 'Criar Grupo' : 'Continuar'}
               {currentStep < 4 && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
           </div>
