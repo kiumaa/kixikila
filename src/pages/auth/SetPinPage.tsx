@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/design-system/LoadingSpinner';
+import { PinDisplay } from '@/components/ui/pin-display';
+import { NumericKeypad } from '@/components/ui/numeric-keypad';
 import { useToast } from '@/hooks/use-toast';
 import { useMockAuthStore } from '@/stores/useMockAuthStore';
 
@@ -24,43 +26,24 @@ const SetPinPage: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  const handlePinInput = (value: string, digit: number) => {
-    if (!/^\d*$/.test(value)) return; // Only numbers
+  const handleKeyPress = (key: string) => {
+    const currentPin = step === 'create' ? pin : confirmPin;
     
-    if (step === 'create') {
-      const newPin = pin.split('');
-      newPin[digit] = value;
-      setPin(newPin.join('').slice(0, 4));
-    } else {
-      const newPin = confirmPin.split('');
-      newPin[digit] = value;
-      setConfirmPin(newPin.join('').slice(0, 4));
+    if (currentPin.length < 4) {
+      const newPin = currentPin + key;
+      if (step === 'create') {
+        setPin(newPin);
+      } else {
+        setConfirmPin(newPin);
+      }
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, digit: number) => {
-    if (e.key === 'Backspace') {
-      if (step === 'create') {
-        const newPin = pin.split('');
-        newPin[digit] = '';
-        setPin(newPin.join(''));
-        
-        // Focus previous input
-        if (digit > 0) {
-          const prevInput = e.currentTarget.parentElement?.children[digit - 1] as HTMLInputElement;
-          prevInput?.focus();
-        }
-      } else {
-        const newPin = confirmPin.split('');
-        newPin[digit] = '';
-        setConfirmPin(newPin.join(''));
-        
-        // Focus previous input
-        if (digit > 0) {
-          const prevInput = e.currentTarget.parentElement?.children[digit - 1] as HTMLInputElement;
-          prevInput?.focus();
-        }
-      }
+  const handleDelete = () => {
+    if (step === 'create') {
+      setPin(prev => prev.slice(0, -1));
+    } else {
+      setConfirmPin(prev => prev.slice(0, -1));
     }
   };
 
@@ -176,34 +159,16 @@ const SetPinPage: React.FC = () => {
           </div>
 
           <div className="space-y-8">
-            {/* PIN Input */}
-            <div>
-              <div className="flex gap-4 justify-center mb-4">
-                {[0, 1, 2, 3].map((digit) => (
-                  <input
-                    key={digit}
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={step === 'create' ? pin[digit] || '' : confirmPin[digit] || ''}
-                    onChange={(e) => {
-                      handlePinInput(e.target.value, digit);
-                      // Auto-focus next input
-                      if (e.target.value && digit < 3) {
-                        const nextInput = e.target.parentElement?.children[digit + 1] as HTMLInputElement;
-                        nextInput?.focus();
-                      }
-                    }}
-                    onKeyDown={(e) => handleKeyDown(e, digit)}
-                    className="w-16 h-16 text-center text-2xl font-bold border-2 border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                    disabled={isLoading}
-                  />
-                ))}
-              </div>
+            {/* PIN Display */}
+            <div className="space-y-6">
+              <PinDisplay 
+                value={step === 'create' ? pin : confirmPin} 
+                showValues={false}
+              />
 
-              {/* PIN Strength Indicator */}
-              {step === 'create' && pin.length > 0 && (
-                <div className="text-center">
+              {/* Status Indicator */}
+              <div className="text-center min-h-[24px]">
+                {step === 'create' && pin.length > 0 && (
                   <div className="flex items-center justify-center gap-2 text-sm">
                     {pin.length === 4 ? (
                       <>
@@ -211,20 +176,14 @@ const SetPinPage: React.FC = () => {
                         <span className="text-success">PIN completo</span>
                       </>
                     ) : (
-                      <>
-                        <div className="w-4 h-4 border-2 border-muted-foreground rounded-full animate-spin" />
-                        <span className="text-muted-foreground">
-                          {pin.length}/4 dígitos
-                        </span>
-                      </>
+                      <span className="text-muted-foreground">
+                        {pin.length}/4 dígitos
+                      </span>
                     )}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Confirmation Status */}
-              {step === 'confirm' && confirmPin.length === 4 && (
-                <div className="text-center">
+                {step === 'confirm' && confirmPin.length === 4 && (
                   <div className="flex items-center justify-center gap-2 text-sm">
                     {pin === confirmPin ? (
                       <>
@@ -238,9 +197,16 @@ const SetPinPage: React.FC = () => {
                       </>
                     )}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
+
+            {/* Numeric Keypad */}
+            <NumericKeypad
+              onKeyPress={handleKeyPress}
+              onDelete={handleDelete}
+              disabled={isLoading}
+            />
 
             {/* Action Button */}
             <Button
@@ -263,15 +229,14 @@ const SetPinPage: React.FC = () => {
               )}
             </Button>
 
-            {/* Security Note */}
-            <div className="bg-muted p-4 rounded-lg">
+            {/* Trusted Device Note */}
+            <div className="bg-muted/50 p-4 rounded-2xl border border-border/50">
               <div className="flex items-start gap-3">
                 <Shield className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-medium text-foreground mb-1">Segurança do PIN</p>
+                  <p className="font-medium text-foreground mb-1">Dispositivo Confiável</p>
                   <p className="text-muted-foreground">
-                    Seu PIN será usado para acesso rápido ao app em dispositivos confiáveis. 
-                    Nunca compartilhe com outras pessoas.
+                    Após definir o PIN, este dispositivo será marcado como confiável para acesso rápido.
                   </p>
                 </div>
               </div>
