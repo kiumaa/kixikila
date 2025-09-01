@@ -7,7 +7,7 @@ import type { User as SupabaseUser, Session as SupabaseSession } from '@supabase
 interface User {
   id: string
   full_name: string
-  phone: string
+  phone?: string
   email?: string
   is_vip: boolean
   kyc_status: 'pending' | 'approved' | 'rejected'
@@ -25,7 +25,7 @@ interface AuthContextType {
   supabaseUser: SupabaseUser | null
   session: SupabaseSession | null
   loading: boolean
-  signUp: (email: string, password: string, userData: { full_name: string; phone: string }) => Promise<{ error: any }>
+  signUp: (email: string, password: string, userData?: { full_name: string; phone?: string }) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
   refreshUserData: () => Promise<void>
@@ -88,19 +88,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data) {
         setUser({
-          id: data.id as string,
-          full_name: data.full_name as string,
-          phone: data.phone as string || '',
-          email: data.email as string,
-          is_vip: data.is_vip as boolean || false,
-          kyc_status: (data.kyc_status as 'pending' | 'approved' | 'rejected') || 'pending',
-          first_login: data.first_login as boolean || true,
-          wallet_balance: (data.wallet_balance as number) || 0,
-          total_saved: (data.total_saved as number) || 0,
-          total_earned: (data.total_earned as number) || 0,
-          trust_score: (data.trust_score as number) || 50,
-          active_groups: (data.active_groups as number) || 0,
-          completed_cycles: (data.completed_cycles as number) || 0
+          id: data.id,
+          full_name: data.full_name || '',
+          phone: data.phone || '',
+          email: data.email || '',
+          is_vip: data.is_vip || false,
+          kyc_status: data.kyc_status || 'pending',
+          first_login: data.first_login || true,
+          wallet_balance: data.wallet_balance || 0,
+          total_saved: data.total_saved || 0,
+          total_earned: data.total_earned || 0,
+          trust_score: data.trust_score || 50,
+          active_groups: data.active_groups || 0,
+          completed_cycles: data.completed_cycles || 0
         })
       }
     } catch (error) {
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signUp = async (email: string, password: string, userData: { full_name: string; phone: string }) => {
+  const signUp = async (email: string, password: string, userData?: { full_name: string; phone?: string }) => {
     const redirectUrl = `${window.location.origin}/`
     
     const { error } = await supabase.auth.signUp({
@@ -116,10 +116,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
+        data: userData ? {
           full_name: userData.full_name,
-          phone: userData.phone
-        }
+          phone: userData.phone || ''
+        } : {}
       }
     })
     
