@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
+import { useProfile } from '@/hooks/use-profile'
+import { useUserGroups } from '@/hooks/use-user-groups'
 import { useNavigate } from 'react-router-dom'
 import { 
   Wallet, Users, TrendingUp, Crown, Bell, Eye, EyeOff, 
@@ -38,87 +40,37 @@ interface Group {
 
 export function MobileDashboard() {
   const { user } = useAuth()
+  const { profile, loading: profileLoading } = useProfile()
+  const { groups, loading: groupsLoading, refetch: refetchGroups } = useUserGroups()
   const navigate = useNavigate()
   const [balanceVisible, setBalanceVisible] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showVIPUpgrade, setShowVIPUpgrade] = useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
-  const [userGroups, setUserGroups] = useState<Group[]>([])
-  const [recommendedGroups, setRecommendedGroups] = useState<Group[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [currentView, setCurrentView] = useState<'dashboard' | 'group-details'>('dashboard')
   const [unreadNotifications] = useState(3)
-  const [userStats, setUserStats] = useState({
-    wallet_balance: 1250.50,
-    total_saved: 5420.80,
-    total_earned: 3200.00,
-    active_groups: 3,
-    trust_score: 98,
-    is_vip: user?.is_vip || false
-  })
 
-  // Mock data (same as before but organized for mobile)
-  const mockUserGroups: Group[] = [
-    {
-      id: '1',
-      name: 'Família Santos',
-      description: 'Poupança familiar para férias de verão na costa algarvia',
-      contribution_amount: 100,
-      max_members: 8,
-      current_members: 7,
-      group_type: 'lottery',
-      status: 'active',
-      total_pool: 700,
-      next_payout_date: '2025-09-15',
-      cycle: 3,
-      is_member: true
-    },
-    {
-      id: '2',
-      name: 'Tech Founders',
-      description: 'Investimento em startups e projetos tecnológicos',
-      contribution_amount: 500,
-      max_members: 10,
-      current_members: 8,
-      group_type: 'order',
-      status: 'ready_for_draw',
-      total_pool: 4000,
-      next_payout_date: '2025-09-20',
-      cycle: 1,
-      is_member: true
-    },
-    {
-      id: '3',
-      name: 'Surf Crew',
-      description: 'Material e viagens de surf pelo mundo',
-      contribution_amount: 75,
-      max_members: 6,
-      current_members: 5,
-      group_type: 'order',
-      status: 'active',
-      total_pool: 375,
-      next_payout_date: '2025-09-25',
-      cycle: 2,
-      is_member: true
-    }
-  ]
+  const isLoading = profileLoading || groupsLoading
 
-  useEffect(() => {
-    setIsLoading(true)
-    const timer = setTimeout(() => {
-      setUserGroups(mockUserGroups)
-      setIsLoading(false)
-    }, 1500)
-    return () => clearTimeout(timer)
-  }, [])
+  // Transform Supabase groups to match Group interface
+  const transformedGroups: Group[] = groups.map(group => ({
+    id: group.id,
+    name: group.name,
+    description: group.description || '',
+    contribution_amount: Number(group.contribution_amount),
+    max_members: group.max_members,
+    current_members: group.current_members,
+    group_type: group.group_type,
+    status: group.status,
+    total_pool: Number(group.total_pool),
+    next_payout_date: group.next_payout_date || '',
+    cycle: group.current_cycle || 1,
+    is_member: true
+  }))
 
   const handleRefresh = async () => {
-    setIsLoading(true)
-    // Simulate refresh
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setUserGroups(mockUserGroups)
-    setIsLoading(false)
+    await refetchGroups()
   }
 
   const handleViewGroupDetails = (groupId: string) => {
@@ -158,7 +110,7 @@ export function MobileDashboard() {
         <div className="flex justify-between items-start mb-6">
           <div>
             <h1 className="text-2xl font-bold text-primary-foreground mb-1">
-              Olá, {user?.full_name?.split(' ')[0] || 'Ana'} 👋
+              Olá, {profile?.full_name?.split(' ')[0] || user?.full_name?.split(' ')[0] || 'Utilizador'} 👋
             </h1>
             <p className="text-primary-foreground/80 text-sm">
               {new Date().toLocaleDateString('pt-PT', { 
@@ -221,7 +173,7 @@ export function MobileDashboard() {
               </div>
               
               <div className="text-3xl font-bold mb-5">
-                {balanceVisible ? formatCurrency(userStats.wallet_balance) : '••••••'}
+                {balanceVisible ? formatCurrency(profile?.wallet_balance || 0) : '••••••'}
               </div>
               
               <div className="grid grid-cols-3 gap-2">
@@ -276,15 +228,15 @@ export function MobileDashboard() {
           ) : (
             <>
               <MobileCard className="p-3 text-center">
-                <div className="text-xl font-bold text-foreground">{userStats.active_groups}</div>
+                <div className="text-xl font-bold text-foreground">{profile?.active_groups || 0}</div>
                 <div className="text-xs text-muted-foreground mt-1">Grupos Ativos</div>
               </MobileCard>
               <MobileCard className="p-3 text-center">
-                <div className="text-xl font-bold text-success">+24%</div>
+                <div className="text-xl font-bold text-success">+{((profile?.total_earned || 0) / Math.max(profile?.total_saved || 1, 1) * 100).toFixed(0)}%</div>
                 <div className="text-xs text-muted-foreground mt-1">Rentabilidade</div>
               </MobileCard>
               <MobileCard className="p-3 text-center">
-                <div className="text-xl font-bold text-primary">{userStats.trust_score}%</div>
+                <div className="text-xl font-bold text-primary">{profile?.trust_score || 50}%</div>
                 <div className="text-xs text-muted-foreground mt-1">Trust Score</div>
               </MobileCard>
             </>
@@ -328,7 +280,7 @@ export function MobileDashboard() {
         </MobileCard>
 
         {/* VIP Banner - Mobile Optimized */}
-        {!userStats.is_vip && (
+        {!profile?.is_vip && (
           <MobileCard className="bg-gradient-to-r from-warning-subtle to-warning-subtle/50 border-warning/20 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
@@ -369,8 +321,8 @@ export function MobileDashboard() {
                 <GroupCardSkeleton />
                 <GroupCardSkeleton />
               </>
-            ) : userGroups.length > 0 ? (
-              userGroups.map((group) => (
+            ) : transformedGroups.length > 0 ? (
+              transformedGroups.map((group) => (
                 <GroupCard
                   key={group.id}
                   group={group}
@@ -398,7 +350,7 @@ export function MobileDashboard() {
       <DepositModal
         isOpen={showDeposit}
         onClose={() => setShowDeposit(false)}
-        currentBalance={userStats.wallet_balance}
+        currentBalance={profile?.wallet_balance || 0}
       />
       <VIPUpgradeModal
         isOpen={showVIPUpgrade}

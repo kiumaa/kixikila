@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useProfile } from '@/hooks/use-profile'
+import { useUserTransactions } from '@/hooks/use-user-transactions'
 import { ArrowLeft, Upload, Download, Eye, EyeOff, TrendingUp, History, Filter } from 'lucide-react'
 import { MobileButton } from '@/components/ui/mobile-button'
 import { MobileCard } from '@/components/ui/mobile-card'
@@ -10,38 +12,25 @@ import { formatCurrency } from '@/lib/utils'
 
 export function MobileWallet() {
   const navigate = useNavigate()
+  const { profile, loading: profileLoading } = useProfile()
+  const { transactions, loading: transactionsLoading } = useUserTransactions()
   const [balanceVisible, setBalanceVisible] = useState(true)
 
   const handleBack = () => {
     navigate('/dashboard')
   }
 
-  const mockTransactions = [
-    {
-      id: '1',
-      type: 'deposit',
-      amount: 500.00,
-      date: '2025-01-25',
-      description: 'Depósito via Stripe',
-      status: 'completed'
-    },
-    {
-      id: '2',
-      type: 'payment',
-      amount: -100.00,
-      date: '2025-01-24',
-      description: 'Pagamento - Família Santos',
-      status: 'completed'
-    },
-    {
-      id: '3',
-      type: 'reward',
-      amount: 800.00,
-      date: '2025-01-20',
-      description: 'Prémio recebido - Tech Founders',
-      status: 'completed'
-    }
-  ]
+  // Transform Supabase transactions to match expected format
+  const transformedTransactions = transactions.map(transaction => ({
+    id: transaction.id,
+    type: transaction.type,
+    amount: Number(transaction.amount),
+    date: transaction.created_at,
+    description: transaction.description,
+    status: transaction.status
+  }))
+
+  const isLoading = profileLoading || transactionsLoading
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -69,7 +58,7 @@ export function MobileWallet() {
             <div>
               <div className="text-primary-foreground/80 text-sm mb-2">Saldo Disponível</div>
               <div className="text-4xl font-bold">
-                {balanceVisible ? formatCurrency(1250.50) : '••••••'}
+                {balanceVisible ? formatCurrency(profile?.wallet_balance || 0) : '••••••'}
               </div>
             </div>
             <button
@@ -84,15 +73,15 @@ export function MobileWallet() {
           <div className="grid grid-cols-3 gap-4 mb-6 text-center">
             <div>
               <div className="text-primary-foreground/60 text-xs mb-1">Total Poupado</div>
-              <div className="font-semibold text-sm">{formatCurrency(5420.80)}</div>
+              <div className="font-semibold text-sm">{formatCurrency(profile?.total_saved || 0)}</div>
             </div>
             <div>
               <div className="text-primary-foreground/60 text-xs mb-1">Total Ganho</div>
-              <div className="font-semibold text-sm text-success-foreground">+{formatCurrency(3200.00)}</div>
+              <div className="font-semibold text-sm text-success-foreground">+{formatCurrency(profile?.total_earned || 0)}</div>
             </div>
             <div>
               <div className="text-primary-foreground/60 text-xs mb-1">Levantamentos</div>
-              <div className="font-semibold text-sm">{formatCurrency(2100.00)}</div>
+              <div className="font-semibold text-sm">{formatCurrency(profile?.total_withdrawn || 0)}</div>
             </div>
           </div>
           
@@ -127,7 +116,7 @@ export function MobileWallet() {
         </MobileCard>
         <MobileCard className="p-4 text-center">
           <History className="w-6 h-6 text-primary mx-auto mb-2" />
-          <div className="text-sm font-semibold text-foreground">12</div>
+          <div className="text-sm font-semibold text-foreground">{transformedTransactions.length}</div>
           <div className="text-xs text-muted-foreground">Transações</div>
         </MobileCard>
       </div>
@@ -144,7 +133,19 @@ export function MobileWallet() {
         </div>
         
         <div className="divide-y divide-border/50">
-          {mockTransactions.map((transaction) => (
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              <div className="animate-pulse flex items-center gap-3">
+                <div className="w-10 h-10 bg-muted rounded-xl"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-muted rounded mb-1"></div>
+                  <div className="h-3 bg-muted rounded w-1/2"></div>
+                </div>
+                <div className="h-4 bg-muted rounded w-16"></div>
+              </div>
+            </div>
+          ) : transformedTransactions.length > 0 ? (
+            transformedTransactions.map((transaction) => (
             <div
               key={transaction.id}
               className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors native-feedback"
@@ -171,7 +172,12 @@ export function MobileWallet() {
                 </div>
               </div>
             </div>
-          ))}
+          ))) : (
+            <div className="p-8 text-center">
+              <History className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">Ainda não há transações</p>
+            </div>
+          )}
         </div>
         
         <div className="p-4 border-t border-border/50">

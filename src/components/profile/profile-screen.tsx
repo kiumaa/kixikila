@@ -3,26 +3,18 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
+import { useProfile } from '@/hooks/use-profile'
+import { useNavigate } from 'react-router-dom'
 import { 
   User, Shield, CreditCard, Bell, Lock, FileText, 
   HelpCircle, LogOut, ChevronRight, Crown, Check 
 } from 'lucide-react'
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth()
-  
-  const userProfile = {
-    name: "Ana Santos",
-    email: user?.email || "ana.santos@email.pt",
-    phone: "+351 912 345 678",
-    isVIP: true,
-    vipExpiry: "2025-12-15",
-    trustScore: 98,
-    activeGroups: 3,
-    completedCycles: 12,
-    totalSaved: 5420.80
-  }
-  
+  const { signOut } = useAuth()
+  const { profile, loading } = useProfile()
+  const navigate = useNavigate()
+
   const menuItems = [
     { icon: User, label: 'Dados Pessoais', href: '/profile/personal' },
     { icon: Shield, label: 'Verificação KYC', href: '/profile/kyc' },
@@ -32,6 +24,34 @@ export default function ProfileScreen() {
     { icon: FileText, label: 'Termos e Privacidade', href: '/profile/legal' },
     { icon: HelpCircle, label: 'Ajuda e Suporte', href: '/profile/help' },
   ]
+
+  const handleMenuItemClick = (href: string) => {
+    navigate(href)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <div className="bg-gradient-to-r from-primary to-primary/80 px-6 pt-14 pb-32">
+          <div className="text-center">
+            <div className="w-20 h-20 mx-auto mb-4 bg-white/20 rounded-full animate-pulse"></div>
+            <div className="h-6 bg-white/20 rounded mb-2 animate-pulse"></div>
+            <div className="h-4 bg-white/20 rounded mb-4 animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
+        <Card className="p-6 text-center">
+          <p className="text-muted-foreground">Erro ao carregar perfil</p>
+        </Card>
+      </div>
+    )
+  }
   
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -41,20 +61,22 @@ export default function ProfileScreen() {
           <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary-foreground/20 to-primary-foreground/10 rounded-full flex items-center justify-center text-primary-foreground font-bold text-2xl">
             AS
           </div>
-          <h2 className="text-2xl font-bold text-primary-foreground mb-1">{userProfile.name}</h2>
-          <p className="text-primary-foreground/80 mb-4">{userProfile.email}</p>
+          <h2 className="text-2xl font-bold text-primary-foreground mb-1">{profile.full_name || 'Utilizador'}</h2>
+          <p className="text-primary-foreground/80 mb-4">{profile.email || 'Email não definido'}</p>
           
           <div className="flex justify-center gap-2">
-            {userProfile.isVIP && (
+            {profile.is_vip && (
               <div className="bg-yellow-500/20 text-yellow-100 px-3 py-1 rounded-full text-sm font-medium">
                 <Crown className="w-3 h-3 mr-1 inline" />
                 VIP
               </div>
             )}
-            <div className="bg-green-500/20 text-green-100 px-3 py-1 rounded-full text-sm font-medium">
-              <Shield className="w-3 h-3 mr-1 inline" />
-              Verificado
-            </div>
+            {profile.kyc_status === 'approved' && (
+              <div className="bg-green-500/20 text-green-100 px-3 py-1 rounded-full text-sm font-medium">
+                <Shield className="w-3 h-3 mr-1 inline" />
+                Verificado
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -67,25 +89,25 @@ export default function ProfileScreen() {
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-muted/50 rounded-lg p-3">
               <div className="text-xs text-muted-foreground mb-1">Trust Score</div>
-              <div className="text-xl font-bold text-primary">{userProfile.trustScore}%</div>
+              <div className="text-xl font-bold text-primary">{profile.trust_score || 50}%</div>
             </div>
             <div className="bg-muted/50 rounded-lg p-3">
               <div className="text-xs text-muted-foreground mb-1">Grupos Ativos</div>
-              <div className="text-xl font-bold text-foreground">{userProfile.activeGroups}</div>
+              <div className="text-xl font-bold text-foreground">{profile.active_groups || 0}</div>
             </div>
             <div className="bg-muted/50 rounded-lg p-3">
               <div className="text-xs text-muted-foreground mb-1">Ciclos Completos</div>
-              <div className="text-xl font-bold text-foreground">{userProfile.completedCycles}</div>
+              <div className="text-xl font-bold text-foreground">{profile.completed_cycles || 0}</div>
             </div>
             <div className="bg-muted/50 rounded-lg p-3">
               <div className="text-xs text-muted-foreground mb-1">Total Poupado</div>
-              <div className="text-xl font-bold text-green-600">€{userProfile.totalSaved.toFixed(2)}</div>
+              <div className="text-xl font-bold text-green-600">€{(profile.total_saved || 0).toFixed(2)}</div>
             </div>
           </div>
         </Card>
 
         {/* VIP Status */}
-        {userProfile.isVIP ? (
+        {profile.is_vip ? (
           <Card className="p-5 bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -94,7 +116,7 @@ export default function ProfileScreen() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-yellow-900">Plano VIP</h3>
-                  <p className="text-xs text-yellow-700">Válido até {userProfile.vipExpiry}</p>
+                  <p className="text-xs text-yellow-700">Válido até {profile.vip_expiry_date ? new Date(profile.vip_expiry_date).toLocaleDateString('pt-PT') : 'Data não definida'}</p>
                 </div>
               </div>
               <Button variant="secondary" size="sm">
@@ -137,6 +159,7 @@ export default function ProfileScreen() {
             {menuItems.map((item, idx) => (
               <button
                 key={idx}
+                onClick={() => handleMenuItemClick(item.href)}
                 className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
