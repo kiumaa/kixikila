@@ -51,8 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSupabaseUser(session?.user ?? null)
         
         if (session?.user) {
-          // Fetch user profile data from our users table
-          await fetchUserProfile(session.user.id)
+          // Fetch user profile data from our users table with retry logic
+          setTimeout(async () => {
+            const profileLoaded = await fetchUserProfile(session.user.id)
+            if (!profileLoaded) {
+              console.warn('[Auth] Failed to load user profile after all retries')
+            }
+          }, 0)
         } else {
           setUser(null)
         }
@@ -67,7 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSupabaseUser(session?.user ?? null)
       
       if (session?.user) {
-        fetchUserProfile(session.user.id)
+        setTimeout(async () => {
+          const profileLoaded = await fetchUserProfile(session.user.id)
+          if (!profileLoaded) {
+            console.warn('[Auth] Failed to load existing session profile')
+          }
+          setLoading(false)
+        }, 0)
       } else {
         setLoading(false)
       }
@@ -76,13 +87,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchUserProfile = async (userId: string, retryCount = 0) => {
+  const fetchUserProfile = async (userId: string, retryCount = 0): Promise<boolean> => {
     const maxRetries = 3
-    const retryDelay = 1000 * (retryCount + 1) // Exponential backoff
-    
-    console.log(`[Auth] Fetching user profile for ID: ${userId}, attempt: ${retryCount + 1}`)
-    
+    const retryDelay = Math.pow(2, retryCount) * 1000 // Exponential backoff
+
     try {
+      console.log(`[Auth] Fetching profile for user ${userId} (attempt ${retryCount + 1}/${maxRetries + 1})`)
+      
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -90,31 +101,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       if (error) {
-        console.error(`[Auth] Error fetching user profile:`, error)
+        console.error(`[Auth] Database error fetching profile:`, error)
         
-        // If profile not found and this is a fresh signup, try fallback creation
-        if (error.code === 'PGRST116' || !data) {
-          console.log('[Auth] Profile not found, attempting fallback creation...')
-          const created = await createUserProfileFallback(userId)
-          if (created && retryCount < maxRetries) {
-            console.log('[Auth] Fallback creation successful, retrying fetch...')
-            setTimeout(() => fetchUserProfile(userId, retryCount + 1), retryDelay)
-            return
+        // If profile doesn't exist and we haven't maxed retries, try to create it
+        if (error.code === 'PGRST116' || error.message.includes('No rows found')) {
+          console.log(`[Auth] Profile not found for user ${userId}, attempting to create...`)
+          
+          if (retryCount < maxRetries) {
+            const profileCreated = await createUserProfileFallback(userId)
+            if (profileCreated) {
+              // Retry fetching after creating profile
+              await new Promise(resolve => setTimeout(resolve, retryDelay))
+              return fetchUserProfile(userId, retryCount + 1)
+            }
           }
         }
         
-        // Retry on network errors
-        if (retryCount < maxRetries && (error.message?.includes('network') || error.message?.includes('timeout'))) {
+        // For other errors, retry if possible
+        if (retryCount < maxRetries) {
           console.log(`[Auth] Retrying profile fetch in ${retryDelay}ms...`)
-          setTimeout(() => fetchUserProfile(userId, retryCount + 1), retryDelay)
-          return
+          await new Promise(resolve => setTimeout(resolve, retryDelay))
+          return fetchUserProfile(userId, retryCount + 1)
         }
         
-        return
+        return false
       }
 
       if (data) {
-        console.log('[Auth] Successfully fetched user profile')
+        console.log(`[Auth] Profile loaded successfully for user ${userId}`)
         const userData = data as UserRow
         setUser({
           id: userData.id,
@@ -131,60 +145,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           active_groups: userData.active_groups || 0,
           completed_cycles: userData.completed_cycles || 0
         })
-      } else if (retryCount < maxRetries) {
-        console.log('[Auth] No profile found, attempting fallback creation...')
-        const created = await createUserProfileFallback(userId)
-        if (created) {
-          console.log('[Auth] Fallback creation successful, retrying fetch...')
-          setTimeout(() => fetchUserProfile(userId, retryCount + 1), retryDelay)
+        return true
+      } else {
+        console.log(`[Auth] No profile data returned for user ${userId}`)
+        
+        // Profile doesn't exist, try to create it
+        if (retryCount < maxRetries) {
+          const profileCreated = await createUserProfileFallback(userId)
+          if (profileCreated) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay))
+            return fetchUserProfile(userId, retryCount + 1)
+          }
         }
+        
+        return false
       }
     } catch (error) {
-      console.error('[Auth] Unexpected error in fetchUserProfile:', error)
+      console.error(`[Auth] Unexpected error in fetchUserProfile:`, error)
       
-      // Retry on unexpected errors
+      // Retry on network or unexpected errors
       if (retryCount < maxRetries) {
-        console.log(`[Auth] Retrying profile fetch in ${retryDelay}ms due to unexpected error...`)
-        setTimeout(() => fetchUserProfile(userId, retryCount + 1), retryDelay)
+        console.log(`[Auth] Retrying due to unexpected error in ${retryDelay}ms...`)
+        await new Promise(resolve => setTimeout(resolve, retryDelay))
+        return fetchUserProfile(userId, retryCount + 1)
       }
+      
+      return false
     }
   }
 
   const createUserProfileFallback = async (userId: string): Promise<boolean> => {
-    console.log(`[Auth] Creating fallback profile for user ID: ${userId}`)
-    
     try {
-      // Get user data from auth.users if available
-      const { data: authUser } = await supabase.auth.getUser()
-      const userData = authUser?.user
+      console.log(`[Auth] Creating fallback profile for user ${userId}`)
       
-      const { error } = await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          full_name: userData?.user_metadata?.full_name || 'Utilizador',
-          email: userData?.email || '',
-          phone: userData?.user_metadata?.phone || '',
-          email_verified: userData?.email_confirmed_at ? true : false,
-          phone_verified: userData?.phone_confirmed_at ? true : false,
-          kyc_status: 'pending',
-          is_active: true,
-          trust_score: 50,
-          wallet_balance: 0.00,
-          total_saved: 0.00,
-          total_earned: 0.00,
-          total_withdrawn: 0.00,
-          active_groups: 0,
-          completed_cycles: 0,
-          first_login: true
-        })
+      // Get user data from Supabase Auth
+      const { data: authUser } = await supabase.auth.getUser()
+      if (!authUser?.user || authUser.user.id !== userId) {
+        console.error('[Auth] Auth user not found or ID mismatch')
+        return false
+      }
+
+      const user = authUser.user
+      const email = user.email || ''
+      const fullName = user.user_metadata?.full_name || user.user_metadata?.name || 'Utilizador'
+      const phone = user.user_metadata?.phone || user.phone || ''
+
+      console.log(`[Auth] Creating profile with name: ${fullName}, email exists: ${!!email}`)
+
+      const { error } = await supabase.from('users').insert({
+        id: userId,
+        full_name: fullName,
+        email: email || null,
+        phone: phone || null,
+        email_verified: !!user.email_confirmed_at,
+        phone_verified: !!user.phone_confirmed_at,
+        kyc_status: 'pending',
+        is_active: true,
+        trust_score: 50,
+        wallet_balance: 0.00,
+        total_saved: 0.00,
+        total_earned: 0.00,
+        total_withdrawn: 0.00,
+        active_groups: 0,
+        completed_cycles: 0,
+        first_login: true
+      })
 
       if (error) {
         console.error('[Auth] Error creating fallback profile:', error)
         return false
       }
 
-      console.log('[Auth] Successfully created fallback profile')
+      console.log(`[Auth] Fallback profile created successfully for user ${userId}`)
       return true
     } catch (error) {
       console.error('[Auth] Unexpected error creating fallback profile:', error)

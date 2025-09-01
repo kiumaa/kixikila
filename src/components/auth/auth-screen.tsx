@@ -28,44 +28,6 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
     setSuccess(null)
   }
 
-  const getErrorMessage = (error: any): string => {
-    if (!error?.message) return 'Erro desconhecido'
-    
-    const message = error.message.toLowerCase()
-    
-    // Signup specific errors
-    if (message.includes('user already registered')) {
-      return 'Este email já está registado. Tente fazer login ou use outro email.'
-    }
-    if (message.includes('invalid email')) {
-      return 'Email inválido. Verifique o formato do email.'
-    }
-    if (message.includes('password')) {
-      if (message.includes('short')) {
-        return 'A palavra-passe deve ter pelo menos 6 caracteres.'
-      }
-      return 'Palavra-passe inválida. Verifique os critérios de segurança.'
-    }
-    
-    // Login specific errors
-    if (message.includes('invalid login credentials')) {
-      return 'Email ou palavra-passe incorretos. Verifique os seus dados.'
-    }
-    if (message.includes('email not confirmed')) {
-      return 'Por favor, confirme o seu email antes de fazer login. Verifique a sua caixa de entrada.'
-    }
-    if (message.includes('too many requests')) {
-      return 'Demasiadas tentativas. Aguarde alguns minutos antes de tentar novamente.'
-    }
-    
-    // Network errors
-    if (message.includes('network') || message.includes('timeout') || message.includes('fetch')) {
-      return 'Erro de ligação. Verifique a sua internet e tente novamente.'
-    }
-    
-    return error.message
-  }
-
   const handleBack = () => {
     if (mode === 'choice') {
       onBack()
@@ -81,11 +43,14 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
       return
     }
 
-    if (!email.includes('@')) {
-      setError('Por favor, introduza um email válido')
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setError('Por favor, insira um email válido')
       return
     }
 
+    // Basic password validation
     if (password.length < 6) {
       setError('A palavra-passe deve ter pelo menos 6 caracteres')
       return
@@ -95,25 +60,38 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
     setError(null)
     setSuccess(null)
 
-    console.log('[AuthScreen] Starting registration process for:', email)
-
     try {
+      console.log('[AuthScreen] Starting signup process...')
       const { error } = await signUp(email, password, { full_name: fullName })
       
       if (error) {
-        console.error('[AuthScreen] Registration error:', error)
-        setError(getErrorMessage(error))
+        console.error('[AuthScreen] Signup error:', error)
+        
+        // Provide user-friendly error messages
+        if (error.message.includes('User already registered')) {
+          setError('Este email já está registado. Tente fazer login.')
+        } else if (error.message.includes('Password should be at least 6 characters')) {
+          setError('A palavra-passe deve ter pelo menos 6 caracteres.')
+        } else if (error.message.includes('Invalid email')) {
+          setError('Email inválido. Verifique o formato.')
+        } else if (error.message.includes('Signup requires a valid password')) {
+          setError('Palavra-passe inválida. Tente uma palavra-passe mais forte.')
+        } else {
+          setError(error.message || 'Erro ao criar conta. Tente novamente.')
+        }
       } else {
-        console.log('[AuthScreen] Registration successful, user should receive confirmation email')
-        setSuccess('Conta criada com sucesso! Verifique o seu email para confirmar a conta.')
-        // Reset form after successful registration
+        console.log('[AuthScreen] Signup successful, check email for verification')
+        setError(null)
+        setSuccess('Conta criada com sucesso! Verifique o seu email para ativar a conta.')
+        // Clear form after successful signup
         setTimeout(() => {
           resetForm()
-        }, 2000)
+          setMode('login')
+        }, 3000)
       }
     } catch (err) {
-      console.error('[AuthScreen] Unexpected registration error:', err)
-      setError('Erro inesperado. Verifique a sua ligação à internet e tente novamente.')
+      console.error('[AuthScreen] Unexpected signup error:', err)
+      setError('Erro de conexão. Verifique a sua internet e tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -125,31 +103,36 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
       return
     }
 
-    if (!email.includes('@')) {
-      setError('Por favor, introduza um email válido')
-      return
-    }
-
     setLoading(true)
     setError(null)
     setSuccess(null)
 
-    console.log('[AuthScreen] Starting login process for:', email)
-
     try {
+      console.log('[AuthScreen] Starting login process...')
       const { error } = await signIn(email, password)
       
       if (error) {
         console.error('[AuthScreen] Login error:', error)
-        setError(getErrorMessage(error))
+        
+        // Provide user-friendly error messages
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Email ou palavra-passe incorretos.')
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Por favor, verifique o seu email antes de fazer login.')
+        } else if (error.message.includes('Too many requests')) {
+          setError('Muitas tentativas de login. Tente novamente em alguns minutos.')
+        } else {
+          setError(error.message || 'Erro ao fazer login. Tente novamente.')
+        }
       } else {
-        console.log('[AuthScreen] Login successful, redirecting to dashboard')
-        setSuccess('Login realizado com sucesso! A redirecionar...')
+        console.log('[AuthScreen] Login successful')
+        setError(null)
+        setSuccess('Login realizado com sucesso!')
         // User will be redirected automatically by auth state change
       }
     } catch (err) {
       console.error('[AuthScreen] Unexpected login error:', err)
-      setError('Erro inesperado. Verifique a sua ligação à internet e tente novamente.')
+      setError('Erro de conexão. Verifique a sua internet e tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -259,13 +242,10 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
               disabled={loading}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
+            {mode === 'register' && (
+              <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
+            )}
           </div>
-
-          {success && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-600">{success}</p>
-            </div>
-          )}
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -273,21 +253,20 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
             </div>
           )}
 
+          {success && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-600">{success}</p>
+            </div>
+          )}
+
           <Button
             variant="default"
             size="lg"
-            className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
             onClick={mode === 'register' ? handleRegister : handleLogin}
             disabled={loading}
           >
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                {mode === 'register' ? 'A criar conta...' : 'A entrar...'}
-              </div>
-            ) : (
-              mode === 'register' ? 'Criar Conta' : 'Entrar'
-            )}
+            {loading ? 'A processar...' : (mode === 'register' ? 'Criar Conta' : 'Entrar')}
           </Button>
 
           <div className="text-center">
