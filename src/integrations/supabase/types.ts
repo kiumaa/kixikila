@@ -1371,6 +1371,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      check_group_admin_access: {
+        Args: { target_group_id: string }
+        Returns: boolean
+      }
+      check_group_membership: {
+        Args: { target_group_id: string }
+        Returns: boolean
+      }
       classify_user_data_sensitivity: {
         Args: { column_name: string }
         Returns: string
