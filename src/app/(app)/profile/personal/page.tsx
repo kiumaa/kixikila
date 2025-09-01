@@ -9,6 +9,7 @@ import { ArrowLeft, Save, User, Mail, Phone, MapPin, Calendar } from 'lucide-rea
 import { useNavigate } from 'react-router-dom'
 import { useProfile } from '@/hooks/use-profile'
 import { toast } from 'sonner'
+import { useEnhancedHaptics } from '@/hooks/use-enhanced-haptics'
 
 export default function PersonalDataPage() {
   const navigate = useNavigate()
@@ -24,16 +25,22 @@ export default function PersonalDataPage() {
     date_of_birth: profile?.date_of_birth || ''
   })
 
+  const { contextual: haptic } = useEnhancedHaptics()
+
   const handleSave = async () => {
     setSaving(true)
+    haptic('form.submit')
     try {
       const success = await updateProfile(formData)
       if (success) {
+        haptic('form.success')
         toast.success('Dados pessoais atualizados com sucesso!')
       } else {
+        haptic('form.error')
         toast.error('Erro ao atualizar dados pessoais')
       }
     } catch (error) {
+      haptic('form.error')
       toast.error('Erro ao atualizar dados pessoais')
     } finally {
       setSaving(false)

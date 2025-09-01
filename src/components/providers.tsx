@@ -3,6 +3,7 @@
 import { ThemeProvider } from '@/components/theme-provider'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/lib/auth-context'
+import { AppStateProvider } from '@/contexts/app-state-context'
 import { useState } from 'react'
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -24,9 +25,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultTheme="system"
         storageKey="kixikila-ui-theme"
       >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <AppStateProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </AppStateProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )
