@@ -4,7 +4,9 @@ import { BrowserRouter } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/sonner'
 import { PWAManager } from '@/components/pwa/pwa-manager'
+import { PerformanceDashboard } from '@/components/dev/performance-dashboard'
 import AppRoutes from '@/components/app-routes'
+import { performanceMonitor } from '@/lib/performance-monitor'
 import '@/app/globals.css'
 
 // Register PWA Service Worker
@@ -26,6 +28,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <Providers>
         <AppRoutes />
         <PWAManager />
+        <PerformanceDashboard />
         <Toaster />
       </Providers>
     </BrowserRouter>
