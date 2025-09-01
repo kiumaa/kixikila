@@ -13,50 +13,33 @@ interface VIPUpgradeModalProps {
 }
 
 export function VIPUpgradeModal({ isOpen, onClose }: VIPUpgradeModalProps) {
-  const [selectedPlan, setSelectedPlan] = useState('premium')
   const [isLoading, setIsLoading] = useState(false)
 
-  const plans = [
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: 9.99,
-      period: 'mês',
-      description: 'Perfeito para utilizadores ativos',
-      features: [
-        'Grupos ilimitados',
-        'Estatísticas avançadas', 
-        'Suporte prioritário',
-        'Comissões reduzidas',
-        'Convites ilimitados'
-      ],
-      popular: true
-    },
-    {
-      id: 'pro',
-      name: 'Pro',
-      price: 19.99,
-      period: 'mês',
-      description: 'Para utilizadores profissionais',
-      features: [
-        'Tudo do Premium',
-        'API access',
-        'Relatórios personalizados',
-        'Gestão de múltiplas contas',
-        'Consultoria 1-1'
-      ],
-      popular: false
-    }
-  ]
+  const plan = {
+    id: 'pro',
+    name: 'Pro',
+    originalPrice: 9.99,
+    promoPrice: 5.99,
+    period: 'mês',
+    description: 'Grupos ilimitados e recursos avançados',
+    features: [
+      'Grupos ilimitados',
+      'Estatísticas avançadas', 
+      'Suporte prioritário',
+      'Comissões reduzidas',
+      'Convites ilimitados',
+      'Badge Pro'
+    ],
+    isPromo: true
+  }
 
   const handleUpgrade = async () => {
     setIsLoading(true)
     
     try {
-      const plan = plans.find(p => p.id === selectedPlan)
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
-          priceId: selectedPlan === 'premium' ? 'price_premium_monthly' : 'price_pro_monthly',
+          plan_type: 'pro_promo_monthly',
           successUrl: `${window.location.origin}/dashboard?upgraded=true`,
           cancelUrl: `${window.location.origin}/dashboard`
         }
@@ -64,9 +47,9 @@ export function VIPUpgradeModal({ isOpen, onClose }: VIPUpgradeModalProps) {
 
       if (error) throw error
 
-      // Open Stripe checkout
+      // Open Stripe checkout in new tab
       if (data.url) {
-        window.location.href = data.url
+        window.open(data.url, '_blank')
       }
     } catch (error: any) {
       console.error('Upgrade error:', error)
@@ -83,52 +66,57 @@ export function VIPUpgradeModal({ isOpen, onClose }: VIPUpgradeModalProps) {
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center">
               <Crown className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Upgrade para VIP</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Upgrade para Pro</h2>
             <p className="text-muted-foreground">Desbloqueie todo o potencial do KIXIKILA</p>
+            
+            {/* Promoção Banner */}
+            <div className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse">
+              <Sparkles className="w-4 h-4" />
+              PROMOÇÃO DE LANÇAMENTO
+            </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 mb-8">
-            {plans.map((plan) => (
-              <Card 
-                key={plan.id}
-                className={`p-6 cursor-pointer transition-all relative ${
-                  selectedPlan === plan.id 
-                    ? 'ring-2 ring-primary bg-primary/5' 
-                    : 'hover:shadow-lg'
-                }`}
-                onClick={() => setSelectedPlan(plan.id)}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-primary to-primary-hover text-primary-foreground px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" />
-                      Mais Popular
-                    </span>
-                  </div>
-                )}
+          <div className="max-w-md mx-auto mb-8">
+            <Card className="p-6 ring-2 ring-primary bg-primary/5 relative overflow-hidden">
+              {/* Promoção Badge */}
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  DESCONTO 40%
+                </span>
+              </div>
+              
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-foreground mb-1">{plan.name}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
                 
-                <div className="text-center mb-4">
-                  <h3 className="text-xl font-bold text-foreground mb-1">{plan.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-3">{plan.description}</p>
-                  <div className="text-3xl font-bold text-foreground">
-                    €{plan.price}
+                {/* Preços */}
+                <div className="space-y-2">
+                  <div className="text-lg text-muted-foreground line-through">
+                    €{plan.originalPrice}
+                  </div>
+                  <div className="text-4xl font-bold text-foreground">
+                    €{plan.promoPrice}
                     <span className="text-sm text-muted-foreground font-normal">/{plan.period}</span>
                   </div>
+                  <p className="text-xs text-orange-600 font-medium">
+                    Poupe €{(plan.originalPrice - plan.promoPrice).toFixed(2)}/mês
+                  </p>
                 </div>
+              </div>
 
-                <ul className="space-y-3">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                      <span className="text-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            ))}
+              <ul className="space-y-3">
+                {plan.features.map((feature, idx) => (
+                  <li key={idx} className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <span className="text-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
           </div>
 
           <div className="bg-muted/50 rounded-lg p-4 mb-6">
@@ -163,7 +151,7 @@ export function VIPUpgradeModal({ isOpen, onClose }: VIPUpgradeModalProps) {
             </Button>
             <Button
               onClick={handleUpgrade}
-              className="flex-1"
+              className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -171,7 +159,7 @@ export function VIPUpgradeModal({ isOpen, onClose }: VIPUpgradeModalProps) {
               ) : (
                 <>
                   <Crown className="w-4 h-4 mr-2" />
-                  Upgrade para {plans.find(p => p.id === selectedPlan)?.name}
+                  Aderir por €{plan.promoPrice}/mês
                 </>
               )}
             </Button>

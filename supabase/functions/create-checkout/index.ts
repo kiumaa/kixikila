@@ -45,17 +45,28 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Get request body for plan information
-    const { plan_type = 'vip_monthly', amount } = await req.json();
+    const { plan_type = 'pro_promo_monthly', amount } = await req.json();
     
     // Determine correct amount based on plan
     let finalAmount;
-    if (plan_type === 'vip_yearly') {
-      finalAmount = 9999; // €99.99
+    let productName;
+    let productDescription;
+    
+    if (plan_type === 'pro_promo_monthly') {
+      finalAmount = 599;  // €5.99 (promo price)
+      productName = "KIXIKILA Pro - Promoção Lançamento";
+      productDescription = "Grupos ilimitados, estatísticas avançadas e suporte prioritário (Preço promocional)";
+    } else if (plan_type === 'pro_monthly') {
+      finalAmount = 999;  // €9.99 (regular price)
+      productName = "KIXIKILA Pro Mensal";
+      productDescription = "Grupos ilimitados, estatísticas avançadas e suporte prioritário";
     } else {
-      finalAmount = 999;  // €9.99
+      finalAmount = 599;  // Default to promo price
+      productName = "KIXIKILA Pro - Promoção Lançamento";
+      productDescription = "Grupos ilimitados, estatísticas avançadas e suporte prioritário (Preço promocional)";
     }
     
-    logStep("Request data", { plan: plan_type, amount: finalAmount });
+    logStep("Request data", { plan: plan_type, amount: finalAmount, productName });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
@@ -79,17 +90,11 @@ serve(async (req) => {
           price_data: {
             currency: "eur",
             product_data: { 
-              name: plan_type === 'vip_monthly' ? "KIXIKILA VIP Mensal" : "KIXIKILA VIP Anual",
-              description: plan_type === 'vip_monthly' 
-                ? "Grupos ilimitados, relatórios avançados e suporte prioritário"
-                : "Grupos ilimitados, relatórios avançados e suporte prioritário (12 meses)"
+              name: productName,
+              description: productDescription
             },
             unit_amount: finalAmount, // amount in cents
-            ...(plan_type === 'vip_yearly' ? { 
-              recurring: { interval: "year" } 
-            } : { 
-              recurring: { interval: "month" } 
-            }),
+            recurring: { interval: "month" },
           },
           quantity: 1,
         },
