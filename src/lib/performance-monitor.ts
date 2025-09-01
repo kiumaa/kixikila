@@ -117,12 +117,6 @@ class PerformanceMonitor {
     return 'poor'
   }
 
-  private getFidRating(value: number): 'good' | 'needs-improvement' | 'poor' {
-    if (value <= 100) return 'good'
-    if (value <= 300) return 'needs-improvement'
-    return 'poor'
-  }
-
   private getInpRating(value: number): 'good' | 'needs-improvement' | 'poor' {
     if (value <= 200) return 'good'
     if (value <= 500) return 'needs-improvement'
