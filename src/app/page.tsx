@@ -31,6 +31,8 @@ export default function HomePage() {
 
   const handleAuthBack = () => {
     setShowAuth(false)
+    // Limpar onboarding completed para mostrar novamente se necessário
+    localStorage.removeItem('kixikila_onboarding_completed')
   }
 
   const handleKYCClose = () => {

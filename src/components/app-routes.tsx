@@ -1,6 +1,6 @@
 'use client'
 
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
 import { LoadingScreen } from '@/components/ui/loading-screen'
 import { OnboardingScreen } from '@/components/onboarding/onboarding-screen'
@@ -13,6 +13,13 @@ import { NotificationsScreen } from '@/components/notifications/notifications-sc
 
 export default function AppRoutes() {
   const { user, loading } = useAuth()
+  const navigate = useNavigate()
+
+  const handleOnboardingComplete = () => {
+    // Marcar onboarding como completado
+    localStorage.setItem('kixikila_onboarding_completed', 'true')
+    navigate('/entrar')
+  }
 
   if (loading) {
     return <LoadingScreen />
@@ -21,8 +28,13 @@ export default function AppRoutes() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <OnboardingScreen onComplete={() => {}} />} />
-      <Route path="/entrar" element={user ? <Navigate to="/dashboard" replace /> : <AuthScreen onBack={() => window.history.back()} />} />
+      <Route path="/" element={
+        user ? <Navigate to="/dashboard" replace /> : 
+        localStorage.getItem('kixikila_onboarding_completed') ? 
+        <Navigate to="/entrar" replace /> :
+        <OnboardingScreen onComplete={handleOnboardingComplete} />
+      } />
+      <Route path="/entrar" element={user ? <Navigate to="/dashboard" replace /> : <AuthScreen onBack={() => navigate('/')} />} />
       
       {/* Protected routes */}
       {user ? (
