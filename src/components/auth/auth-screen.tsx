@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { ArrowLeft } from 'lucide-react'
 
@@ -105,7 +104,7 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
 
           <div className="space-y-3">
             <Button
-              variant="primary"
+              variant="default"
               size="lg"
               className="w-full"
               onClick={() => setMode('register')}
@@ -199,11 +198,11 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
           )}
 
           <Button
-            variant="primary"
+            variant="default"
             size="lg"
             className="w-full"
             onClick={mode === 'register' ? handleRegister : handleLogin}
-            loading={loading}
+            disabled={loading}
           >
             {mode === 'register' ? 'Criar Conta' : 'Entrar'}
           </Button>
