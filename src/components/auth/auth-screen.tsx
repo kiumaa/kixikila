@@ -106,7 +106,7 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
             <Button
               variant="default"
               size="lg"
-              className="w-full"
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
               onClick={() => setMode('register')}
             >
               Criar Conta
@@ -200,7 +200,7 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
           <Button
             variant="default"
             size="lg"
-            className="w-full"
+            className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
             onClick={mode === 'register' ? handleRegister : handleLogin}
             disabled={loading}
           >

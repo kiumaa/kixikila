@@ -3,6 +3,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import type { User as SupabaseUser, Session as SupabaseSession } from '@supabase/supabase-js'
+import type { Database } from '@/integrations/supabase/types'
+
+type UserRow = Database['public']['Tables']['users']['Row']
 
 interface User {
   id: string
@@ -87,20 +90,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data) {
+        const userData = data as UserRow
         setUser({
-          id: (data as any).id,
-          full_name: (data as any).full_name || '',
-          phone: (data as any).phone || '',
-          email: (data as any).email || '',
-          is_vip: (data as any).is_vip || false,
-          kyc_status: (data as any).kyc_status || 'pending',
-          first_login: (data as any).first_login || true,
-          wallet_balance: (data as any).wallet_balance || 0,
-          total_saved: (data as any).total_saved || 0,
-          total_earned: (data as any).total_earned || 0,
-          trust_score: (data as any).trust_score || 50,
-          active_groups: (data as any).active_groups || 0,
-          completed_cycles: (data as any).completed_cycles || 0
+          id: userData.id,
+          full_name: userData.full_name || '',
+          phone: userData.phone || '',
+          email: userData.email || '',
+          is_vip: userData.is_vip || false,
+          kyc_status: (userData.kyc_status as 'pending' | 'approved' | 'rejected') || 'pending',
+          first_login: userData.first_login || true,
+          wallet_balance: userData.wallet_balance || 0,
+          total_saved: userData.total_saved || 0,
+          total_earned: userData.total_earned || 0,
+          trust_score: userData.trust_score || 50,
+          active_groups: userData.active_groups || 0,
+          completed_cycles: userData.completed_cycles || 0
         })
       }
     } catch (error) {
