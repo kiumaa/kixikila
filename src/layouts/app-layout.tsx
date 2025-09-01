@@ -1,99 +1,105 @@
 'use client'
 
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
 import { Home, Wallet, Plus, UserPlus, User } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { CreateGroupModal } from '@/components/modals/create-group-modal'
+import { NativeTabBar } from '@/components/ui/native-tabbar'
+import { PullToRefresh } from '@/components/ui/pull-to-refresh'
+import { useSwipeGesture } from '@/hooks/use-gesture'
+import { cn } from '@/lib/utils'
 
 interface AppLayoutProps {
   children: React.ReactNode
+  enablePullToRefresh?: boolean
+  onRefresh?: () => Promise<void>
+  enableSwipeBack?: boolean
+  onSwipeBack?: () => void
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
-  const location = useLocation()
+export function AppLayout({ 
+  children, 
+  enablePullToRefresh = false,
+  onRefresh,
+  enableSwipeBack = false,
+  onSwipeBack
+}: AppLayoutProps) {
   const [showCreateGroup, setShowCreateGroup] = useState(false)
 
-  const navItems = [
+  // Native TabBar items
+  const tabItems = [
     {
       icon: Home,
       label: 'Home',
-      path: '/dashboard',
-      isActive: location.pathname === '/dashboard'
+      path: '/dashboard'
     },
     {
       icon: Wallet,
       label: 'Carteira',
-      path: '/wallet',
-      isActive: location.pathname === '/wallet'
+      path: '/wallet'
     },
     {
       icon: Plus,
       label: 'Criar',
-      path: '',
-      isActive: false,
       isAction: true,
       onClick: () => setShowCreateGroup(true)
     },
     {
       icon: UserPlus,
       label: 'Convidar',
-      path: '/invite',
-      isActive: location.pathname === '/invite'
+      path: '/invite'
     },
     {
       icon: User,
       label: 'Perfil',
-      path: '/profile',
-      isActive: location.pathname === '/profile'
+      path: '/profile'
     }
   ]
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Main Content */}
-      <main className="pb-20">
+  // Swipe gesture for back navigation
+  const swipeRef = useSwipeGesture({
+    onSwipeRight: enableSwipeBack && onSwipeBack ? onSwipeBack : undefined,
+    threshold: 100
+  })
+
+  const defaultRefresh = async () => {
+    // Default refresh behavior - can be overridden
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+
+  const content = (
+    <div 
+      ref={swipeRef}
+      className={cn(
+        "min-h-screen bg-background mobile-container",
+        "pb-20" // Space for TabBar
+      )}
+    >
+      {/* Main Content with Mobile First approach */}
+      <main className="min-h-screen">
         {children}
       </main>
+    </div>
+  )
 
-      {/* Fixed Bottom TabBar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
-        <div className="max-w-md mx-auto px-4 py-2">
-          <div className="flex justify-around items-center">
-            {navItems.map((item, index) => (
-              <button
-                key={index}
-                onClick={item.onClick || (() => window.location.href = item.path)}
-                className={cn(
-                  "flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-all duration-200",
-                  item.isAction 
-                    ? "bg-primary text-primary-foreground shadow-lg scale-110 -mt-2 rounded-full p-3"
-                    : item.isActive 
-                      ? "text-primary bg-primary/10" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
-                <item.icon className={cn(
-                  "transition-all duration-200",
-                  item.isAction ? "w-6 h-6" : "w-5 h-5"
-                )} />
-                <span className={cn(
-                  "text-xs font-medium transition-all duration-200",
-                  item.isAction ? "sr-only" : "block"
-                )}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+  return (
+    <>
+      {/* Content with optional Pull-to-Refresh */}
+      {enablePullToRefresh ? (
+        <PullToRefresh onRefresh={onRefresh || defaultRefresh}>
+          {content}
+        </PullToRefresh>
+      ) : (
+        content
+      )}
+
+      {/* Native TabBar */}
+      <NativeTabBar items={tabItems} />
 
       {/* Create Group Modal */}
       <CreateGroupModal
         isOpen={showCreateGroup}
         onClose={() => setShowCreateGroup(false)}
       />
-    </div>
+    </>
   )
 }

@@ -12,8 +12,11 @@ export default {
 	theme: {
 		container: {
 			center: true,
-			padding: '2rem',
+			padding: '1rem',
 			screens: {
+				'mobile': '430px',
+				'tablet': '768px',
+				'desktop': '1024px',
 				'2xl': '1400px'
 			}
 		},
@@ -179,6 +182,15 @@ export default {
 				'fade-in': 'fade-in 0.3s ease-out',
 				'slide-up': 'slide-up 0.3s ease-out',
 				'bounce-in': 'bounce-in 0.5s ease-out'
+			},
+			spacing: {
+				'safe-area-pb': 'env(safe-area-inset-bottom)',
+				'safe-area-pt': 'env(safe-area-inset-top)',
+				'mobile': '16px',
+				'mobile-sm': '12px',
+			},
+			scale: {
+				'98': '0.98',
 			}
 		}
 	},

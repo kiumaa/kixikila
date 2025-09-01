@@ -9,6 +9,38 @@
 
 @layer base {
   :root {
+    /* Mobile First Breakpoints and Dimensions */
+    --mobile-min: 360px;
+    --mobile-max: 430px;
+    --mobile-padding: 16px;
+    --mobile-spacing: 12px;
+    
+    /* Mobile First Typography Scale */
+    --text-xs: 11px;
+    --text-sm: 13px;
+    --text-base: 14px;
+    --text-lg: 16px;
+    --text-xl: 18px;
+    --text-2xl: 20px;
+    --text-3xl: 24px;
+    
+    /* Mobile First Spacing Scale (4/8px grid) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    
+    /* Mobile First Component Heights */
+    --mobile-button-height: 48px;
+    --mobile-input-height: 48px;
+    --mobile-tab-height: 56px;
+    --mobile-header-height: 80px;
+    
     /* Core System Colors */
     --background: 0 0% 100%;
     --foreground: 215 25% 27%;
@@ -181,6 +213,25 @@
   body {
     @apply bg-background text-foreground font-system antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-size: var(--text-base);
+    line-height: 1.5;
+    /* Mobile First: prevent horizontal scroll */
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Mobile First Base Layout */
+  .mobile-container {
+    max-width: var(--mobile-max);
+    min-width: var(--mobile-min);
+    margin: 0 auto;
+    padding: 0 var(--mobile-padding);
+  }
+  
+  /* Prevent zoom on input focus (iOS) */
+  input, select, textarea {
+    font-size: max(16px, 1em);
   }
 
   /* Apple-like font stack */
@@ -190,23 +241,46 @@
 }
 
 @layer components {
-  /* iOS-inspired interactive elements */
-  .ios-button {
-    @apply active:scale-95 transition-transform duration-75;
+  /* Mobile First Native Components */
+  .mobile-button {
+    height: var(--mobile-button-height);
+    @apply w-full px-6 rounded-xl font-medium text-base active:scale-95 transition-all duration-200;
+    min-height: 44px; /* iOS touch target */
   }
   
-  .ios-card {
-    @apply bg-card hover:bg-card-hover transition-colors duration-200 border border-border/50;
+  .mobile-button-secondary {
+    @apply mobile-button bg-secondary text-secondary-foreground hover:bg-secondary-hover;
+  }
+  
+  .mobile-button-primary {
+    @apply mobile-button bg-primary text-primary-foreground hover:bg-primary-hover;
+  }
+  
+  .mobile-card {
+    @apply bg-card rounded-2xl border border-border/50 p-4 active:scale-98 transition-all duration-200;
     box-shadow: var(--shadow-sm);
   }
   
-  .ios-card:hover {
+  .mobile-card:hover, .mobile-card:active {
     box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(0.98);
   }
   
-  .ios-input {
-    @apply h-12 px-4 bg-input border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200;
+  .mobile-input {
+    height: var(--mobile-input-height);
+    @apply w-full px-4 bg-input border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200;
+    font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 44px;
+  }
+  
+  /* Native App Like Interactions */
+  .native-tap {
+    @apply active:scale-95 transition-transform duration-75;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .native-feedback {
+    @apply active:bg-muted/50 transition-colors duration-150;
   }
 
   /* Smooth transitions */
