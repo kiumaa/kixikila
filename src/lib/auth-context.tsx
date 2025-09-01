@@ -76,7 +76,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, retryCount = 0) => {
+    const maxRetries = 3
+    const retryDelay = 1000 * (retryCount + 1) // Exponential backoff
+    
+    console.log(`[Auth] Fetching user profile for ID: ${userId}, attempt: ${retryCount + 1}`)
+    
     try {
       const { data, error } = await supabase
         .from('users')
@@ -85,11 +90,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       if (error) {
-        console.error('Error fetching user profile:', error)
+        console.error(`[Auth] Error fetching user profile:`, error)
+        
+        // If profile not found and this is a fresh signup, try fallback creation
+        if (error.code === 'PGRST116' || !data) {
+          console.log('[Auth] Profile not found, attempting fallback creation...')
+          const created = await createUserProfileFallback(userId)
+          if (created && retryCount < maxRetries) {
+            console.log('[Auth] Fallback creation successful, retrying fetch...')
+            setTimeout(() => fetchUserProfile(userId, retryCount + 1), retryDelay)
+            return
+          }
+        }
+        
+        // Retry on network errors
+        if (retryCount < maxRetries && (error.message?.includes('network') || error.message?.includes('timeout'))) {
+          console.log(`[Auth] Retrying profile fetch in ${retryDelay}ms...`)
+          setTimeout(() => fetchUserProfile(userId, retryCount + 1), retryDelay)
+          return
+        }
+        
         return
       }
 
       if (data) {
+        console.log('[Auth] Successfully fetched user profile')
         const userData = data as UserRow
         setUser({
           id: userData.id,
@@ -106,9 +131,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           active_groups: userData.active_groups || 0,
           completed_cycles: userData.completed_cycles || 0
         })
+      } else if (retryCount < maxRetries) {
+        console.log('[Auth] No profile found, attempting fallback creation...')
+        const created = await createUserProfileFallback(userId)
+        if (created) {
+          console.log('[Auth] Fallback creation successful, retrying fetch...')
+          setTimeout(() => fetchUserProfile(userId, retryCount + 1), retryDelay)
+        }
       }
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error)
+      console.error('[Auth] Unexpected error in fetchUserProfile:', error)
+      
+      // Retry on unexpected errors
+      if (retryCount < maxRetries) {
+        console.log(`[Auth] Retrying profile fetch in ${retryDelay}ms due to unexpected error...`)
+        setTimeout(() => fetchUserProfile(userId, retryCount + 1), retryDelay)
+      }
+    }
+  }
+
+  const createUserProfileFallback = async (userId: string): Promise<boolean> => {
+    console.log(`[Auth] Creating fallback profile for user ID: ${userId}`)
+    
+    try {
+      // Get user data from auth.users if available
+      const { data: authUser } = await supabase.auth.getUser()
+      const userData = authUser?.user
+      
+      const { error } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          full_name: userData?.user_metadata?.full_name || 'Utilizador',
+          email: userData?.email || '',
+          phone: userData?.user_metadata?.phone || '',
+          email_verified: userData?.email_confirmed_at ? true : false,
+          phone_verified: userData?.phone_confirmed_at ? true : false,
+          kyc_status: 'pending',
+          is_active: true,
+          trust_score: 50,
+          wallet_balance: 0.00,
+          total_saved: 0.00,
+          total_earned: 0.00,
+          total_withdrawn: 0.00,
+          active_groups: 0,
+          completed_cycles: 0,
+          first_login: true
+        })
+
+      if (error) {
+        console.error('[Auth] Error creating fallback profile:', error)
+        return false
+      }
+
+      console.log('[Auth] Successfully created fallback profile')
+      return true
+    } catch (error) {
+      console.error('[Auth] Unexpected error creating fallback profile:', error)
+      return false
     }
   }
 
