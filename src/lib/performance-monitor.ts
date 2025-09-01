@@ -1,6 +1,6 @@
 'use client'
 
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
+import { onCLS, onFCP, onLCP, onTTFB, onINP } from 'web-vitals'
 
 interface PerformanceMetric {
   name: string
@@ -28,11 +28,11 @@ class PerformanceMonitor {
 
   private initializeWebVitals() {
     // Core Web Vitals
-    getCLS((metric) => this.recordMetric('CLS', metric.value, this.getClsRating(metric.value)))
-    getFID((metric) => this.recordMetric('FID', metric.value, this.getFidRating(metric.value)))
-    getFCP((metric) => this.recordMetric('FCP', metric.value, this.getFcpRating(metric.value)))
-    getLCP((metric) => this.recordMetric('LCP', metric.value, this.getLcpRating(metric.value)))
-    getTTFB((metric) => this.recordMetric('TTFB', metric.value, this.getTtfbRating(metric.value)))
+    onCLS((metric) => this.recordMetric('CLS', metric.value, this.getClsRating(metric.value)))
+    onINP((metric) => this.recordMetric('INP', metric.value, this.getInpRating(metric.value)))
+    onFCP((metric) => this.recordMetric('FCP', metric.value, this.getFcpRating(metric.value)))
+    onLCP((metric) => this.recordMetric('LCP', metric.value, this.getLcpRating(metric.value)))
+    onTTFB((metric) => this.recordMetric('TTFB', metric.value, this.getTtfbRating(metric.value)))
   }
 
   private initializeResourceMonitoring() {
@@ -43,8 +43,8 @@ class PerformanceMonitor {
           for (const entry of list.getEntries()) {
             if (entry.entryType === 'navigation') {
               const navEntry = entry as PerformanceNavigationTiming
-              this.recordMetric('DOM_CONTENT_LOADED', navEntry.domContentLoadedEventEnd - navEntry.navigationStart, 'good')
-              this.recordMetric('LOAD_COMPLETE', navEntry.loadEventEnd - navEntry.navigationStart, 'good')
+              this.recordMetric('DOM_CONTENT_LOADED', navEntry.domContentLoadedEventEnd - navEntry.startTime, 'good')
+              this.recordMetric('LOAD_COMPLETE', navEntry.loadEventEnd - navEntry.startTime, 'good')
             }
           }
         })
@@ -123,6 +123,12 @@ class PerformanceMonitor {
     return 'poor'
   }
 
+  private getInpRating(value: number): 'good' | 'needs-improvement' | 'poor' {
+    if (value <= 200) return 'good'
+    if (value <= 500) return 'needs-improvement'
+    return 'poor'
+  }
+
   private getFcpRating(value: number): 'good' | 'needs-improvement' | 'poor' {
     if (value <= 1800) return 'good'
     if (value <= 3000) return 'needs-improvement'
@@ -163,7 +169,7 @@ class PerformanceMonitor {
 
   getLoadTime(): number {
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
-    return navigation ? navigation.loadEventEnd - navigation.navigationStart : 0
+    return navigation ? navigation.loadEventEnd - navigation.startTime : 0
   }
 
   getCurrentReport(): PerformanceReport {
@@ -184,7 +190,7 @@ class PerformanceMonitor {
   }
 
   getCoreWebVitals(): Record<string, PerformanceMetric | undefined> {
-    const vitals = ['CLS', 'FID', 'FCP', 'LCP', 'TTFB']
+    const vitals = ['CLS', 'INP', 'FCP', 'LCP', 'TTFB']
     const result: Record<string, PerformanceMetric | undefined> = {}
     
     vitals.forEach(vital => {

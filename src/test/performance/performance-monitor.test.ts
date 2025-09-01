@@ -1,20 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
+import { onCLS, onFCP, onLCP, onTTFB, onINP } from 'web-vitals'
 
 // Mock web-vitals
 vi.mock('web-vitals', () => ({
-  getCLS: vi.fn(),
-  getFID: vi.fn(), 
-  getFCP: vi.fn(),
-  getLCP: vi.fn(),
-  getTTFB: vi.fn()
+  onCLS: vi.fn(),
+  onINP: vi.fn(), 
+  onFCP: vi.fn(),
+  onLCP: vi.fn(),
+  onTTFB: vi.fn()
 }))
 
 // Mock performance observer
-global.PerformanceObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  disconnect: vi.fn()
-}))
+class MockPerformanceObserver {
+  static supportedEntryTypes = ['navigation', 'resource', 'paint']
+  
+  constructor(public callback: PerformanceObserverCallback) {}
+  
+  observe = vi.fn()
+  disconnect = vi.fn()
+}
+
+global.PerformanceObserver = MockPerformanceObserver as any
 
 describe('Performance Monitoring', () => {
   beforeEach(() => {
@@ -25,24 +31,24 @@ describe('Performance Monitoring', () => {
     const mockCallback = vi.fn()
     
     // Simulate measuring performance metrics
-    vi.mocked(getCLS).mockImplementation(mockCallback)
-    vi.mocked(getFID).mockImplementation(mockCallback)
-    vi.mocked(getFCP).mockImplementation(mockCallback)
-    vi.mocked(getLCP).mockImplementation(mockCallback)
-    vi.mocked(getTTFB).mockImplementation(mockCallback)
+    vi.mocked(onCLS).mockImplementation(mockCallback)
+    vi.mocked(onINP).mockImplementation(mockCallback)
+    vi.mocked(onFCP).mockImplementation(mockCallback)
+    vi.mocked(onLCP).mockImplementation(mockCallback)
+    vi.mocked(onTTFB).mockImplementation(mockCallback)
     
     // Call the metrics
-    getCLS(mockCallback)
-    getFID(mockCallback)
-    getFCP(mockCallback)  
-    getLCP(mockCallback)
-    getTTFB(mockCallback)
+    onCLS(mockCallback)
+    onINP(mockCallback)
+    onFCP(mockCallback)  
+    onLCP(mockCallback)
+    onTTFB(mockCallback)
     
-    expect(getCLS).toHaveBeenCalledWith(mockCallback)
-    expect(getFID).toHaveBeenCalledWith(mockCallback)
-    expect(getFCP).toHaveBeenCalledWith(mockCallback)
-    expect(getLCP).toHaveBeenCalledWith(mockCallback)
-    expect(getTTFB).toHaveBeenCalledWith(mockCallback)
+    expect(onCLS).toHaveBeenCalledWith(mockCallback)
+    expect(onINP).toHaveBeenCalledWith(mockCallback)
+    expect(onFCP).toHaveBeenCalledWith(mockCallback)
+    expect(onLCP).toHaveBeenCalledWith(mockCallback)
+    expect(onTTFB).toHaveBeenCalledWith(mockCallback)
   })
 
   it('should track navigation timing', () => {

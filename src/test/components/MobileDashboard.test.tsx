@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '../utils'
+import { render } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/dom'
 import { MobileDashboard } from '@/pages/mobile-dashboard'
 
 // Mock hooks

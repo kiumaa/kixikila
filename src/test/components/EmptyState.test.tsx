@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '../utils'
+import { render } from '@testing-library/react'
+import { screen, fireEvent } from '@testing-library/dom'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Users } from 'lucide-react'
 

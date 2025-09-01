@@ -1,6 +1,6 @@
 'use client'
 
-import { axeAccessibilityReporter } from '@axe-core/react'
+import axeAccessibilityReporter from '@axe-core/react'
 
 interface AccessibilityIssue {
   id: string
